@@ -36,6 +36,21 @@ done
 
 install_dependencies() {
     local packages=(caelestia-shell caelestia-cli cmake ninja)
+    if ! command -v yay >/dev/null 2>&1 &&
+       ! command -v paru >/dev/null 2>&1 &&
+       command -v pacman >/dev/null 2>&1; then
+        local bootstrap_dir
+        echo "未检测到 yay 或 paru，正在安装 yay-bin……"
+        sudo pacman -S --needed --noconfirm base-devel git
+        bootstrap_dir="$(mktemp -d)"
+        git clone --depth=1 https://aur.archlinux.org/yay-bin.git "$bootstrap_dir/yay-bin"
+        (
+            cd "$bootstrap_dir/yay-bin"
+            makepkg -si --needed --noconfirm
+        )
+        rm -rf "$bootstrap_dir"
+    fi
+
     if command -v yay >/dev/null 2>&1; then
         yay -S --needed "${packages[@]}"
     elif command -v paru >/dev/null 2>&1; then

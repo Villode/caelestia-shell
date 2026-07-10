@@ -11,6 +11,9 @@ This fork is the controlled Caelestia Shell base used by
 The controlled branch also disables runtime source watching and moves the unsupported `DefaultEnv`
 pragmas into the launcher wrapper. These are deliberate compatibility and idle-resource changes.
 
+On Arch Linux, the installer can bootstrap `yay-bin` when neither `yay` nor `paru` is available,
+then install the remaining build and runtime dependencies.
+
 ## Updating from upstream
 
 Updates are intentionally manual so an upstream change cannot silently break the Chinese patch,
