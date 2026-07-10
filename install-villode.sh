@@ -46,6 +46,11 @@ install_dependencies() {
     fi
 }
 
+if $with_deps; then
+    echo "正在检查并补齐 Caelestia 构建与运行依赖……"
+    install_dependencies
+fi
+
 if [[ ! -x /usr/bin/caelestia ]] || ! command -v qs >/dev/null 2>&1; then
     if $with_deps; then
         install_dependencies
