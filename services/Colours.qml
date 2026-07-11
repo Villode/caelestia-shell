@@ -29,6 +29,8 @@ Singleton {
 
     property bool cooldownPending
     property real lastBaseTransparency
+    property bool presetStorageInitialised
+    property bool autoModeStorageInitialised
 
     function getLuminance(c: color): real {
         if (c.r == 0 && c.g == 0 && c.b == 0)
@@ -69,7 +71,7 @@ Singleton {
             root.scheme = scheme.name;
             flavour = scheme.flavour;
             currentLight = scheme.mode === "light";
-            Quickshell.execDetached(["python3", Quickshell.shellPath("assets/sync_alacritty_theme.py"), scheme.mode]);
+            Quickshell.execDetached(["python3", Quickshell.shellPath("assets/sync_alacritty_theme.py"), scheme.mode, ...GlobalConfig.general.apps.terminal]);
         } else {
             previewLight = scheme.mode === "light";
         }
@@ -141,6 +143,10 @@ Singleton {
     }
 
     function setPreset(name: string, mode: string): void {
+        // A click can arrive while FileView is still completing its initial
+        // asynchronous read. From this point the user's newer choice is the
+        // authority; a stale load must not overwrite it.
+        root.presetStorageInitialised = true;
         root.preset = ["blue", "teal", "violet", "green", "rose"].includes(name) ? name : "blue";
         presetStorage.setText(root.preset);
         applyVillodePreset(current, mode === "light");
@@ -154,6 +160,7 @@ Singleton {
     }
 
     function setAutoMode(enabled: bool): void {
+        root.autoModeStorageInitialised = true;
         root.autoMode = enabled;
         autoModeStorage.setText(enabled ? "true" : "false");
         GlobalConfig.services.smartScheme = false;
@@ -217,6 +224,9 @@ Singleton {
         watchChanges: true
         onFileChanged: reload()
         onLoaded: {
+            if (root.presetStorageInitialised)
+                return;
+            root.presetStorageInitialised = true;
             const saved = text().trim();
             if (["blue", "teal", "violet", "green", "rose"].includes(saved)) {
                 root.preset = saved;
@@ -227,8 +237,10 @@ Singleton {
             }
         }
         onLoadFailed: err => {
-            if (err === FileViewError.FileNotFound)
+            if (err === FileViewError.FileNotFound) {
+                root.presetStorageInitialised = true;
                 Qt.callLater(() => setText(root.preset));
+            }
         }
     }
 
@@ -239,14 +251,21 @@ Singleton {
         watchChanges: true
         onFileChanged: reload()
         onLoaded: {
+            if (root.autoModeStorageInitialised)
+                return;
+            root.autoModeStorageInitialised = true;
             root.autoMode = text().trim() === "true";
-            GlobalConfig.services.smartScheme = false;
+            if (root.autoMode) {
+                GlobalConfig.services.smartScheme = false;
+            }
             if (root.autoMode && presetStorage.loaded)
                 root.applyTimeMode(true);
         }
         onLoadFailed: err => {
-            if (err === FileViewError.FileNotFound)
+            if (err === FileViewError.FileNotFound) {
+                root.autoModeStorageInitialised = true;
                 Qt.callLater(() => setText("false"));
+            }
         }
     }
 

@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
@@ -16,7 +18,7 @@ PageBase {
     property bool checkedOnce
     property string errorText
     property string lastChecked
-    readonly property int updateCount: components.filter(item => item.status === "有更新").length
+    readonly property int updateCount: components.filter(item => item.status === "有更新" || item.status === "需要修复").length
 
     property Process checkProcess: Process {
         id: checkProcess
@@ -46,7 +48,13 @@ PageBase {
             return;
         root.checking = true;
         root.errorText = "";
+        root.components = [];
         checkProcess.running = true;
+    }
+
+    function launchUpdate(): void {
+        const terminal = [...GlobalConfig.general.apps.terminal];
+        Quickshell.execDetached([Quickshell.shellPath("assets/villode_terminal_exec.sh"), String(terminal.length), ...terminal, "--", "sh", "-lc", "villode-caelestia-update; code=$?; echo; if [ $code -eq 0 ]; then echo '更新完成。'; else echo '更新失败，退出码：'$code; fi; echo '按回车键关闭…'; read -r; exit $code"]);
     }
 
     function parseUpdates(text: string): void {
@@ -123,7 +131,7 @@ PageBase {
 
                     StyledText {
                         Layout.fillWidth: true
-                        text: root.checking ? "正在检查更新…" : root.updateCount > 0 ? `发现 ${root.updateCount} 个更新` : "所有组件均为最新"
+                        text: root.checking ? "正在检查更新…" : root.errorText ? "无法检查更新" : root.updateCount > 0 ? `发现 ${root.updateCount} 个更新或修复项` : "所有组件均为最新"
                         font: Tokens.font.body.large
                     }
 
@@ -160,8 +168,8 @@ PageBase {
                 required property int index
 
                 Layout.fillWidth: true
-                first: index === 0
-                last: index === root.components.length - 1
+                first: componentRow.index === 0
+                last: componentRow.index === root.components.length - 1
                 implicitHeight: componentLayout.implicitHeight + Tokens.padding.large * 2
 
                 RowLayout {
@@ -189,7 +197,7 @@ PageBase {
 
                     StyledText {
                         text: componentRow.modelData.status
-                        color: componentRow.modelData.status === "有更新" ? Colours.palette.m3primary : Colours.palette.m3onSurfaceVariant
+                        color: componentRow.modelData.status === "有更新" || componentRow.modelData.status === "需要修复" ? Colours.palette.m3primary : Colours.palette.m3onSurfaceVariant
                         font: Tokens.font.label.medium
                     }
                 }
@@ -212,13 +220,7 @@ PageBase {
             text: root.updateCount > 0 ? `更新 ${root.updateCount} 个组件` : "已是最新"
             type: IconTextButton.Filled
             disabled: root.checking || root.updateCount === 0
-            onClicked: Quickshell.execDetached([
-                "alacritty",
-                "-e",
-                "sh",
-                "-lc",
-                "villode-caelestia-update; code=$?; echo; if [ $code -eq 0 ]; then echo '更新完成。'; else echo '更新失败，退出码：'$code; fi; echo '按回车键关闭…'; read -r; exit $code"
-            ])
+            onClicked: root.launchUpdate()
         }
 
         StyledText {

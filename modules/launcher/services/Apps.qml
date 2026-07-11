@@ -11,13 +11,15 @@ Searcher {
     function launch(entry: DesktopEntry): void {
         appDb.incrementFrequency(entry.id);
 
-        if (entry.runInTerminal)
+        if (entry.runInTerminal) {
+            const terminal = [...GlobalConfig.general.apps.terminal];
             Quickshell.execDetached({
-                command: [...GlobalConfig.general.apps.terminal, `${Quickshell.shellDir}/assets/wrap_term_launch.sh`, ...entry.command],
+                command: [Quickshell.shellPath("assets/villode_terminal_exec.sh"), String(terminal.length), ...terminal, "--", `${Quickshell.shellDir}/assets/wrap_term_launch.sh`, ...entry.command],
                 workingDirectory: entry.workingDirectory
             });
-        else
+        } else {
             entry.execute();
+        }
     }
 
     function search(search: string): list<var> {

@@ -21,6 +21,7 @@ Searcher {
     property string actualCurrent
     property bool previewColourLock
     property bool pendingPreviewClear
+    property bool pendingDesktopStaticSync
 
     function getCategoryFor(w: FileSystemEntry): string {
         let category = w.parentDir.slice(Paths.wallsdir.length + 1);
@@ -30,6 +31,8 @@ Searcher {
     }
 
     function setRandom(): void {
+        pendingDesktopStaticSync = true;
+        randomSyncTimeout.restart();
         Quickshell.execDetached(["caelestia", "wallpaper", "-r", ...smartArg]);
     }
 
@@ -100,7 +103,11 @@ Searcher {
                 Quickshell.execDetached(["caelestia", "wallpaper", "-f", root.fallback, ...root.smartArg]);
             }
             root.actualCurrent = wall;
-            root.syncVillodeDesktop(wall);
+            if (root.pendingDesktopStaticSync) {
+                root.pendingDesktopStaticSync = false;
+                randomSyncTimeout.stop();
+                root.syncVillodeDesktop(wall);
+            }
             root.previewColourLock = false;
         }
         onLoadFailed: {
@@ -116,6 +123,13 @@ Searcher {
         recursive: true
         path: Paths.wallsdir
         filter: FileSystemModel.Images
+    }
+
+    Timer {
+        id: randomSyncTimeout
+
+        interval: 5000
+        onTriggered: root.pendingDesktopStaticSync = false
     }
 
     Process {
