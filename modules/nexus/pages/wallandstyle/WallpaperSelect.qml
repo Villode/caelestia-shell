@@ -16,7 +16,7 @@ import qs.modules.nexus.common
 PageBase {
     id: root
 
-    title: qsTr("Wallpapers")
+    title: "选择壁纸"
     isSubPage: true
 
     ColumnLayout {
@@ -32,7 +32,7 @@ PageBase {
 
             IconTextButton {
                 icon: "photo_library"
-                text: qsTr("Browse")
+                text: "浏览"
                 font: Tokens.font.body.large
                 isRound: true
                 shapeMorph: true
@@ -43,8 +43,8 @@ PageBase {
                 FileDialog {
                     id: browseDialog
 
-                    title: qsTr("Select an image")
-                    filterLabel: qsTr("Image files")
+                    title: "选择图片"
+                    filterLabel: "图片文件"
                     filters: Images.validImageExtensions
                     onAccepted: path => {
                         Wallpapers.setWallpaper(path);
@@ -55,7 +55,7 @@ PageBase {
 
             IconTextButton {
                 icon: "shuffle"
-                text: qsTr("Random")
+                text: "随机"
                 font: Tokens.font.body.large
                 isRound: true
                 shapeMorph: true
@@ -72,18 +72,18 @@ PageBase {
         WallItem {
             imgHeight: Math.round(width * 0.3)
             radius: Tokens.rounding.extraLarge
-            source: Quickshell.shellPath("assets/wallpaper.webp")
-            text: qsTr("Featured wallpaper")
+            source: Quickshell.shellPath("assets/villode-midnight-glass.png")
+            text: "Villode Midnight Glass"
             fillLabel: false
             onClicked: {
-                Wallpapers.setWallpaper(Quickshell.shellPath("assets/wallpaper.webp"));
+                Wallpapers.setWallpaper(Quickshell.shellPath("assets/villode-midnight-glass.png"));
                 root.nState.closeSubPage();
             }
         }
 
         StyledText {
             Layout.topMargin: Tokens.spacing.large
-            text: qsTr("Local wallpapers")
+            text: "本地壁纸"
             font: Tokens.font.title.small
         }
 
@@ -177,7 +177,7 @@ PageBase {
 
                     StyledText {
                         Layout.alignment: Qt.AlignHCenter
-                        text: qsTr("No local wallpapers found")
+                        text: "没有找到本地壁纸"
                         color: Colours.palette.m3outline
                         font: Tokens.font.title.small
                     }

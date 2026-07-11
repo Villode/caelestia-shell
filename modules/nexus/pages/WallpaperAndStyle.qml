@@ -13,7 +13,18 @@ import qs.modules.nexus.common
 PageBase {
     id: root
 
-    title: qsTr("Wallpaper & style")
+    readonly property real maximumTransparency: 0.75
+    property string requestedMode
+    readonly property string desiredMode: requestedMode || (Colours.light ? "light" : "dark")
+    property Connections colourConnections: Connections {
+        function onCurrentLightChanged(): void {
+            root.requestedMode = Colours.light ? "light" : "dark";
+        }
+
+        target: Colours
+    }
+
+    title: "壁纸和样式"
 
     ColumnLayout {
         anchors.horizontalCenter: parent.horizontalCenter
@@ -146,7 +157,7 @@ PageBase {
 
             IconTextButton {
                 icon: "wallpaper"
-                text: qsTr("Wallpapers")
+                text: "选择壁纸"
                 font: Tokens.font.body.large
                 isRound: true
                 shapeMorph: true
@@ -156,43 +167,176 @@ PageBase {
                 disabled: !Config.background.wallpaperEnabled
                 onClicked: root.nState.openSubPage(1) // Wallpaper page
             }
+        }
 
-            IconTextButton {
-                icon: "palette"
-                text: qsTr("Colours")
-                font: Tokens.font.body.large
-                isRound: true
-                shapeMorph: true
-                type: IconTextButton.Tonal
-                horizontalPadding: Tokens.padding.extraLarge
-                verticalPadding: Tokens.padding.medium
-                onClicked: root.nState.openSubPage(3) // Colours page
+        SectionHeader {
+            text: "外观"
+        }
+
+        ConnectedRect {
+            Layout.fillWidth: true
+            first: true
+            implicitHeight: themeLayout.implicitHeight + Tokens.padding.large * 2
+
+            RowLayout {
+                id: themeLayout
+
+                anchors.fill: parent
+                anchors.margins: Tokens.padding.large
+                spacing: Tokens.spacing.large
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 0
+
+                    StyledText {
+                        text: "主题模式"
+                        font: Tokens.font.body.medium
+                    }
+
+                    StyledText {
+                        text: "自动模式会按照本地时间切换明暗"
+                        color: Colours.palette.m3outline
+                        font: Tokens.font.label.small
+                    }
+                }
+
+                ButtonRow {
+                    spacing: 0
+
+                    IconTextButton {
+                        icon: "dark_mode"
+                        text: "深色"
+                        isToggle: false
+                        checked: !Colours.autoMode && !Colours.light
+                        type: IconTextButton.Tonal
+                        onClicked: {
+                            root.requestedMode = "dark";
+                            Colours.setAutoMode(false);
+                            Colours.setMode("dark");
+                        }
+                    }
+
+                    IconTextButton {
+                        icon: "light_mode"
+                        text: "亮色"
+                        isToggle: false
+                        checked: !Colours.autoMode && Colours.light
+                        type: IconTextButton.Tonal
+                        onClicked: {
+                            root.requestedMode = "light";
+                            Colours.setAutoMode(false);
+                            Colours.setMode("light");
+                        }
+                    }
+
+                    IconTextButton {
+                        icon: "brightness_auto"
+                        text: "自动"
+                        isToggle: false
+                        checked: Colours.autoMode
+                        type: IconTextButton.Tonal
+                        onClicked: {
+                            root.requestedMode = "";
+                            Colours.setAutoMode(true);
+                        }
+                    }
+                }
             }
         }
 
-        ToggleRow {
-            first: true
-            text: qsTr("Display wallpaper")
-            checked: Config.background.wallpaperEnabled
-            onToggled: GlobalConfig.background.wallpaperEnabled = checked
+        ConnectedRect {
+            Layout.fillWidth: true
+            Layout.topMargin: Tokens.spacing.extraSmall / 2 - parent.spacing
+            implicitHeight: colourLayout.implicitHeight + Tokens.padding.large * 2
+
+            RowLayout {
+                id: colourLayout
+
+                anchors.fill: parent
+                anchors.margins: Tokens.padding.large
+                spacing: Tokens.spacing.large
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 0
+
+                    StyledText {
+                        text: "主题色"
+                        font: Tokens.font.body.medium
+                    }
+
+                    StyledText {
+                        text: "选择一套预设强调色"
+                        color: Colours.palette.m3outline
+                        font: Tokens.font.label.small
+                    }
+                }
+
+                ButtonRow {
+                    spacing: Tokens.spacing.extraSmall
+
+                    PresetButton {
+                        presetName: "blue"
+                        presetColour: "#366385"
+                        text: "海蓝"
+                    }
+
+                    PresetButton {
+                        presetName: "teal"
+                        presetColour: "#1c6a66"
+                        text: "青绿"
+                    }
+
+                    PresetButton {
+                        presetName: "violet"
+                        presetColour: "#7657a8"
+                        text: "紫罗兰"
+                    }
+
+                    PresetButton {
+                        presetName: "green"
+                        presetColour: "#437653"
+                        text: "森林"
+                    }
+
+                    PresetButton {
+                        presetName: "rose"
+                        presetColour: "#9a526f"
+                        text: "玫瑰"
+                    }
+                }
+            }
         }
 
-        ToggleRow {
+        SliderRow {
             Layout.topMargin: Tokens.spacing.extraSmall / 2 - parent.spacing
-
-            text: qsTr("Transparency")
-            subtext: qsTr("Base %1, layers %2").arg(Colours.transparency.base).arg(Colours.transparency.layers)
-            checked: Colours.transparency.enabled
-            onToggled: GlobalConfig.appearance.transparency.enabled = checked
-        }
-
-        ToggleRow {
-            Layout.topMargin: Tokens.spacing.extraSmall / 2 - parent.spacing
-
             last: true
-            text: qsTr("Dark theme")
-            checked: !Colours.light
-            onToggled: Colours.setMode(checked ? "dark" : "light")
+            icon: "opacity"
+            label: "透明度"
+            value: GlobalConfig.appearance.transparency.enabled ? Math.min(root.maximumTransparency, 1 - GlobalConfig.appearance.transparency.base) / root.maximumTransparency : 0
+            valueLabel: `${Math.round(value * root.maximumTransparency * 100)}%`
+            onMoved: v => {
+                GlobalConfig.appearance.transparency.enabled = v > 0.005;
+                GlobalConfig.appearance.transparency.base = 1 - v * root.maximumTransparency;
+            }
+        }
+    }
+
+    component PresetButton: IconTextButton {
+        required property string presetName
+        required property color presetColour
+
+        icon: "circle"
+        isToggle: false
+        checked: Colours.preset === presetName
+        type: IconTextButton.Tonal
+        activeColour: presetColour
+        inactiveColour: Qt.alpha(presetColour, 0.18)
+        activeOnColour: "white"
+        inactiveOnColour: Colours.palette.m3onSurfaceVariant
+        onClicked: {
+            Colours.setPreset(presetName, root.desiredMode);
         }
     }
 }

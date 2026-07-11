@@ -8,9 +8,9 @@ QtObject {
     readonly property list<var> pages: [
         // Appearance
         {
-            label: qsTr("Wallpaper & style"),
+            label: qsTr("壁纸和样式"),
             icon: "palette",
-            description: qsTr("Wallpaper, fonts, colours"),
+            description: qsTr("壁纸、字体、颜色"),
             category: "appearance"
         },
 
@@ -23,70 +23,70 @@ QtObject {
         //     category: "connectivity"
         // },
         {
-            label: qsTr("Network"),
+            label: qsTr("网络"),
             icon: "wifi",
-            description: qsTr("Wi-Fi, ethernet"),
+            description: qsTr("无线网络、有线网络"),
             category: "connectivity"
         },
         {
-            label: qsTr("Connected devices"),
+            label: qsTr("已连接设备"),
             icon: "devices_other",
-            description: qsTr("Bluetooth, pairing"),
+            description: qsTr("蓝牙、配对"),
             category: "connectivity",
             noFill: true
         },
         {
-            label: qsTr("Audio"),
+            label: qsTr("音频"),
             icon: "volume_up",
-            description: qsTr("App volumes, sound devices"),
+            description: qsTr("应用音量、声音设备"),
             category: "connectivity"
         },
 
         // System
         {
-            label: qsTr("Updates"),
+            label: qsTr("Villode 更新"),
             icon: "update",
-            description: qsTr("System updates"),
+            description: qsTr("同步 Shell、中文化与桌面组件"),
             category: "system"
         },
         {
-            label: qsTr("Plugins"),
+            label: qsTr("插件"),
             icon: "extension",
-            description: qsTr("Manage plugins"),
+            description: qsTr("管理插件"),
             category: "system"
         },
 
         // Shell
         {
-            label: qsTr("Panels"),
+            label: qsTr("面板"),
             icon: "dock_to_bottom",
-            description: qsTr("Dashboard, taskbar, launcher, sidebar"),
+            description: qsTr("仪表盘、任务栏、启动器、侧边栏"),
             category: "shell"
         },
         {
-            label: qsTr("Apps"),
+            label: qsTr("应用"),
             icon: "apps",
-            description: qsTr("Default apps, favourites, hidden apps"),
+            description: qsTr("默认应用、收藏、隐藏应用"),
             category: "shell"
         },
         {
-            label: qsTr("Services"),
+            label: qsTr("服务"),
             icon: "build",
-            description: qsTr("Poll intervals, lyrics backend"),
+            description: qsTr("轮询间隔、歌词后端"),
             category: "shell"
         },
         {
-            label: qsTr("Language & region"),
+            label: qsTr("语言和地区"),
             icon: "globe",
-            description: qsTr("UI language, weather location, display units"),
+            description: qsTr("界面语言、天气位置、显示单位"),
             category: "shell"
         },
 
         // About
         {
-            label: qsTr("About"),
+            label: qsTr("关于"),
             icon: "info",
-            description: qsTr("System information, credits"),
+            description: qsTr("系统信息、致谢"),
             category: "about"
         },
     ]

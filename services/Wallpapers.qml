@@ -33,9 +33,15 @@ Searcher {
         Quickshell.execDetached(["caelestia", "wallpaper", "-r", ...smartArg]);
     }
 
+    function syncVillodeDesktop(path: string): void {
+        if (path)
+            Quickshell.execDetached(["villode-desktop", "--set-static", path, "--fit", "cover"]);
+    }
+
     function setWallpaper(path: string): void {
         actualCurrent = path;
         Quickshell.execDetached(["caelestia", "wallpaper", "-f", path, ...smartArg]);
+        syncVillodeDesktop(path);
     }
 
     function preview(path: string): void {
@@ -94,6 +100,7 @@ Searcher {
                 Quickshell.execDetached(["caelestia", "wallpaper", "-f", root.fallback, ...root.smartArg]);
             }
             root.actualCurrent = wall;
+            root.syncVillodeDesktop(wall);
             root.previewColourLock = false;
         }
         onLoadFailed: {

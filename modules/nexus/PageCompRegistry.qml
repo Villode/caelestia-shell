@@ -79,7 +79,11 @@ QtObject {
 
         // System
         Component {
-            PlaceholderComp {}
+            StackPage {
+                Component {
+                    UpdatesPage {}
+                }
+            }
         },
         Component {
             PlaceholderComp {}
@@ -187,14 +191,14 @@ QtObject {
 
             StyledText {
                 Layout.alignment: Qt.AlignHCenter
-                text: qsTr("Page under construction")
+                text: qsTr("页面正在建设中")
                 color: Colours.palette.m3outlineVariant
                 font: Tokens.font.title.large
             }
 
             StyledText {
                 Layout.alignment: Qt.AlignHCenter
-                text: qsTr("This page will be available in a future update.")
+                text: qsTr("此页面会在后续更新中开放。")
                 color: Colours.palette.m3outlineVariant
                 font: Tokens.font.body.large
             }

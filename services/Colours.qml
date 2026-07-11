@@ -24,6 +24,8 @@ Singleton {
     readonly property M3Palette preview: M3Palette {}
     readonly property Transparency transparency: Transparency {}
     readonly property alias wallLuminance: analyser.luminance
+    property string preset: "blue"
+    property bool autoMode
 
     property bool cooldownPending
     property real lastBaseTransparency
@@ -67,6 +69,7 @@ Singleton {
             root.scheme = scheme.name;
             flavour = scheme.flavour;
             currentLight = scheme.mode === "light";
+            Quickshell.execDetached(["python3", Quickshell.shellPath("assets/sync_alacritty_theme.py"), scheme.mode]);
         } else {
             previewLight = scheme.mode === "light";
         }
@@ -76,10 +79,95 @@ Singleton {
             if (colours.hasOwnProperty(propName))
                 colours[propName] = `#${colour}`;
         }
+
+        applyVillodePreset(colours, scheme.mode === "light");
+    }
+
+    function applyVillodePreset(colours: M3Palette, lightMode: bool): void {
+        const palettes = {
+            blue: ["#2563eb", "#dbeafe", "#172554", "#7c3aed", "#ede9fe", "#93c5fd", "#1e3a8a"],
+            teal: ["#0f766e", "#ccfbf1", "#134e4a", "#2563eb", "#dbeafe", "#5eead4", "#134e4a"],
+            violet: ["#6d28d9", "#ede9fe", "#3b0764", "#be185d", "#fce7f3", "#c4b5fd", "#4c1d95"],
+            green: ["#15803d", "#dcfce7", "#14532d", "#0f766e", "#ccfbf1", "#86efac", "#14532d"],
+            rose: ["#be123c", "#ffe4e6", "#881337", "#7c3aed", "#ede9fe", "#fda4af", "#881337"]
+        };
+        const selected = palettes[root.preset] ?? palettes.blue;
+        const primary = lightMode ? selected[0] : selected[5];
+        const onPrimary = lightMode ? "#ffffff" : selected[6];
+        const container = lightMode ? selected[1] : selected[6];
+        const onContainer = lightMode ? selected[2] : selected[5];
+
+        const neutralBackground = lightMode ? "#f7f8fa" : "#0f1115";
+        const neutralLow = lightMode ? "#f1f3f6" : "#171a20";
+        const neutralContainer = lightMode ? "#eceff3" : "#1c2027";
+        const neutralHigh = lightMode ? "#e6e9ee" : "#242932";
+        const neutralHighest = lightMode ? "#dfe3e9" : "#2c323c";
+
+        colours.m3background = Qt.tint(neutralBackground, Qt.alpha(primary, lightMode ? 0.025 : 0.04));
+        colours.m3onBackground = lightMode ? "#20242b" : "#e7e9ee";
+        colours.m3surface = Qt.tint(neutralBackground, Qt.alpha(primary, lightMode ? 0.03 : 0.05));
+        colours.m3surfaceDim = lightMode ? "#d9dde4" : "#0f1115";
+        colours.m3surfaceBright = lightMode ? "#ffffff" : "#343840";
+        colours.m3surfaceContainerLowest = lightMode ? "#ffffff" : "#0a0c0f";
+        colours.m3surfaceContainerLow = Qt.tint(neutralLow, Qt.alpha(primary, 0.06));
+        colours.m3surfaceContainer = Qt.tint(neutralContainer, Qt.alpha(primary, 0.10));
+        colours.m3surfaceContainerHigh = Qt.tint(neutralHigh, Qt.alpha(primary, 0.14));
+        colours.m3surfaceContainerHighest = Qt.tint(neutralHighest, Qt.alpha(primary, 0.18));
+        colours.m3onSurface = lightMode ? "#20242b" : "#e7e9ee";
+        colours.m3surfaceVariant = Qt.tint(neutralHighest, Qt.alpha(primary, 0.14));
+        colours.m3onSurfaceVariant = lightMode ? "#4b5563" : "#c0c6d0";
+        colours.m3outline = lightMode ? "#6b7280" : "#8d96a5";
+        colours.m3outlineVariant = lightMode ? "#c3c9d2" : "#444b57";
+
+        colours.m3primary_paletteKeyColor = primary;
+        colours.m3surfaceTint = primary;
+        colours.m3primary = primary;
+        colours.m3onPrimary = onPrimary;
+        colours.m3primaryContainer = container;
+        colours.m3onPrimaryContainer = onContainer;
+        colours.m3inversePrimary = lightMode ? selected[5] : selected[0];
+        colours.m3primaryFixed = selected[1];
+        colours.m3primaryFixedDim = selected[5];
+        colours.m3onPrimaryFixed = selected[2];
+        colours.m3onPrimaryFixedVariant = selected[0];
+        colours.m3secondary = lightMode ? "#526072" : "#c5cfdd";
+        colours.m3onSecondary = lightMode ? "#ffffff" : "#2c3745";
+        colours.m3secondaryContainer = Qt.tint(lightMode ? "#e1e7ef" : "#354151", Qt.alpha(primary, 0.16));
+        colours.m3onSecondaryContainer = lightMode ? selected[2] : "#e8e5f0";
+        colours.m3tertiary = lightMode ? selected[3] : selected[4];
+        colours.m3onTertiary = lightMode ? "#ffffff" : selected[2];
+        colours.m3tertiaryContainer = lightMode ? selected[4] : selected[2];
+        colours.m3onTertiaryContainer = lightMode ? selected[2] : selected[4];
+    }
+
+    function setPreset(name: string, mode: string): void {
+        root.preset = ["blue", "teal", "violet", "green", "rose"].includes(name) ? name : "blue";
+        presetStorage.setText(root.preset);
+        applyVillodePreset(current, mode === "light");
+        if (showPreview)
+            applyVillodePreset(preview, mode === "light");
+        Quickshell.execDetached(["caelestia", "scheme", "set", "--notify", "-n", "dynamic", "-m", mode]);
     }
 
     function setMode(mode: string): void {
-        Quickshell.execDetached(["caelestia", "scheme", "set", "--notify", "-m", mode]);
+        setPreset(root.preset, mode);
+    }
+
+    function setAutoMode(enabled: bool): void {
+        root.autoMode = enabled;
+        autoModeStorage.setText(enabled ? "true" : "false");
+        GlobalConfig.services.smartScheme = false;
+        if (enabled)
+            applyTimeMode(true);
+    }
+
+    function applyTimeMode(force: bool): void {
+        if (!root.autoMode)
+            return;
+        const hour = new Date().getHours();
+        const mode = hour >= 7 && hour < 19 ? "light" : "dark";
+        if (force || (mode === "light") !== root.currentLight)
+            setPreset(root.preset, mode);
     }
 
     function reloadHyprRules(): void {
@@ -114,16 +202,66 @@ Singleton {
     }
 
     FileView {
+        id: schemeView
+
         path: `${Paths.state}/scheme.json`
         watchChanges: true
         onFileChanged: reload()
         onLoaded: root.load(text(), false)
     }
 
+    FileView {
+        id: presetStorage
+
+        path: `${Paths.state}/villode-preset.txt`
+        watchChanges: true
+        onFileChanged: reload()
+        onLoaded: {
+            const saved = text().trim();
+            if (["blue", "teal", "violet", "green", "rose"].includes(saved)) {
+                root.preset = saved;
+                if (root.autoMode)
+                    root.applyTimeMode(true);
+                else
+                    schemeView.reload();
+            }
+        }
+        onLoadFailed: err => {
+            if (err === FileViewError.FileNotFound)
+                Qt.callLater(() => setText(root.preset));
+        }
+    }
+
+    FileView {
+        id: autoModeStorage
+
+        path: `${Paths.state}/villode-auto-mode.txt`
+        watchChanges: true
+        onFileChanged: reload()
+        onLoaded: {
+            root.autoMode = text().trim() === "true";
+            GlobalConfig.services.smartScheme = false;
+            if (root.autoMode && presetStorage.loaded)
+                root.applyTimeMode(true);
+        }
+        onLoadFailed: err => {
+            if (err === FileViewError.FileNotFound)
+                Qt.callLater(() => setText("false"));
+        }
+    }
+
     ImageAnalyser {
         id: analyser
 
         source: Wallpapers.current
+    }
+
+    Timer {
+        interval: 60000
+        running: root.autoMode
+        repeat: true
+        triggeredOnStart: true
+        onTriggered: root.applyTimeMode(false)
     }
 
     Timer {
@@ -148,7 +286,7 @@ Singleton {
 
     component Transparency: QtObject {
         readonly property bool enabled: Tokens.transparency.enabled
-        readonly property real base: Math.max(0, Math.min(1, Tokens.transparency.base - (root.light ? 0.1 : 0)))
+        readonly property real base: Math.max(0.25, Math.min(1, Tokens.transparency.base + (root.light ? 0.12 : 0)))
         readonly property real layers: Math.max(0, Math.min(1, Tokens.transparency.layers))
 
         onEnabledChanged: {
