@@ -16,12 +16,6 @@ StyledRect {
     required property DrawerVisibilities visibilities
     readonly property real nonAnimHeight: layout.implicitHeight + layout.anchors.margins * 2
 
-    Layout.fillWidth: true
-    implicitHeight: nonAnimHeight
-
-    radius: Tokens.rounding.large
-    color: Colours.tPalette.m3surfaceContainer
-
     function takeScreenshot(args: var): void {
         Quickshell.execDetached([
             "sh",
@@ -32,6 +26,12 @@ StyledRect {
         ]);
         root.visibilities.utilities = false;
     }
+
+    Layout.fillWidth: true
+    implicitHeight: nonAnimHeight
+
+    radius: Tokens.rounding.large
+    color: Colours.tPalette.m3surfaceContainer
 
     RowLayout {
         id: layout
