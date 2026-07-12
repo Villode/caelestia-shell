@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import Caelestia.Components
 import Caelestia.Config
 import qs.components
 import qs.components.controls
@@ -19,7 +20,6 @@ StyledRect {
         Quickshell.execDetached(["sh", "-c", "sleep 0.3; output=$(caelestia screenshot \"$@\" 2>&1); code=$?; if [ $code -ne 0 ]; then [ -n \"$output\" ] || output='请检查截图依赖是否完整。'; caelestia shell toaster error '截图失败' \"$output\" screenshot >/dev/null 2>&1 || notify-send -u critical -- '截图失败' \"$output\"; fi; exit $code", "sh", ...args]);
         root.visibilities.utilities = false;
     }
-
     Layout.fillWidth: true
     implicitHeight: nonAnimHeight
 
