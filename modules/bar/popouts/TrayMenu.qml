@@ -6,7 +6,9 @@ import Quickshell
 import Quickshell.Widgets
 import Caelestia.Config
 import qs.components
+import qs.components.effects
 import qs.services
+import qs.utils
 
 StackView {
     id: root
@@ -128,11 +130,11 @@ StackView {
 
                             active: item.modelData.icon !== ""
 
-                            sourceComponent: IconImage {
-                                asynchronous: true
+                            sourceComponent: ColouredIcon {
                                 implicitSize: label.implicitHeight
 
-                                source: item.modelData.icon
+                                source: Icons.getTrayIcon("", item.modelData.icon)
+                                colour: item.modelData.enabled ? Colours.palette.m3onSurface : Colours.palette.m3outline
                             }
                         }
 

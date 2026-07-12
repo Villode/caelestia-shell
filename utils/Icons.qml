@@ -238,6 +238,23 @@ Singleton {
             const [name, path] = icon.split("?path=");
             icon = Qt.resolvedUrl(`${path}/${name.slice(name.lastIndexOf("/") + 1)}`);
         }
+
+        const iconName = icon.startsWith("image://icon/") ? icon.slice("image://icon/".length) : icon;
+        const iconFiles = {
+            "input-keyboard-symbolic": "/usr/share/icons/Adwaita/symbolic/devices/input-keyboard-symbolic.svg",
+            "input-keyboard": "/usr/share/icons/Adwaita/scalable/devices/input-keyboard.svg",
+            "view-refresh": "/usr/share/icons/Adwaita/symbolic/actions/view-refresh-symbolic.svg",
+            "application-exit": "/usr/share/icons/Adwaita/symbolic/actions/application-exit-symbolic.svg"
+        };
+        if (iconFiles[iconName])
+            return `file://${iconFiles[iconName]}`;
+        if (iconName.startsWith("fcitx-"))
+            return `file:///usr/share/icons/hicolor/48x48/apps/org.fcitx.Fcitx5.${iconName}.png`;
+
+        // Status notifier items may expose a freedesktop icon name instead of
+        // a URL. Resolve those names through the current icon theme.
+        if (icon && !icon.includes("://") && !icon.startsWith("/") && !icon.startsWith("file:"))
+            return Quickshell.iconPath(icon);
         return icon;
     }
 

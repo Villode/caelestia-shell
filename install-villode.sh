@@ -35,7 +35,10 @@ while (($#)); do
 done
 
 install_dependencies() {
-    local packages=(caelestia-shell caelestia-cli cmake ninja)
+    local packages=(
+        caelestia-shell caelestia-cli cmake ninja
+        adwaita-icon-theme hicolor-icon-theme
+    )
     if ! command -v yay >/dev/null 2>&1 &&
        ! command -v paru >/dev/null 2>&1 &&
        command -v pacman >/dev/null 2>&1; then
