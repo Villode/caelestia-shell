@@ -52,11 +52,18 @@ PageBase {
         }
 
         DefaultRow {
-            last: true
             icon: "folder"
             label: qsTr("File manager")
             status: GlobalConfig.general.apps.explorer.join(" ")
             onSelected: app => GlobalConfig.general.apps.explorer = app.command
+        }
+
+        DefaultRow {
+            last: true
+            icon: "language"
+            label: qsTr("Browser")
+            status: GlobalConfig.general.apps.browser.join(" ")
+            onSelected: app => GlobalConfig.general.apps.browser = app.command
         }
 
         // Library

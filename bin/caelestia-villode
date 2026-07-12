@@ -8,5 +8,8 @@ export QS_NO_RELOAD_POPUP="${QS_NO_RELOAD_POPUP:-1}"
 export QS_DROP_EXPENSIVE_FONTS="${QS_DROP_EXPENSIVE_FONTS:-1}"
 export QSG_RENDER_LOOP="${QSG_RENDER_LOOP:-threaded}"
 export QT_QUICK_FLICKABLE_WHEEL_DECELERATION="${QT_QUICK_FLICKABLE_WHEEL_DECELERATION:-10000}"
+# Let Qt resolve freedesktop icon names through the desktop's GTK icon theme.
+# Without a platform theme, even valid names can render as checkerboards.
+export QT_QPA_PLATFORMTHEME="${QT_QPA_PLATFORMTHEME:-gtk3}"
 
 exec /usr/bin/caelestia "$@"

@@ -122,7 +122,7 @@ install -m755 "$repo_dir/bin/caelestia-villode" "$HOME/.local/bin/caelestia"
 if $build_native; then
     version="$(<"$repo_dir/UPSTREAM_VERSION")"
     revision="$(git -C "$repo_dir" rev-parse HEAD 2>/dev/null || echo villode)"
-    cmake -S "$repo_dir" -B "$build_dir" -G Ninja \
+    cmake --fresh -S "$repo_dir" -B "$build_dir" -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_INSTALL_PREFIX="$HOME/.local" \
         -DVERSION="${version#v}" \

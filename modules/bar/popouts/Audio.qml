@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import Quickshell
 import Quickshell.Services.Pipewire
 import Caelestia.Config
 import qs.components
@@ -107,7 +108,10 @@ Item {
             text: qsTr("Open settings")
             icon: "settings"
 
-            onClicked: root.popouts.detachRequested("audio")
+            onClicked: {
+                Quickshell.execDetached([...GlobalConfig.general.apps.audio]);
+                root.popouts.hasCurrent = false;
+            }
         }
     }
 }

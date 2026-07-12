@@ -68,7 +68,9 @@ void RootConfig::setupFileBackend(const QString& path, const QString& screen) {
     connect(m_retryTimer, &QTimer::timeout, this, &RootConfig::reload);
 
     m_saveTimer->setSingleShot(true);
-    m_saveTimer->setInterval(500);
+    // Persist on the next event-loop turn. A longer debounce can lose changes
+    // when the shell is restarted immediately after a settings selection.
+    m_saveTimer->setInterval(0);
     connect(m_saveTimer, &QTimer::timeout, this, [this] {
         QDir().mkpath(QFileInfo(m_filePath).absolutePath());
 
