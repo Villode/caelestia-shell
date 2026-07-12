@@ -2,6 +2,7 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Caelestia
 import Caelestia.Config
 import qs.utils
@@ -14,6 +15,16 @@ Singleton {
     property var cc
     property list<var> forecast
     property list<var> hourlyForecast
+    property bool geocodingBusy
+
+    Process {
+        id: geocodingProcess
+
+        stdout: StdioCollector {
+            id: geocodingOutput
+        }
+        onExited: code => root.finishGeocoding(code, geocodingOutput.text)
+    }
 
     readonly property string icon: cc ? Icons.getWeatherIcon(cc.weatherCode) : "cloud_alert"
     readonly property string description: cc?.weatherDesc ?? qsTr("No weather")
@@ -37,7 +48,7 @@ Singleton {
             if (configLocation.indexOf(",") !== -1 && !isNaN(parseFloat(configLocation.split(",")[0]))) {
                 loc = configLocation;
                 fetchCityFromCoords(configLocation);
-            } else {
+            } else if (!geocodingBusy) {
                 fetchCoordsFromCity(configLocation);
             }
         } else if (!loc || timer.elapsed() > 900) {
@@ -141,19 +152,28 @@ Singleton {
 
     function fetchCoordsFromCity(cityName: string): void {
         const lang = Qt.locale().name.split("_")[0] || "en";
-        const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cityName)}&count=1&language=${lang}&format=json`;
+        geocodingBusy = true;
+        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cityName)}&format=json&limit=1&accept-language=${lang}`;
+        geocodingProcess.command = ["curl", "-fsSL", "--max-time", "10", "-A", "caelestia-shell/1.0", url];
+        geocodingProcess.running = true;
+    }
 
-        Requests.get(url, text => {
-            const json = JSON.parse(text);
-            if (json.results && json.results.length > 0) {
-                const result = json.results[0];
-                loc = result.latitude + "," + result.longitude;
-                city = fixCityName(result.name);
-            } else {
-                loc = "";
-                reload();
+    function finishGeocoding(code: int, text: string): void {
+        if (code === 0) {
+            try {
+                const results = JSON.parse(text);
+                if (results && results.length > 0) {
+                    const result = results[0];
+                    geocodingBusy = false;
+                    city = fixCityName(result.display_name?.split(",")[0] || GlobalConfig.services.weatherLocation);
+                    loc = result.lat + "," + result.lon;
+                    return;
+                }
+            } catch (error) {
             }
-        });
+        }
+        geocodingBusy = false;
+        loc = "";
     }
 
     function fetchWeatherData(): void {

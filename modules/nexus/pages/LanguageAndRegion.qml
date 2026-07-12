@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import Quickshell
 import Caelestia.Config
 import qs.components
 import qs.components.controls
@@ -22,14 +23,33 @@ PageBase {
     // Clock format (index 0 = 24-hour, 1 = 12-hour — matches Time.useTwelveHourClock)
     readonly property list<MenuItem> clockItems: [
         MenuItem {
-            text: qsTr("24-hour")
+            text: "24 小时"
         },
         MenuItem {
-            text: qsTr("12-hour")
+            text: "12 小时"
         }
     ]
 
-    title: qsTr("Language & region")
+    title: "语言和地区"
+
+    readonly property Timer weatherDesktopReloadTimer: Timer {
+        interval: 500
+        onTriggered: Quickshell.execDetached(["villode-desktop", "--reload"])
+    }
+
+    function saveWeatherLocation(location: string): void {
+        const normalized = location.trim();
+        weatherLocation.text = normalized;
+        Weather.loc = "";
+        Weather.city = normalized;
+
+        if (GlobalConfig.services.weatherLocation === normalized)
+            Weather.reload();
+        else
+            GlobalConfig.services.weatherLocation = normalized;
+
+        weatherDesktopReloadTimer.restart();
+    }
 
     ColumnLayout {
         anchors.horizontalCenter: parent.horizontalCenter
@@ -40,7 +60,7 @@ PageBase {
         // Language
         SectionHeader {
             first: true
-            text: qsTr("Language")
+            text: "语言"
         }
 
         // Read-only: the shell follows the system locale (no in-shell translations yet)
@@ -65,14 +85,14 @@ PageBase {
 
                     StyledText {
                         Layout.fillWidth: true
-                        text: qsTr("System language")
+                        text: "系统语言"
                         font: Tokens.font.body.small
                         elide: Text.ElideRight
                     }
 
                     StyledText {
                         Layout.fillWidth: true
-                        text: qsTr("Follows your system locale (%1)").arg(Qt.locale().name)
+                        text: "跟随系统区域设置（%1）".arg(Qt.locale().name)
                         color: Colours.palette.m3outline
                         font: Tokens.font.label.small
                         elide: Text.ElideRight
@@ -89,57 +109,69 @@ PageBase {
 
         // Weather
         SectionHeader {
-            text: qsTr("Weather")
+            text: "天气"
         }
 
-        // Placeholder until the map-based location picker lands
         ConnectedRect {
             Layout.fillWidth: true
             first: true
             last: true
-            implicitHeight: comingSoon.implicitHeight + Tokens.padding.extraLarge * 2
+            implicitHeight: weatherLocationLayout.implicitHeight + Tokens.padding.large * 2
 
             ColumnLayout {
-                id: comingSoon
+                id: weatherLocationLayout
 
-                anchors.centerIn: parent
-                width: parent.width - Tokens.padding.largeIncreased * 2
-                spacing: Tokens.padding.extraSmall
+                anchors.fill: parent
+                anchors.margins: Tokens.padding.large
+                spacing: Tokens.spacing.small
 
-                MaterialIcon {
-                    Layout.alignment: Qt.AlignHCenter
-                    text: "map"
-                    color: Colours.palette.m3outlineVariant
-                    fontStyle: Tokens.font.icon.extraLarge
-                }
+                M3TextField {
+                    id: weatherLocation
 
-                StyledText {
-                    Layout.alignment: Qt.AlignHCenter
-                    text: qsTr("Location picker coming soon")
-                    color: Colours.palette.m3outlineVariant
-                    font: Tokens.font.title.small
-                }
-
-                StyledText {
                     Layout.fillWidth: true
-                    horizontalAlignment: Text.AlignHCenter
-                    wrapMode: Text.WordWrap
-                    text: qsTr("Choose your weather location on a map in a future update")
-                    color: Colours.palette.m3outlineVariant
-                    font: Tokens.font.body.small
+                    label: "天气位置"
+                    placeholder: "城市或纬度,经度"
+                    text: GlobalConfig.services.weatherLocation
+                    leadingIcon: "location_on"
+                    supportingText: "留空则按 IP 地址自动定位"
+                    onAccepted: root.saveWeatherLocation(text)
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    Layout.topMargin: -Tokens.spacing.extraSmall
+                    spacing: Tokens.spacing.small
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+
+                    IconTextButton {
+                        icon: "my_location"
+                        text: "使用 IP"
+                        type: IconTextButton.Tonal
+                        onClicked: root.saveWeatherLocation("")
+                    }
+
+                    IconTextButton {
+                        icon: "check"
+                        text: "保存"
+                        type: IconTextButton.Filled
+                        onClicked: root.saveWeatherLocation(weatherLocation.text)
+                    }
                 }
             }
         }
 
         // Units
         SectionHeader {
-            text: qsTr("Units")
+            text: "单位"
         }
 
         SelectRow {
             first: true
-            label: qsTr("Temperature")
-            subtext: qsTr("Units for weather temperatures")
+            label: "天气温度"
+            subtext: "天气预报使用的温度单位"
             menuItems: root.tempItems
             active: root.tempItems[GlobalConfig.services.useFahrenheit ? 1 : 0]
             onSelected: item => GlobalConfig.services.useFahrenheit = root.tempItems.indexOf(item) === 1
@@ -147,8 +179,8 @@ PageBase {
 
         SelectRow {
             last: true
-            label: qsTr("System temperatures")
-            subtext: qsTr("Units for CPU and GPU temperatures")
+            label: "系统温度"
+            subtext: "CPU 和 GPU 使用的温度单位"
             menuItems: root.tempItems
             active: root.tempItems[GlobalConfig.services.useFahrenheitPerformance ? 1 : 0]
             onSelected: item => GlobalConfig.services.useFahrenheitPerformance = root.tempItems.indexOf(item) === 1
@@ -156,14 +188,14 @@ PageBase {
 
         // Time & date
         SectionHeader {
-            text: qsTr("Time & date")
+            text: "时间和日期"
         }
 
         SelectRow {
             first: true
             last: true
-            label: qsTr("Clock format")
-            subtext: qsTr("How times are shown across the shell")
+            label: "时钟格式"
+            subtext: "Shell 中时间的显示方式"
             menuItems: root.clockItems
             active: root.clockItems[GlobalConfig.services.useTwelveHourClock ? 1 : 0]
             onSelected: item => GlobalConfig.services.useTwelveHourClock = root.clockItems.indexOf(item) === 1

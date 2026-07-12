@@ -19,72 +19,55 @@ PageBase {
     title: "选择壁纸"
     isSubPage: true
 
+    readonly property list<string> localWallpaperDialogCwd: wallpaperDialogCwd(Paths.wallsdir)
+    readonly property FileDialog wallpaperDirDialog: FileDialog {
+        title: "选择壁纸文件夹"
+        filterLabel: "文件夹"
+        cwd: root.localWallpaperDialogCwd
+        acceptDirectories: true
+        onAccepted: path => GlobalConfig.paths.wallpaperDir = path
+    }
+
+    function wallpaperDialogCwd(path: string): list<string> {
+        const home = Paths.home.replace(/\/$/, "");
+        const normalized = path.replace(/\/$/, "");
+        if (!normalized.startsWith(home))
+            return ["Home"];
+        const rest = normalized.slice(home.length).replace(/^\//, "");
+        return rest.length > 0 ? ["Home", ...rest.split("/").filter(part => part.length > 0)] : ["Home"];
+    }
+
     ColumnLayout {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: parent.top
         width: root.cappedWidth
         spacing: Tokens.spacing.small
 
-        ButtonRow {
-            Layout.bottomMargin: Tokens.spacing.medium
-            Layout.alignment: Qt.AlignHCenter
+        RowLayout {
+            Layout.fillWidth: true
             spacing: Tokens.spacing.small
 
-            IconTextButton {
-                icon: "photo_library"
-                text: "浏览"
-                font: Tokens.font.body.large
-                isRound: true
-                shapeMorph: true
-                horizontalPadding: Tokens.padding.extraLarge
-                verticalPadding: Tokens.padding.medium
-                onClicked: browseDialog.open()
-
-                FileDialog {
-                    id: browseDialog
-
-                    title: "选择图片"
-                    filterLabel: "图片文件"
-                    filters: Images.validImageExtensions
-                    onAccepted: path => {
-                        Wallpapers.setWallpaper(path);
-                        root.nState.closeSubPage();
-                    }
-                }
+            StyledText {
+                Layout.fillWidth: true
+                text: "本地壁纸"
+                font: Tokens.font.title.small
             }
 
-            IconTextButton {
+            IconButton {
+                icon: "folder_open"
+                type: IconButton.Text
+                isRound: true
+                padding: Tokens.padding.small
+                onClicked: root.wallpaperDirDialog.open()
+            }
+
+            IconButton {
                 icon: "shuffle"
-                text: "随机"
-                font: Tokens.font.body.large
+                type: IconButton.Text
                 isRound: true
-                shapeMorph: true
-                horizontalPadding: Tokens.padding.extraLarge
-                verticalPadding: Tokens.padding.medium
-                type: IconTextButton.Tonal
-                onClicked: {
-                    Wallpapers.setRandom();
-                    root.nState.closeSubPage();
-                }
+                padding: Tokens.padding.small
+                onClicked: Wallpapers.setRandom()
             }
-        }
-
-        WallItem {
-            imgHeight: Math.round(width * 0.3)
-            radius: Tokens.rounding.extraLarge
-            source: Quickshell.shellPath("assets/villode-midnight-glass.png")
-            text: "Villode Midnight Glass"
-            fillLabel: false
-            onClicked: {
-                Wallpapers.setWallpaper(Quickshell.shellPath("assets/villode-midnight-glass.png"));
-                root.nState.closeSubPage();
-            }
-        }
-
-        StyledText {
-            Layout.topMargin: Tokens.spacing.large
-            text: "本地壁纸"
-            font: Tokens.font.title.small
         }
 
         GridLayout {

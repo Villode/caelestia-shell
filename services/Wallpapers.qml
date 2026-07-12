@@ -37,8 +37,10 @@ Searcher {
     }
 
     function syncVillodeDesktop(path: string): void {
-        if (path)
+        if (path) {
+            GlobalConfig.background.wallpaperEnabled = true;
             Quickshell.execDetached(["villode-desktop", "--set-static", path, "--fit", "cover"]);
+        }
     }
 
     function setWallpaper(path: string): void {

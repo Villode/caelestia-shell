@@ -1,3 +1,4 @@
+import QtQuick
 import QtQuick.Layouts
 import Caelestia.Config
 import qs.components
@@ -22,10 +23,12 @@ StyledRect {
         spacing: Tokens.spacing.small
 
         StyledText {
-            text: qsTr("Filter:")
+            visible: !root.dialog.acceptDirectories
+            text: qsTr("筛选：")
         }
 
         StyledRect {
+            visible: !root.dialog.acceptDirectories
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.rightMargin: Tokens.spacing.medium
@@ -41,12 +44,17 @@ StyledRect {
             }
         }
 
+        Item {
+            visible: root.dialog.acceptDirectories
+            Layout.fillWidth: true
+        }
+
         StyledRect {
             color: Colours.tPalette.m3surfaceContainerHigh
             radius: Tokens.rounding.medium
 
-            implicitWidth: cancelText.implicitWidth + Tokens.padding.medium * 2
-            implicitHeight: cancelText.implicitHeight + Tokens.padding.medium * 2
+            implicitWidth: selectText.implicitWidth + Tokens.padding.medium * 2
+            implicitHeight: selectText.implicitHeight + Tokens.padding.medium * 2
 
             StateLayer {
                 disabled: !root.dialog.selectionValid
@@ -59,7 +67,7 @@ StyledRect {
                 anchors.centerIn: parent
                 anchors.margins: Tokens.padding.medium
 
-                text: qsTr("Select")
+                text: root.dialog.acceptDirectories ? qsTr("选择文件夹") : qsTr("选择")
                 color: root.dialog.selectionValid ? Colours.palette.m3onSurface : Colours.palette.m3outline
             }
         }
@@ -83,7 +91,7 @@ StyledRect {
                 anchors.centerIn: parent
                 anchors.margins: Tokens.padding.medium
 
-                text: qsTr("Cancel")
+                text: qsTr("取消")
             }
         }
     }
