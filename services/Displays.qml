@@ -15,6 +15,7 @@ Singleton {
     property bool busy: false
     property string statusMessage: ""
     property var pendingPersist: null
+    property var pendingPersistRules: null
     property string pendingWriteContent: ""
     property int pendingWrites: 0
 
@@ -177,9 +178,18 @@ Singleton {
     // Layout box in compositor coordinates (Hyprland positions use scaled sizes).
     function layoutSize(monitor: var): var {
         const scale = Math.max(0.01, monitor?.scale || 1);
+        const w = monitor?.width || 0;
+        const h = monitor?.height || 0;
+        // Disabled outputs often report 0 size — keep a placeholder for the map.
+        if (w <= 0 || h <= 0 || monitor?.disabled) {
+            return {
+                width: w > 0 ? w / scale : 1920,
+                height: h > 0 ? h / scale : 1080
+            };
+        }
         return {
-            width: (monitor?.width || 0) / scale,
-            height: (monitor?.height || 0) / scale
+            width: w / scale,
+            height: h / scale
         };
     }
 
@@ -237,6 +247,220 @@ Singleton {
         identifyProc.command = ["bash", "-lc", parts.join("; ")];
         identifyProc.running = true;
         statusMessage = monitors.length > 1 ? `正在标识 ${monitors.length} 台显示器…` : "正在标识显示器…";
+    }
+
+    // --- Projection modes (Win11: PC only / Duplicate / Extend / Second only) ---
+
+    readonly property bool multiMonitor: monitors.length >= 2
+
+    function isInternalName(name: string): bool {
+        return /^(eDP|LVDS|DSI)/i.test(String(name || ""));
+    }
+
+    function primaryMonitor(): var {
+        if (!monitors.length)
+            return null;
+        return monitors.find(m => isInternalName(m.name)) || monitors[0];
+    }
+
+    function secondaryMonitors(): list<var> {
+        const primary = primaryMonitor();
+        if (!primary)
+            return [];
+        return monitors.filter(m => m.name !== primary.name);
+    }
+
+    function isMirrored(monitor: var): bool {
+        const mirror = monitor?.mirrorOf;
+        return !!(mirror && mirror !== "none" && mirror !== "");
+    }
+
+    // Detect current arrangement: internal | external | duplicate | extend | single
+    function projectionMode(): string {
+        if (monitors.length < 2)
+            return "single";
+
+        const enabled = monitors.filter(m => !m.disabled);
+        const primary = primaryMonitor();
+        if (!primary)
+            return "single";
+
+        if (enabled.length === 1) {
+            if (enabled[0].name === primary.name)
+                return "internal";
+            return "external";
+        }
+
+        if (enabled.some(m => isMirrored(m)))
+            return "duplicate";
+
+        return "extend";
+    }
+
+    function monitorRuleKeyword(rule: var): string {
+        // rule: { name, disabled, mode, x, y, scale, mirror }
+        if (rule.disabled)
+            return `monitor ${rule.name},disable`;
+        const mode = rule.mode || "preferred";
+        const scale = rule.scale || "1";
+        if (rule.mirror)
+            return `monitor ${rule.name},${mode},auto,${scale},mirror,${rule.mirror}`;
+        const pos = `${rule.x ?? 0}x${rule.y ?? 0}`;
+        return `monitor ${rule.name},${mode},${pos},${scale}`;
+    }
+
+    function preferredModeFor(monitor: var): string {
+        if (!monitor)
+            return "preferred";
+        // Disabled outputs may still expose last mode / availableModes.
+        if (monitor.width > 0 && monitor.height > 0 && monitor.refreshRate > 0) {
+            const exact = `${monitor.width}x${monitor.height}@${Number(monitor.refreshRate).toFixed(2)}`;
+            const withHz = `${exact}Hz`;
+            if ((monitor.availableModes || []).includes(withHz) || (monitor.availableModes || []).includes(exact))
+                return normalizeMode(withHz.endsWith("Hz") ? withHz : exact + "Hz");
+            // Fall back to widthxheight without forcing a refresh that may be unavailable when disabled.
+            return `${monitor.width}x${monitor.height}`;
+        }
+        const modes = monitor.availableModes || [];
+        if (modes.length)
+            return normalizeMode(modes[0]);
+        return "preferred";
+    }
+
+    function scaleFor(monitor: var): string {
+        const s = monitor?.scale > 0 ? monitor.scale : 1;
+        // Keep clean when possible for known size; else 1.
+        if (monitor?.width > 0 && monitor?.height > 0) {
+            const clean = nearestValidScale(monitor.width, monitor.height, s);
+            return formatScale(clean);
+        }
+        return formatScale(s);
+    }
+
+    function applyMonitorRules(rules: list<var>, message: string): void {
+        if (!rules.length || busy)
+            return;
+
+        // Prefer enabling primary first so mirror targets exist.
+        const ordered = [...rules].sort((a, b) => {
+            if (a.disabled !== b.disabled)
+                return a.disabled ? 1 : -1;
+            if (!!a.mirror !== !!b.mirror)
+                return a.mirror ? 1 : -1;
+            return 0;
+        });
+
+        const batch = ordered.map(r => `keyword ${monitorRuleKeyword(r)}`).join(" ; ");
+        pendingPersistRules = ordered;
+        busy = true;
+        statusMessage = message || "";
+        applyProc.command = ["hyprctl", "--batch", batch];
+        applyProc.running = true;
+    }
+
+    function applyProjectionMode(mode: string): void {
+        if (busy)
+            return;
+        if (monitors.length < 2) {
+            statusMessage = "需要至少两台显示器才能切换投影模式。";
+            return;
+        }
+
+        const primary = primaryMonitor();
+        const secondaries = secondaryMonitors();
+        if (!primary || !secondaries.length) {
+            statusMessage = "无法确定主显示器。";
+            return;
+        }
+
+        const rules = [];
+        const labels = {
+            internal: "仅电脑屏幕",
+            duplicate: "复制这些显示器",
+            extend: "扩展这些显示器",
+            external: "仅第二屏幕"
+        };
+
+        if (mode === "internal") {
+            rules.push({
+                name: primary.name,
+                disabled: false,
+                mode: preferredModeFor(primary),
+                x: 0,
+                y: 0,
+                scale: scaleFor(primary),
+                mirror: ""
+            });
+            for (const mon of secondaries) {
+                rules.push({
+                    name: mon.name,
+                    disabled: true
+                });
+            }
+        } else if (mode === "external") {
+            rules.push({
+                name: primary.name,
+                disabled: true
+            });
+            let x = 0;
+            for (const mon of secondaries) {
+                const sc = scaleFor(mon);
+                const modeStr = preferredModeFor(mon);
+                rules.push({
+                    name: mon.name,
+                    disabled: false,
+                    mode: modeStr,
+                    x: x,
+                    y: 0,
+                    scale: sc,
+                    mirror: ""
+                });
+                const w = mon.width > 0 ? mon.width / Math.max(0.01, Number(sc)) : 1920;
+                x += Math.round(w);
+            }
+        } else if (mode === "duplicate") {
+            rules.push({
+                name: primary.name,
+                disabled: false,
+                mode: preferredModeFor(primary),
+                x: 0,
+                y: 0,
+                scale: scaleFor(primary),
+                mirror: ""
+            });
+            for (const mon of secondaries) {
+                rules.push({
+                    name: mon.name,
+                    disabled: false,
+                    mode: preferredModeFor(mon),
+                    scale: scaleFor(mon),
+                    mirror: primary.name
+                });
+            }
+        } else if (mode === "extend") {
+            // Primary on the left, then secondaries left-to-right.
+            let x = 0;
+            const ordered = [primary, ...secondaries];
+            for (const mon of ordered) {
+                const sc = scaleFor(mon);
+                rules.push({
+                    name: mon.name,
+                    disabled: false,
+                    mode: preferredModeFor(mon),
+                    x: x,
+                    y: 0,
+                    scale: sc,
+                    mirror: ""
+                });
+                const w = mon.width > 0 ? mon.width / Math.max(0.01, Number(sc)) : 1920;
+                x += Math.round(w);
+            }
+        } else {
+            statusMessage = "未知投影模式。";
+            return;
+        }
+
+        applyMonitorRules(rules, `已切换为「${labels[mode] || mode}」。`);
     }
 
     function currentModeString(monitor: var): string {
@@ -334,30 +558,47 @@ Singleton {
         for (const mon of monitors) {
             byName[mon.name] = {
                 name: mon.name,
-                mode: normalizeMode(currentModeString(mon)),
+                mode: normalizeMode(currentModeString(mon)) || preferredModeFor(mon),
                 scale: formatScale(mon.scale || 1),
                 x: mon.x,
                 y: mon.y,
-                disabled: !!mon.disabled
+                disabled: !!mon.disabled,
+                mirror: isMirrored(mon) ? mon.mirrorOf : ""
             };
         }
         if (pendingPersist && pendingPersist.name)
-            byName[pendingPersist.name] = pendingPersist;
+            byName[pendingPersist.name] = Object.assign({}, byName[pendingPersist.name] || {}, pendingPersist);
+        if (pendingPersistRules && pendingPersistRules.length) {
+            for (const rule of pendingPersistRules) {
+                byName[rule.name] = {
+                    name: rule.name,
+                    mode: rule.mode || "preferred",
+                    scale: rule.scale || "1",
+                    x: rule.x ?? 0,
+                    y: rule.y ?? 0,
+                    disabled: !!rule.disabled,
+                    mirror: rule.mirror || ""
+                };
+            }
+        }
 
         const lines = ["# Managed by Caelestia Display settings.", ""];
         for (const name of Object.keys(byName).sort()) {
             const mon = byName[name];
-            if (mon.disabled)
+            if (mon.disabled) {
                 lines.push(`monitor = ${mon.name}, disable`);
-            else
+            } else if (mon.mirror) {
+                lines.push(`monitor = ${mon.name}, ${mon.mode || "preferred"}, auto, ${mon.scale || 1}, mirror, ${mon.mirror}`);
+            } else {
                 lines.push(`monitor = ${mon.name}, ${mon.mode}, ${mon.x}x${mon.y}, ${mon.scale}`);
+            }
         }
         lines.push("");
         return lines.join("\n");
     }
 
     function persistMonitors(): void {
-        if (!monitors.length && !pendingPersist)
+        if (!monitors.length && !pendingPersist && !(pendingPersistRules && pendingPersistRules.length))
             return;
 
         pendingWriteContent = buildMonitorConfig();
@@ -385,7 +626,14 @@ Singleton {
             }
 
             // Stable visual numbering: left-to-right, then top-to-bottom (like Windows).
-            const sorted = [...data].sort((a, b) => (a.x - b.x) || (a.y - b.y) || String(a.name).localeCompare(String(b.name)));
+            // Keep disabled outputs so projection modes can re-enable them.
+            const sorted = [...data].sort((a, b) => {
+                const ad = a.disabled ? 1 : 0;
+                const bd = b.disabled ? 1 : 0;
+                if (ad !== bd)
+                    return ad - bd;
+                return (a.x - b.x) || (a.y - b.y) || String(a.name).localeCompare(String(b.name));
+            });
             const next = sorted.map((m, index) => ({
                 id: m.id,
                 index: index + 1,
@@ -399,14 +647,16 @@ Singleton {
                 y: m.y,
                 focused: !!m.focused,
                 disabled: !!m.disabled,
+                mirrorOf: m.mirrorOf || "none",
                 availableModes: Array.isArray(m.availableModes) ? m.availableModes : []
             }));
 
             monitors = next;
+            pendingPersistRules = null;
 
             if (!selectedName || !next.some(m => m.name === selectedName)) {
-                const focused = next.find(m => m.focused);
-                selectedName = focused?.name || next[0]?.name || "";
+                const focused = next.find(m => m.focused && !m.disabled);
+                selectedName = focused?.name || next.find(m => !m.disabled)?.name || next[0]?.name || "";
             }
         } catch (error) {
             statusMessage = "无法读取显示器信息。";
@@ -435,7 +685,8 @@ Singleton {
 
     Process {
         id: listProc
-        command: ["hyprctl", "monitors", "-j"]
+        // Include disabled outputs so "仅电脑屏幕 / 仅第二屏幕" can re-enable them.
+        command: ["hyprctl", "monitors", "all", "-j"]
         stdout: StdioCollector {
             onStreamFinished: root.parseMonitors(text)
         }
@@ -459,10 +710,11 @@ Singleton {
         onExited: code => { // qmllint disable signal-handler-parameters
             root.busy = false;
             if (code === 0) {
-                if (!root.statusMessage || root.statusMessage.startsWith("已自动调整"))
-                    root.statusMessage = (root.statusMessage && root.statusMessage.startsWith("已自动调整") ? root.statusMessage + " " : "") + "显示设置已应用。";
-                else
+                if (!root.statusMessage)
                     root.statusMessage = "显示设置已应用。";
+                else if (root.statusMessage.startsWith("已自动调整"))
+                    root.statusMessage = root.statusMessage + " 显示设置已应用。";
+                // Projection messages already complete — still persist.
                 root.persistMonitors();
                 root.refresh();
             } else if (!root.statusMessage) {

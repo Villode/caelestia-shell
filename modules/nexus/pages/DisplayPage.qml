@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 import Caelestia.Config
@@ -162,12 +163,14 @@ PageBase {
                             readonly property real rw: Math.max(48, size.width * arrangementMap.fit)
                             readonly property real rh: Math.max(32, size.height * arrangementMap.fit)
                             readonly property bool selected: modelData.name === Displays.selectedName
+                            readonly property bool dimmed: !!modelData.disabled
 
                             x: rx
                             y: ry
                             width: rw
                             height: rh
                             radius: Tokens.rounding.medium
+                            opacity: dimmed ? 0.45 : 1
                             color: selected ? Colours.palette.m3primary : Colours.palette.m3surfaceContainerHighest
                             border.width: selected ? 0 : 1
                             border.color: Colours.palette.m3outlineVariant
@@ -177,11 +180,24 @@ PageBase {
                                 onClicked: Displays.selectMonitor(modelData.name)
                             }
 
-                            StyledText {
+                            ColumnLayout {
                                 anchors.centerIn: parent
-                                text: String(modelData.index)
-                                color: selected ? Colours.palette.m3onPrimary : Colours.palette.m3onSurface
-                                font: Tokens.font.title.large
+                                spacing: 0
+
+                                StyledText {
+                                    Layout.alignment: Qt.AlignHCenter
+                                    text: String(modelData.index)
+                                    color: selected ? Colours.palette.m3onPrimary : Colours.palette.m3onSurface
+                                    font: Tokens.font.title.large
+                                }
+
+                                StyledText {
+                                    Layout.alignment: Qt.AlignHCenter
+                                    visible: modelData.disabled || Displays.isMirrored(modelData)
+                                    text: modelData.disabled ? "关" : "镜像"
+                                    color: selected ? Colours.palette.m3onPrimary : Colours.palette.m3outline
+                                    font: Tokens.font.label.small
+                                }
                             }
                         }
                     }
@@ -205,7 +221,8 @@ PageBase {
                             if (!root.mon)
                                 return "无显示器";
                             const label = root.mon.description || root.mon.name;
-                            return `显示器 ${root.mon.index} · ${label}`;
+                            const state = root.mon.disabled ? "（已关闭）" : (Displays.isMirrored(root.mon) ? "（镜像）" : "");
+                            return `显示器 ${root.mon.index} · ${label}${state}`;
                         }
                         font: Tokens.font.body.small
                         elide: Text.ElideRight
@@ -232,6 +249,61 @@ PageBase {
                         }
                     }
                 }
+
+                // Win11 projection modes
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: Tokens.spacing.small
+                    visible: Displays.monitors.length > 0
+
+                    StyledText {
+                        Layout.fillWidth: true
+                        text: "多显示器"
+                        font: Tokens.font.body.small
+                    }
+
+                    Flow {
+                        Layout.fillWidth: true
+                        spacing: Tokens.spacing.extraSmall
+
+                        ProjectionChip {
+                            modeId: "internal"
+                            iconName: "laptop_windows"
+                            label: "仅电脑屏幕"
+                            sublabel: "关闭其他显示器"
+                        }
+
+                        ProjectionChip {
+                            modeId: "duplicate"
+                            iconName: "content_copy"
+                            label: "复制"
+                            sublabel: "镜像主屏画面"
+                        }
+
+                        ProjectionChip {
+                            modeId: "extend"
+                            iconName: "width_wide"
+                            label: "扩展"
+                            sublabel: "拼成更大桌面"
+                        }
+
+                        ProjectionChip {
+                            modeId: "external"
+                            iconName: "desktop_windows"
+                            label: "仅第二屏幕"
+                            sublabel: "关闭电脑屏幕"
+                        }
+                    }
+
+                    StyledText {
+                        Layout.fillWidth: true
+                        visible: !Displays.multiMonitor
+                        text: "当前只检测到一台显示器。接入第二台后可切换投影模式。"
+                        color: Colours.palette.m3outline
+                        font: Tokens.font.label.small
+                        wrapMode: Text.WordWrap
+                    }
+                }
             }
         }
 
@@ -249,7 +321,7 @@ PageBase {
                 spacing: Tokens.spacing.medium
 
                 MaterialIcon {
-                    text: "monitor"
+                    text: mon?.disabled ? "desktop_access_disabled" : "monitor"
                     color: Colours.palette.m3onSurfaceVariant
                     fontStyle: Tokens.font.icon.medium
                 }
@@ -267,13 +339,43 @@ PageBase {
 
                     StyledText {
                         Layout.fillWidth: true
-                        text: mon ? `${mon.width} × ${mon.height} · ${Math.round(mon.refreshRate)} Hz · 缩放 ${root.formatScalePercent(root.scaleValue)}` : "等待检测"
+                        text: {
+                            if (!mon)
+                                return "等待检测";
+                            if (mon.disabled)
+                                return "已关闭 · 可在多显示器模式中重新启用";
+                            if (Displays.isMirrored(mon))
+                                return `镜像自 ${mon.mirrorOf} · ${mon.width} × ${mon.height}`;
+                            return `${mon.width} × ${mon.height} · ${Math.round(mon.refreshRate)} Hz · 缩放 ${root.formatScalePercent(root.scaleValue)}`;
+                        }
                         color: Colours.palette.m3outline
                         font: Tokens.font.label.small
                         elide: Text.ElideRight
                     }
                 }
             }
+        }
+
+        component ProjectionChip: IconTextButton {
+            required property string modeId
+            required property string iconName
+            required property string label
+            property string sublabel
+
+            icon: iconName
+            text: label
+            isToggle: false
+            checked: Displays.projectionMode() === modeId
+            type: IconTextButton.Tonal
+            enabled: Displays.multiMonitor && !Displays.busy
+            onClicked: {
+                if (Displays.projectionMode() !== modeId)
+                    Displays.applyProjectionMode(modeId);
+            }
+
+            ToolTip.visible: hovered && !!sublabel
+            ToolTip.delay: 400
+            ToolTip.text: sublabel
         }
 
         SectionHeader {
