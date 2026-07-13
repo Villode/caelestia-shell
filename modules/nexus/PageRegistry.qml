@@ -15,13 +15,12 @@ QtObject {
         },
 
         // Connectivity
-        // TODO
-        // {
-        //     label: qsTr("Display"),
-        //     icon: "monitor",
-        //     description: qsTr("Output configuration"),
-        //     category: "connectivity"
-        // },
+        {
+            label: qsTr("显示"),
+            icon: "monitor",
+            description: qsTr("分辨率、界面缩放、显示缩放"),
+            category: "connectivity"
+        },
         {
             label: qsTr("网络"),
             icon: "wifi",

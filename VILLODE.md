@@ -11,6 +11,11 @@ This fork is the controlled Caelestia Shell base used by
 The controlled branch also disables runtime source watching and moves the unsupported `DefaultEnv`
 pragmas into the launcher wrapper. These are deliberate compatibility and idle-resource changes.
 
+Nexus includes a **Display** settings page for monitor resolution/refresh rate, compositor
+display scale (percentage), and Shell UI scale (font/padding/spacing/rounding). Applied monitor
+modes are persisted to `~/.config/hypr/conf.d/villode-monitors.conf` and
+`~/.config/villode-hyprland/monitors.conf`.
+
 On Arch Linux, the installer can bootstrap `yay-bin` when neither `yay` nor `paru` is available,
 then install the remaining build and runtime dependencies.
 
