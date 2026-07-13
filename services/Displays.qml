@@ -257,6 +257,10 @@ Singleton {
         return /^(eDP|LVDS|DSI)/i.test(String(name || ""));
     }
 
+    function isHeadlessName(name: string): bool {
+        return /^HEADLESS/i.test(String(name || "")) || /headless/i.test(String(name || ""));
+    }
+
     function primaryMonitor(): var {
         if (!monitors.length)
             return null;
@@ -268,6 +272,11 @@ Singleton {
         if (!primary)
             return [];
         return monitors.filter(m => m.name !== primary.name);
+    }
+
+    function realSecondaryMonitors(): list<var> {
+        // Physical outputs only — HEADLESS is for testing and must not orphan the laptop panel.
+        return secondaryMonitors().filter(m => !isHeadlessName(m.name));
     }
 
     function isMirrored(monitor: var): bool {
@@ -411,12 +420,19 @@ Singleton {
                 });
             }
         } else if (mode === "external") {
+            // SAFETY: never disable the laptop panel when the only "second screen" is HEADLESS.
+            // That leaves the user with a black/unreachable session.
+            const realSeconds = realSecondaryMonitors();
+            if (!realSeconds.length) {
+                statusMessage = "仅第二屏幕需要真实外接显示器。当前第二块是虚拟屏，不能关闭笔记本主屏。";
+                return;
+            }
             rules.push({
                 name: primary.name,
                 disabled: true
             });
             let x = 0;
-            for (const mon of secondaries) {
+            for (const mon of realSeconds) {
                 const sc = scaleFor(mon);
                 const modeStr = preferredModeFor(mon);
                 rules.push({
@@ -430,6 +446,14 @@ Singleton {
                 });
                 const w = mon.width > 0 ? mon.width / Math.max(0.01, Number(sc)) : 1920;
                 x += Math.round(w);
+            }
+            // Disable leftover headless outputs so they don't steal focus.
+            for (const mon of secondaries) {
+                if (isHeadlessName(mon.name))
+                    rules.push({
+                        name: mon.name,
+                        disabled: true
+                    });
             }
         } else if (mode === "duplicate") {
             rules.push({
