@@ -76,6 +76,7 @@ Singleton {
     function persist(enabled: bool): void {
         pendingWriteContent = buildConf(enabled);
         pendingWriteEnabled = enabled ? "1" : "0";
+        // Always materialize conf files before adding `source =` lines (Hyprland errors if missing).
         mkdirProc.running = true;
     }
 
@@ -86,6 +87,7 @@ Singleton {
         touchpadConfFile.path = hyprTouchpadPath;
         villodeTouchpadFile.path = villodeTouchpadPath;
         stateFile.path = statePath;
+        // Write both confs first; only then append source lines.
         touchpadConfFile.setText(pendingWriteContent);
         villodeTouchpadFile.setText(pendingWriteContent);
         stateFile.setText(pendingWriteEnabled + "\n");
@@ -168,14 +170,25 @@ Singleton {
         command: ["bash", "-lc", `
 set -euo pipefail
 cfg_home="\${XDG_CONFIG_HOME:-$HOME/.config}"
+# Create stub confs if missing so Hyprland source never glob-fails.
+hypr_tp="$cfg_home/hypr/conf.d/villode-touchpad.conf"
+vh_tp="$cfg_home/villode-hyprland/touchpad.conf"
+mkdir -p "$(dirname "$hypr_tp")" "$(dirname "$vh_tp")"
+if [[ ! -f "$hypr_tp" ]]; then
+  printf '%s\\n' '# Managed by Caelestia settings — touchpad enable/disable' '' > "$hypr_tp"
+fi
+if [[ ! -f "$vh_tp" ]]; then
+  printf '%s\\n' '# Managed by Caelestia settings — touchpad enable/disable' '' > "$vh_tp"
+fi
 for conf in "$cfg_home/hypr/hyprland.conf" "$cfg_home/villode-hyprland/hyprland.conf"; do
   [[ -f "$conf" ]] || continue
   if [[ "$conf" == *villode-hyprland* ]]; then
     marker='villode-hyprland/touchpad.conf'
-    line='source = ~/.config/villode-hyprland/touchpad.conf'
+    # Absolute path avoids ~ expansion / glob issues in some Hyprland versions.
+    line="source = $cfg_home/villode-hyprland/touchpad.conf"
   else
     marker='conf.d/villode-touchpad.conf'
-    line='source = ~/.config/hypr/conf.d/villode-touchpad.conf'
+    line="source = $cfg_home/hypr/conf.d/villode-touchpad.conf"
   fi
   if ! grep -Fq "$marker" "$conf"; then
     printf '\\n# Touchpad enable/disable (Caelestia)\\n%s\\n' "$line" >> "$conf"
