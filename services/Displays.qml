@@ -160,9 +160,8 @@ Singleton {
         if (!size)
             return [1];
 
-        const choices = preferredScales(size.width, size.height);
-        // Keep the active scale visible even when it is not a common preset
-        // (e.g. Hyprland previously snapped 0.90 → ≈0.8333).
+        // Full legal ladder for smooth slider snapping (N/120 clean scales).
+        const choices = validScalesFor(size.width, size.height, 0.5, 3.0);
         const current = monitor?.scale;
         if (current > 0 && isCleanScale(size.width, size.height, current)) {
             const key = current.toFixed(6);
@@ -173,6 +172,71 @@ Singleton {
             }
         }
         return choices;
+    }
+
+    // Layout box in compositor coordinates (Hyprland positions use scaled sizes).
+    function layoutSize(monitor: var): var {
+        const scale = Math.max(0.01, monitor?.scale || 1);
+        return {
+            width: (monitor?.width || 0) / scale,
+            height: (monitor?.height || 0) / scale
+        };
+    }
+
+    function layoutBounds(): var {
+        if (!monitors.length) {
+            return {
+                minX: 0,
+                minY: 0,
+                maxX: 1,
+                maxY: 1,
+                width: 1,
+                height: 1
+            };
+        }
+        let minX = Infinity;
+        let minY = Infinity;
+        let maxX = -Infinity;
+        let maxY = -Infinity;
+        for (const mon of monitors) {
+            const size = layoutSize(mon);
+            minX = Math.min(minX, mon.x);
+            minY = Math.min(minY, mon.y);
+            maxX = Math.max(maxX, mon.x + size.width);
+            maxY = Math.max(maxY, mon.y + size.height);
+        }
+        return {
+            minX: minX,
+            minY: minY,
+            maxX: maxX,
+            maxY: maxY,
+            width: Math.max(1, maxX - minX),
+            height: Math.max(1, maxY - minY)
+        };
+    }
+
+    function monitorIndex(name: string): int {
+        const idx = monitors.findIndex(m => m.name === name);
+        return idx < 0 ? 0 : idx;
+    }
+
+    function identifyMonitors(): void {
+        if (identifyProc.running || !monitors.length)
+            return;
+        // Sequential large notifications while focusing each output (Win11-style identify).
+        const parts = [];
+        monitors.forEach((mon, i) => {
+            const n = mon.index || (i + 1);
+            const safeName = String(mon.name).replace(/'/g, "");
+            const safeLabel = String(mon.description || mon.name).replace(/"/g, "").replace(/'/g, "");
+            parts.push(`hyprctl dispatch focusmonitor '${safeName}' >/dev/null 2>&1 || true`);
+            parts.push(`hyprctl notify 1 2400 'rgb(0078D4)' "fontsize:34  ${n}" >/dev/null 2>&1 || true`);
+            parts.push(`hyprctl notify 1 2400 'rgb(0078D4)' "fontsize:16  ${safeLabel}" >/dev/null 2>&1 || true`);
+            parts.push("sleep 0.45");
+        });
+        identifyProc.command = ["bash", "-lc", parts.join("; ")];
+        identifyProc.running = true;
+        statusMessage = monitors.length > 1 ? `正在标识 ${monitors.length} 台显示器…` : "正在标识显示器…";
     }
 
     function currentModeString(monitor: var): string {
@@ -320,8 +384,11 @@ Singleton {
                 return;
             }
 
-            const next = data.map(m => ({
+            // Stable visual numbering: left-to-right, then top-to-bottom (like Windows).
+            const sorted = [...data].sort((a, b) => (a.x - b.x) || (a.y - b.y) || String(a.name).localeCompare(String(b.name)));
+            const next = sorted.map((m, index) => ({
                 id: m.id,
+                index: index + 1,
                 name: m.name,
                 description: m.description || m.model || m.name,
                 width: m.width,
@@ -474,6 +541,18 @@ fi
         onSaveFailed: {
             root.pendingWrites = Math.max(0, root.pendingWrites - 1);
             root.statusMessage = "设置已应用，但保存配置失败。";
+        }
+    }
+
+    Process {
+        id: identifyProc
+        stdout: StdioCollector {}
+        stderr: StdioCollector {}
+        onExited: code => { // qmllint disable signal-handler-parameters
+            if (code === 0)
+                root.statusMessage = "已在屏幕上显示显示器编号。";
+            else if (!root.statusMessage)
+                root.statusMessage = "标识显示器失败。";
         }
     }
 }
