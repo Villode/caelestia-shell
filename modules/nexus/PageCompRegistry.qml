@@ -65,6 +65,9 @@ QtObject {
                 Component {
                     EthernetDetailPage {}
                 }
+                Component {
+                    WifiDetailPage {}
+                }
             }
         },
         Component {
@@ -98,6 +101,14 @@ QtObject {
             StackPage {
                 Component {
                     UpdatesPage {}
+                }
+            }
+        },
+        Component {
+            // Lock / power / idle
+            StackPage {
+                Component {
+                    PowerPage {}
                 }
             }
         },

@@ -2,12 +2,14 @@ import QtQuick
 import Quickshell
 import Caelestia.Config
 import qs.components
+import qs.services
 import qs.modules.bar as Bar
 import qs.modules.dashboard as Dashboard
 import qs.modules.launcher as Launcher
 import qs.modules.notifications as Notifications
 import qs.modules.osd as Osd
 import qs.modules.session as Session
+import qs.modules.multitasking as Multitasking
 import qs.modules.sidebar as Sidebar
 import qs.modules.utilities as Utilities
 import qs.modules.bar.popouts as BarPopouts
@@ -26,6 +28,8 @@ Item {
     readonly property alias notifications: notifications
     readonly property alias session: session
     readonly property alias sessionWrapper: sessionWrapper
+    readonly property alias multitasking: multitasking
+    readonly property alias multitaskingWrapper: multitaskingWrapper
     readonly property alias launcher: launcher
     readonly property alias dashboard: dashboard
     readonly property alias popouts: popoutsWrapper.content
@@ -38,13 +42,97 @@ Item {
     anchors.margins: borderThickness
     anchors.leftMargin: bar.implicitWidth
 
+    // Multitasking: ONLY the card strip height — do not cover dock / bottom chrome.
+    // Dimming is ContentWindow.modalScrim (visual only). Empty clicks on cards strip dismiss.
+    Item {
+        id: multitaskingWrapper
+
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        // Height = card strip only (not full screen) so bottom dock stays free for input
+        height: multitasking.visible || multitasking.shouldBeActive ? multitasking.implicitHeight + Tokens.padding.large : 0
+        visible: multitasking.visible || multitasking.shouldBeActive
+        z: 10
+        clip: false
+
+        // Dismiss when clicking empty space within the strip (not full screen)
+        MouseArea {
+            anchors.fill: parent
+            z: 0
+            onClicked: root.visibilities.multitasking = false
+        }
+
+        Multitasking.Wrapper {
+            id: multitasking
+
+            visibilities: root.visibilities
+            screen: root.screen
+
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            height: implicitHeight
+            z: 1
+        }
+    }
+
+    Launcher.Wrapper {
+        id: launcher
+        z: 12
+
+        screen: root.screen
+        visibilities: root.visibilities
+        panels: root
+
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: parent.bottom
+    }
+
+    Dashboard.Wrapper {
+        id: dashboard
+        // Top dashboard must stay above multitasking cards
+        z: 120
+
+        visibilities: root.visibilities
+
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.top
+    }
+
+    // Power / session menu — centered modal
+    Item {
+        id: sessionWrapper
+
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.verticalCenter: parent.verticalCenter
+        readonly property real pad: Tokens.padding.extraLarge
+        width: session.implicitWidth + pad * 2
+        height: session.implicitHeight + pad * 2
+        visible: session.visible || session.shouldBeActive
+        z: 100
+
+        Session.Wrapper {
+            id: session
+
+            visibilities: root.visibilities
+            sidebarVisible: sidebar.visible
+
+            anchors.centerIn: parent
+            width: implicitWidth
+            height: implicitHeight
+        }
+    }
+
+    // —— Shell chrome (always above multitasking) ——
     Item {
         id: osdWrapper
+        z: 200
 
         anchors.verticalCenter: parent.verticalCenter
         anchors.right: parent.right
-        anchors.rightMargin: sessionWrapper.anchors.rightMargin + session.width * (1 - session.offsetScale)
-        clip: sidebar.visible || session.visible
+        anchors.rightMargin: sidebar.width * (1 - sidebar.offsetScale)
+        clip: sidebar.visible
 
         implicitWidth: osd.implicitWidth * (1 - osd.offsetScale)
         implicitHeight: osd.implicitHeight
@@ -63,6 +151,7 @@ Item {
 
     Notifications.Wrapper {
         id: notifications
+        z: 210
 
         visibilities: root.visibilities
         sidebarPanel: sidebar
@@ -74,50 +163,9 @@ Item {
         anchors.right: parent.right
     }
 
-    Item {
-        id: sessionWrapper
-
-        anchors.verticalCenter: parent.verticalCenter
-        anchors.right: parent.right
-        anchors.rightMargin: sidebar.width * (1 - sidebar.offsetScale)
-        clip: sidebar.visible
-
-        implicitWidth: session.implicitWidth * (1 - session.offsetScale)
-        implicitHeight: session.implicitHeight
-
-        Session.Wrapper {
-            id: session
-
-            visibilities: root.visibilities
-            sidebarVisible: sidebar.visible
-
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.right: parent.right
-        }
-    }
-
-    Launcher.Wrapper {
-        id: launcher
-
-        screen: root.screen
-        visibilities: root.visibilities
-        panels: root
-
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottom: parent.bottom
-    }
-
-    Dashboard.Wrapper {
-        id: dashboard
-
-        visibilities: root.visibilities
-
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: parent.top
-    }
-
     BarPopouts.ClipWrapper {
         id: popoutsWrapper
+        z: 220
 
         screen: root.screen
         borderThickness: root.borderThickness
@@ -125,6 +173,7 @@ Item {
 
     Utilities.Wrapper {
         id: utilities
+        z: 200
 
         visibilities: root.visibilities
         sidebar: sidebar
@@ -136,6 +185,7 @@ Item {
 
     Toasts.Toasts {
         id: toasts
+        z: 230
 
         anchors.bottom: sidebar.visible ? parent.bottom : utilities.top
         anchors.right: sidebar.left
@@ -144,6 +194,7 @@ Item {
 
     Sidebar.Wrapper {
         id: sidebar
+        z: 200
 
         visibilities: root.visibilities
 

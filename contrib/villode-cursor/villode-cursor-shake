@@ -1,0 +1,638 @@
+#!/usr/bin/env python3
+"""Mac-style shake-to-find — smooth pointer magnifier.
+
+Uses a small click-through layer window that follows the cursor and scales an
+SVG pointer with exponential easing. Never zooms the desktop, never reloads
+cursor themes mid-shake.
+"""
+
+from __future__ import annotations
+
+import argparse
+import math
+import os
+import signal
+import socket
+import subprocess
+import sys
+import time
+from collections import deque
+from pathlib import Path
+
+DEFAULTS = {
+    "poll_hz": 90.0,
+    # Detection — deliberately hard: light wiggles must NOT fire.
+    # Only a clear, vigorous left-right (or multi-axis) shake.
+    "window_s": 0.65,
+    "min_path_px": 420.0,  # total travel in window
+    "min_reversals": 6,  # need several full direction changes
+    "min_stroke_px": 100.0,  # each peak-to-peak stroke (blocks light/medium)
+    "min_amplitude_px": 120.0,  # overall peak-to-peak must be large
+    "min_speed_px_s": 1000.0,  # path / time — light wiggles are slow
+    "min_ratio": 4.0,  # path / net (shake in place, not a big drag)
+    "activate_intensity": 0.78,  # must clear this to start magnifying
+    "base_px": 34.0,
+    "max_scale": 3.8,
+    "grow_rate": 16.0,
+    "shrink_rate": 8.0,
+    "hold_s": 0.50,
+    "cooldown_s": 0.55,  # after rest, ignore residual motion
+    "theme_svg": str(Path.home() / ".local/share/villode-cursor/left_ptr.svg"),
+    "hotspot_x": 0.31,
+    "hotspot_y": 0.12,
+    "debug": 0,
+}
+
+
+def load_overrides(path: Path) -> dict:
+    if not path.is_file():
+        return {}
+    out: dict = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, val = line.split("=", 1)
+        key, val = key.strip(), val.strip()
+        if key not in DEFAULTS:
+            continue
+        try:
+            if isinstance(DEFAULTS[key], int):
+                out[key] = int(float(val))
+            elif isinstance(DEFAULTS[key], str):
+                out[key] = val
+            else:
+                out[key] = float(val)
+        except ValueError:
+            continue
+    return out
+
+
+def hypr_sig() -> str | None:
+    sig = os.environ.get("HYPRLAND_INSTANCE_SIGNATURE")
+    if sig:
+        return sig
+    runtime = Path(os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}"))
+    base = runtime / "hypr"
+    if not base.is_dir():
+        return None
+    for child in sorted(base.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True):
+        if (child / ".socket.sock").exists():
+            return child.name
+    return None
+
+
+class Hypr:
+    def __init__(self) -> None:
+        self.path: Path | None = None
+        self._reconnect()
+
+    def _reconnect(self) -> bool:
+        sig = hypr_sig()
+        if not sig:
+            self.path = None
+            return False
+        runtime = Path(os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}"))
+        p = runtime / "hypr" / sig / ".socket.sock"
+        self.path = p if p.exists() else None
+        return self.path is not None
+
+    def call(self, cmd: str, timeout: float = 0.1) -> str:
+        if self.path is None and not self._reconnect():
+            return ""
+        try:
+            with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
+                s.settimeout(timeout)
+                s.connect(str(self.path))
+                s.sendall(cmd.encode())
+                buf = b""
+                while True:
+                    try:
+                        chunk = s.recv(8192)
+                    except socket.timeout:
+                        break
+                    if not chunk:
+                        break
+                    buf += chunk
+                    if len(chunk) < 8192:
+                        break
+                return buf.decode("utf-8", "replace").strip()
+        except OSError:
+            self.path = None
+            return ""
+
+    def cursorpos(self) -> tuple[float, float] | None:
+        raw = self.call("cursorpos")
+        if not raw or "," not in raw:
+            return None
+        try:
+            a, b = raw.split(",", 1)
+            return float(a.replace("ok", "").strip()), float(b.strip())
+        except ValueError:
+            return None
+
+    def keyword(self, key: str, value: str) -> None:
+        self.call(f"keyword {key} {value}")
+
+
+class ShakeDetector:
+    """Detect vigorous deliberate pointer shake only.
+
+    Light wiggles / slow sway / normal moves must stay near 0.
+    Needs large strokes, several reversals, high speed, and path ≫ net travel.
+    """
+
+    def __init__(
+        self,
+        window_s: float,
+        min_path: float,
+        min_reversals: int,
+        min_ratio: float,
+        min_stroke: float,
+        min_amplitude: float,
+        min_speed: float,
+    ):
+        self.window_s = window_s
+        self.min_path = min_path
+        self.min_reversals = min_reversals
+        self.min_ratio = min_ratio
+        self.min_stroke = min_stroke
+        self.min_amplitude = min_amplitude
+        self.min_speed = min_speed
+        self.samples: deque[tuple[float, float, float]] = deque()
+
+    def clear(self) -> None:
+        self.samples.clear()
+
+    def update(self, t: float, x: float, y: float) -> float:
+        self.samples.append((t, x, y))
+        while self.samples and t - self.samples[0][0] > self.window_s:
+            self.samples.popleft()
+        n = len(self.samples)
+        if n < 12:
+            return 0.0
+
+        path = 0.0
+        for i in range(1, n):
+            path += math.hypot(
+                self.samples[i][1] - self.samples[i - 1][1],
+                self.samples[i][2] - self.samples[i - 1][2],
+            )
+
+        span_t = max(1e-3, self.samples[-1][0] - self.samples[0][0])
+        speed = path / span_t
+        if path < self.min_path or speed < self.min_speed:
+            return 0.0
+
+        net = math.hypot(
+            self.samples[-1][1] - self.samples[0][1],
+            self.samples[-1][2] - self.samples[0][2],
+        )
+        ratio = path / max(net, 1.0)
+        if ratio < self.min_ratio:
+            return 0.0
+
+        def axis_stats(get_coord) -> tuple[int, float, float]:
+            """Peak-based: (big_turns, sum_of_big_peak_gaps, peak_to_peak).
+
+            Local extrema avoid counting tiny wiggles that only looked long
+            because the turn-around sample was folded into the next stroke.
+            """
+            coords = [get_coord(s) for s in self.samples]
+            amplitude = max(coords) - min(coords)
+            extrema = [coords[0]]
+            for i in range(1, len(coords) - 1):
+                left = coords[i] - coords[i - 1]
+                right = coords[i + 1] - coords[i]
+                if abs(left) < 1.5 and abs(right) < 1.5:
+                    continue
+                if left * right < 0:
+                    if abs(coords[i] - extrema[-1]) >= 4.0:
+                        extrema.append(coords[i])
+            if abs(coords[-1] - extrema[-1]) >= 4.0:
+                extrema.append(coords[-1])
+
+            big_turns = 0
+            stroke_sum = 0.0
+            for i in range(1, len(extrema)):
+                gap = abs(extrema[i] - extrema[i - 1])
+                if gap >= self.min_stroke:
+                    big_turns += 1
+                    stroke_sum += gap
+            return big_turns, stroke_sum, amplitude
+
+        x_turns, x_stroke, x_amp = axis_stats(lambda s: s[1])
+        y_turns, y_stroke, y_amp = axis_stats(lambda s: s[2])
+        if x_turns > y_turns or (x_turns == y_turns and x_amp >= y_amp):
+            flips, axis_stroke, amplitude = x_turns, x_stroke, x_amp
+        else:
+            flips, axis_stroke, amplitude = y_turns, y_stroke, y_amp
+
+        if flips < self.min_reversals:
+            return 0.0
+        if amplitude < self.min_amplitude:
+            return 0.0
+        # Need several large peak-to-peak strokes, not one drag + jitter
+        if axis_stroke < self.min_stroke * self.min_reversals * 0.85:
+            return 0.0
+
+        path_term = min(1.0, (path - self.min_path) / 400.0)
+        flip_term = min(1.0, (flips - self.min_reversals + 1) / 5.0)
+        ratio_term = min(1.0, (ratio - self.min_ratio) / 5.0)
+        speed_term = min(1.0, (speed - self.min_speed) / 1000.0)
+        amp_term = min(1.0, (amplitude - self.min_amplitude) / 120.0)
+        intensity = (
+            0.20 * path_term
+            + 0.30 * flip_term
+            + 0.18 * ratio_term
+            + 0.18 * speed_term
+            + 0.14 * amp_term
+        )
+        return max(0.0, min(1.0, intensity))
+
+
+def ensure_svg(cfg: dict) -> Path:
+    svg = Path(cfg["theme_svg"])
+    if svg.is_file():
+        return svg
+    dest = Path.home() / ".local/share/villode-cursor/left_ptr.svg"
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    hlc = Path.home() / ".local/share/icons/macOS-hypr/hyprcursors/left_ptr.hlc"
+    if hlc.is_file():
+        try:
+            import shutil
+            import tempfile
+
+            with tempfile.TemporaryDirectory() as td:
+                subprocess.check_call(["bsdtar", "-xf", str(hlc), "-C", td])
+                src = Path(td) / "left_ptr.svg"
+                if src.is_file():
+                    shutil.copy2(src, dest)
+                    cfg["theme_svg"] = str(dest)
+                    return dest
+        except Exception:
+            pass
+    dest.write_text(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">'
+        '<path fill="#000" stroke="#fff" stroke-width="10" d="M84 48v125l27-27 25 61 22-11-25-58h39z"/>'
+        "</svg>",
+        encoding="utf-8",
+    )
+    cfg["theme_svg"] = str(dest)
+    return dest
+
+
+def run_overlay(cfg: dict) -> int:
+    import cairo
+    import gi
+
+    gi.require_version("Gtk", "3.0")
+    gi.require_version("Gdk", "3.0")
+    gi.require_version("GtkLayerShell", "0.1")
+    gi.require_version("Rsvg", "2.0")
+    from gi.repository import GLib, Gtk, GtkLayerShell, Rsvg
+
+    runtime = Path(os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}"))
+    pid_file = runtime / "villode-cursor-shake.pid"
+    force_file = runtime / "villode-cursor-shake.force"
+    log_path = Path("/tmp/villode-cursor-shake.log")
+    debug = bool(cfg.get("debug"))
+
+    if pid_file.exists():
+        try:
+            old = int(pid_file.read_text().strip())
+            if old != os.getpid():
+                os.kill(old, 0)
+                print(f"villode-cursor-shake: already running (pid {old})", file=sys.stderr)
+                return 0
+        except (ProcessLookupError, ValueError, OSError):
+            pass
+    pid_file.write_text(str(os.getpid()))
+
+    svg_path = ensure_svg(cfg)
+    handle = Rsvg.Handle.new_from_file(str(svg_path))
+
+    hy = Hypr()
+    hy.keyword("cursor:zoom_factor", "1")
+    hy.keyword("cursor:invisible", "false")
+
+    detector = ShakeDetector(
+        window_s=float(cfg["window_s"]),
+        min_path=float(cfg["min_path_px"]),
+        min_reversals=int(cfg["min_reversals"]),
+        min_ratio=float(cfg["min_ratio"]),
+        min_stroke=float(cfg["min_stroke_px"]),
+        min_amplitude=float(cfg["min_amplitude_px"]),
+        min_speed=float(cfg["min_speed_px_s"]),
+    )
+    activate_intensity = float(cfg["activate_intensity"])
+    cooldown_s = float(cfg["cooldown_s"])
+
+    base_px = float(cfg["base_px"])
+    max_scale = float(cfg["max_scale"])
+    grow_rate = float(cfg["grow_rate"])
+    shrink_rate = float(cfg["shrink_rate"])
+    hold_s = float(cfg["hold_s"])
+    hot_nx = float(cfg["hotspot_x"])
+    hot_ny = float(cfg["hotspot_y"])
+    pad = 28  # shadow room
+    canvas = int(math.ceil(base_px * (max_scale + 0.25))) + pad * 2
+    interval_ms = max(8, int(round(1000.0 / max(60.0, float(cfg["poll_hz"])))))
+
+    st = {
+        "scale": 1.0,
+        "target": 1.0,
+        "last_shake": 0.0,
+        "grown_at": 0.0,  # when we last entered magnified state
+        "cx": 0.0,
+        "cy": 0.0,
+        "hidden": False,
+        "visible": False,
+        "last_t": time.monotonic(),
+        "last_draw_scale": -1.0,
+        "last_margin": (-9999, -9999),
+        "last_log": 0.0,
+        "idle_frames": 0,
+        "rested_at": 0.0,  # cooldown after full rest
+    }
+
+    def log(msg: str) -> None:
+        if not debug:
+            return
+        try:
+            with log_path.open("a", encoding="utf-8") as f:
+                f.write(f"{time.strftime('%H:%M:%S')} {msg}\n")
+        except OSError:
+            pass
+
+    def set_hidden(hide: bool) -> None:
+        if hide == st["hidden"]:
+            return
+        st["hidden"] = hide
+        hy.keyword("cursor:invisible", "true" if hide else "false")
+
+    # ── small floating surface ─────────────────────────────────────────
+    win = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
+    win.set_title("Villode Cursor Find")
+    win.set_app_paintable(True)
+    win.set_decorated(False)
+    win.set_accept_focus(False)
+    win.set_can_focus(False)
+    win.set_default_size(canvas, canvas)
+    win.resize(canvas, canvas)
+
+    screen = win.get_screen()
+    visual = screen.get_rgba_visual()
+    if visual is not None:
+        win.set_visual(visual)
+
+    GtkLayerShell.init_for_window(win)
+    GtkLayerShell.set_namespace(win, "villode-cursor-find")
+    GtkLayerShell.set_layer(win, GtkLayerShell.Layer.OVERLAY)
+    GtkLayerShell.set_keyboard_mode(win, GtkLayerShell.KeyboardMode.NONE)
+    GtkLayerShell.set_exclusive_zone(win, -1)
+    # Position via top/left margins (global coords relative to output — layer
+    # shell positions on the monitor under the surface; with exclusive -1 and
+    # anchors, margins work in output-local space. We use the monitor that
+    # contains the cursor by setting monitor when possible.)
+    GtkLayerShell.set_anchor(win, GtkLayerShell.Edge.LEFT, True)
+    GtkLayerShell.set_anchor(win, GtkLayerShell.Edge.TOP, True)
+    GtkLayerShell.set_anchor(win, GtkLayerShell.Edge.RIGHT, False)
+    GtkLayerShell.set_anchor(win, GtkLayerShell.Edge.BOTTOM, False)
+
+    area = Gtk.DrawingArea()
+    area.set_size_request(canvas, canvas)
+    area.set_app_paintable(True)
+    win.add(area)
+
+    def clear_input(*_a) -> None:
+        gdk_win = win.get_window()
+        if gdk_win is not None:
+            gdk_win.input_shape_combine_region(cairo.Region(), 0, 0)
+
+    win.connect("realize", clear_input)
+    area.connect("realize", clear_input)
+
+    def on_draw(_widget, cr: cairo.Context) -> bool:
+        cr.set_operator(cairo.OPERATOR_SOURCE)
+        cr.set_source_rgba(0, 0, 0, 0)
+        cr.paint()
+        cr.set_operator(cairo.OPERATOR_OVER)
+
+        sc = st["scale"]
+        if sc < 1.02:
+            return False
+
+        size = base_px * sc
+        # hotspot at fixed point inside canvas so window can be positioned by hotspot
+        hot_x = hot_nx * size
+        hot_y = hot_ny * size
+        # place art so hotspot sits at (pad + hot_x_at_max?) — simpler: hotspot at
+        # canvas center-left-ish: position art with hotspot at (pad+hot_x, pad+hot_y)
+        # Actually we position window so top-left = cursor - (pad+hot). Draw art at (pad, pad).
+        x = pad
+        y = pad
+
+        cr.save()
+        cr.translate(x, y)
+        s = size / 256.0
+        cr.scale(s, s)
+        vp = Rsvg.Rectangle()
+        vp.x = vp.y = 0
+        vp.width = vp.height = 256
+        # shadow
+        cr.save()
+        cr.translate(2.5, 5)
+        cr.push_group()
+        handle.render_document(cr, vp)
+        cr.pop_group_to_source()
+        cr.paint_with_alpha(0.22)
+        cr.restore()
+        handle.render_document(cr, vp)
+        cr.restore()
+        return False
+
+    area.connect("draw", on_draw)
+
+    def place_window(cx: float, cy: float, sc: float) -> None:
+        size = base_px * sc
+        hot_x = hot_nx * size
+        hot_y = hot_ny * size
+        # window top-left so hotspot aligns with cursor
+        margin_l = int(round(cx - (pad + hot_x)))
+        margin_t = int(round(cy - (pad + hot_y)))
+        if (margin_l, margin_t) != st["last_margin"]:
+            GtkLayerShell.set_margin(win, GtkLayerShell.Edge.LEFT, max(0, margin_l))
+            GtkLayerShell.set_margin(win, GtkLayerShell.Edge.TOP, max(0, margin_t))
+            st["last_margin"] = (margin_l, margin_t)
+
+    def read_force() -> float:
+        try:
+            if not force_file.exists():
+                return 0.0
+            parts = force_file.read_text().strip().split()
+            if len(parts) < 2:
+                force_file.unlink(missing_ok=True)
+                return 0.0
+            until, scale = float(parts[0]), float(parts[1])
+            if time.time() > until:
+                force_file.unlink(missing_ok=True)
+                return 0.0
+            return scale
+        except (OSError, ValueError):
+            return 0.0
+
+    def show_overlay(show: bool) -> None:
+        if show and not st["visible"]:
+            win.show_all()
+            clear_input()
+            st["visible"] = True
+        elif not show and st["visible"]:
+            win.hide()
+            st["visible"] = False
+
+    def tick() -> bool:
+        try:
+            t = time.monotonic()
+            dt = min(0.05, max(0.001, t - st["last_t"]))
+            st["last_t"] = t
+
+            pos = hy.cursorpos()
+            if pos is None:
+                return True
+            cx, cy = pos
+            moved = abs(cx - st["cx"]) + abs(cy - st["cy"]) > 0.15
+            st["cx"], st["cy"] = cx, cy
+
+            force = read_force()
+            intensity = detector.update(t, cx, cy)
+            magnified = st["scale"] > 1.08
+            in_cooldown = (t - st["rested_at"]) < cooldown_s and st["rested_at"] > 0
+
+            if force > 1.0:
+                st["last_shake"] = t
+                if st["grown_at"] <= 0:
+                    st["grown_at"] = t
+                st["target"] = min(max_scale + 0.1, force)
+            elif not magnified and not in_cooldown and intensity >= activate_intensity:
+                # Fresh activation: only clear intentional shakes
+                st["last_shake"] = t
+                st["grown_at"] = t
+                st["target"] = 1.0 + (max_scale - 1.0) * (intensity ** 0.5)
+                if debug and t - st["last_log"] > 0.15:
+                    log(f"activate i={intensity:.2f} target={st['target']:.2f}")
+                    st["last_log"] = t
+            elif magnified and intensity >= activate_intensity * 0.85:
+                # Still shaking hard → keep / raise peak a bit
+                st["last_shake"] = t
+                peak = 1.0 + (max_scale - 1.0) * (intensity ** 0.5)
+                st["target"] = max(st["target"], peak)
+            else:
+                # Quiet (or weak wiggle): shrink after hold
+                min_show = 0.50
+                quiet_for = t - st["last_shake"]
+                shown_for = t - st["grown_at"] if st["grown_at"] > 0 else 0.0
+                if quiet_for > hold_s and (not magnified or shown_for > min_show):
+                    st["target"] = 1.0
+
+            rate = grow_rate if st["target"] > st["scale"] + 0.02 else shrink_rate
+            st["scale"] += (st["target"] - st["scale"]) * (1.0 - math.exp(-rate * dt))
+            # Snap to rest once — do NOT clear the detector every idle frame
+            # (that was wiping samples so shake could never accumulate).
+            if st["target"] <= 1.0 and st["scale"] < 1.03:
+                if st["scale"] > 1.0 or st["grown_at"] > 0:
+                    st["rested_at"] = t
+                    st["grown_at"] = 0.0
+                st["scale"] = 1.0
+
+            sc = st["scale"]
+            active = sc > 1.02
+
+            if active:
+                st["idle_frames"] = 0
+                show_overlay(True)
+                set_hidden(True)
+                place_window(cx, cy, sc)
+                if moved or abs(sc - st["last_draw_scale"]) > 0.004:
+                    st["last_draw_scale"] = sc
+                    area.queue_draw()
+                    clear_input()
+            else:
+                st["idle_frames"] += 1
+                if st["visible"] or st["hidden"] or st["last_draw_scale"] > 1.0:
+                    st["last_draw_scale"] = 1.0
+                    set_hidden(False)
+                    show_overlay(False)
+                    log("rest")
+        except Exception as exc:
+            log(f"tick err {exc!r}")
+            try:
+                set_hidden(False)
+            except Exception:
+                pass
+        return True
+
+    def cleanup(*_a) -> None:
+        try:
+            hy.keyword("cursor:invisible", "false")
+            hy.keyword("cursor:zoom_factor", "1")
+        except Exception:
+            pass
+        try:
+            if pid_file.exists() and pid_file.read_text().strip() == str(os.getpid()):
+                pid_file.unlink(missing_ok=True)
+        except OSError:
+            pass
+        try:
+            Gtk.main_quit()
+        except Exception:
+            pass
+
+    signal.signal(signal.SIGTERM, cleanup)
+    signal.signal(signal.SIGINT, cleanup)
+    win.connect("destroy", cleanup)
+
+    # Start hidden — only show when magnifying
+    win.realize()
+    clear_input()
+
+    # Steady poll for shake detection (overlay hidden while idle → cheap)
+    GLib.timeout_add(interval_ms, tick)
+    log(f"started small-overlay canvas={canvas} max_scale={max_scale}")
+    Gtk.main()
+    cleanup()
+    return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Smooth shake-to-find pointer magnifier")
+    parser.add_argument(
+        "--config",
+        type=Path,
+        default=Path.home() / ".config" / "villode-cursor" / "shake.conf",
+    )
+    parser.add_argument("--debug", action="store_true")
+    parser.add_argument("--pulse", action="store_true")
+    args = parser.parse_args()
+
+    cfg = dict(DEFAULTS)
+    cfg.update(load_overrides(args.config))
+    if args.debug:
+        cfg["debug"] = 1
+
+    runtime = Path(os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}"))
+    force_file = runtime / "villode-cursor-shake.force"
+    pid_file = runtime / "villode-cursor-shake.pid"
+
+    if args.pulse:
+        force_file.write_text(f"{time.time() + 1.4:.3f} {float(cfg['max_scale']):.3f}\n")
+        if not pid_file.exists():
+            print("villode-cursor-shake: daemon not running", file=sys.stderr)
+            return 1
+        return 0
+
+    return run_overlay(cfg)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

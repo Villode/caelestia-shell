@@ -32,29 +32,47 @@ ConnectedRect {
         anchors.rightMargin: Tokens.padding.largeIncreased
         spacing: Tokens.spacing.medium
 
-        ColumnLayout {
+        Item {
             Layout.fillWidth: true
-            spacing: 0
+            Layout.fillHeight: true
+            implicitHeight: labelCol.implicitHeight
+            implicitWidth: labelCol.implicitWidth
 
-            StyledText {
-                id: label
+            ColumnLayout {
+                id: labelCol
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 0
 
-                Layout.fillWidth: true
-                font: Tokens.font.body.small
-                elide: Text.ElideRight
+                StyledText {
+                    id: label
+
+                    Layout.fillWidth: true
+                    font: Tokens.font.body.small
+                    elide: Text.ElideRight
+                }
+
+                StyledText {
+                    Layout.fillWidth: true
+                    visible: root.subtext
+                    text: root.subtext
+                    color: Colours.palette.m3outline
+                    font: Tokens.font.label.small
+                    elide: Text.ElideRight
+                }
             }
 
-            StyledText {
-                Layout.fillWidth: true
-                visible: root.subtext
-                text: root.subtext
-                color: Colours.palette.m3outline
-                font: Tokens.font.label.small
-                elide: Text.ElideRight
+            // Clicking label / blank area ends number-field editing.
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.LeftButton
+                onClicked: spinBox.forceActiveFocus()
             }
         }
 
         CustomSpinBox {
+            id: spinBox
             min: root.from
             max: root.to
             step: root.stepSize

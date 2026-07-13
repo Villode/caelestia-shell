@@ -43,7 +43,7 @@ StyledRect {
     implicitHeight: layout.implicitHeight + Tokens.padding.extraLargeIncreased
 
     radius: Tokens.rounding.large
-    color: Colours.tPalette.m3surfaceContainer
+    color: { const c = Colours.palette.m3surfaceContainer; return Qt.rgba(c.r, c.g, c.b, 1); }
 
     ColumnLayout {
         id: layout
@@ -53,7 +53,7 @@ StyledRect {
         spacing: Tokens.spacing.medium
 
         StyledText {
-            text: qsTr("Quick Toggles")
+            text: qsTr("快捷开关")
             font: Tokens.font.body.medium
         }
 

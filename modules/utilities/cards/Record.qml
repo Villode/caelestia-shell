@@ -19,7 +19,7 @@ StyledRect {
     implicitHeight: layout.implicitHeight + layout.anchors.margins * 2
 
     radius: Tokens.rounding.large
-    color: Colours.tPalette.m3surfaceContainer
+    color: { const c = Colours.palette.m3surfaceContainer; return Qt.rgba(c.r, c.g, c.b, 1); }
 
     ColumnLayout {
         id: layout
@@ -60,14 +60,14 @@ StyledRect {
 
                 StyledText {
                     Layout.fillWidth: true
-                    text: qsTr("Screen Recorder")
+                    text: qsTr("屏幕录制")
                     font: Tokens.font.body.medium
                     elide: Text.ElideRight
                 }
 
                 StyledText {
                     Layout.fillWidth: true
-                    text: Recorder.paused ? qsTr("Paused") : Recorder.running ? qsTr("Running...") : qsTr("Ready")
+                    text: Recorder.paused ? qsTr("已暂停") : Recorder.running ? qsTr("运行中...") : qsTr("就绪")
                     color: Colours.palette.m3onSurfaceVariant
                     font: Tokens.font.body.small
                     elide: Text.ElideRight
@@ -84,26 +84,26 @@ StyledRect {
                 menuItems: [
                     MenuItem {
                         icon: "fullscreen"
-                        text: qsTr("Record fullscreen")
-                        activeText: qsTr("Fullscreen")
+                        text: qsTr("录制全屏")
+                        activeText: qsTr("全屏")
                         onClicked: Recorder.start()
                     },
                     MenuItem {
                         icon: "screenshot_region"
-                        text: qsTr("Record region")
-                        activeText: qsTr("Region")
+                        text: qsTr("录制区域")
+                        activeText: qsTr("区域")
                         onClicked: Recorder.start(["-r"])
                     },
                     MenuItem {
                         icon: "select_to_speak"
-                        text: qsTr("Record fullscreen with sound")
-                        activeText: qsTr("Fullscreen")
+                        text: qsTr("录制全屏和声音")
+                        activeText: qsTr("全屏")
                         onClicked: Recorder.start(["-s"])
                     },
                     MenuItem {
                         icon: "volume_up"
-                        text: qsTr("Record region with sound")
-                        activeText: qsTr("Region")
+                        text: qsTr("录制区域和声音")
+                        activeText: qsTr("区域")
                         onClicked: Recorder.start(["-sr"])
                     }
                 ]
@@ -237,7 +237,7 @@ StyledRect {
                     else
                         time = `${mins}:${secs}`;
 
-                    return qsTr("Recording for %1").arg(time);
+                    return qsTr("已录制 %1").arg(time);
                 }
                 font: Tokens.font.body.medium
                 elide: Text.ElideMiddle

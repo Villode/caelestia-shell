@@ -14,7 +14,7 @@ StyledRect {
     implicitHeight: nonAnimHeight
 
     radius: Tokens.rounding.large
-    color: Colours.tPalette.m3surfaceContainer
+    color: { const c = Colours.palette.m3surfaceContainer; return Qt.rgba(c.r, c.g, c.b, 1); }
     clip: true
 
     RowLayout {
@@ -49,14 +49,14 @@ StyledRect {
 
             StyledText {
                 Layout.fillWidth: true
-                text: qsTr("Keep Awake")
+                text: qsTr("保持唤醒")
                 font: Tokens.font.body.medium
                 elide: Text.ElideRight
             }
 
             StyledText {
                 Layout.fillWidth: true
-                text: IdleInhibitor.enabled ? qsTr("Preventing sleep mode") : qsTr("Normal power management")
+                text: IdleInhibitor.enabled ? qsTr("正在阻止睡眠") : qsTr("正常电源管理")
                 color: Colours.palette.m3onSurfaceVariant
                 font: Tokens.font.body.small
                 elide: Text.ElideRight
@@ -95,7 +95,7 @@ StyledRect {
                 id: activeText
 
                 anchors.centerIn: parent
-                text: qsTr("Active since %1").arg(Qt.formatTime(IdleInhibitor.enabledSince, GlobalConfig.services.useTwelveHourClock ? "hh:mm a" : "hh:mm"))
+                text: qsTr("自 %1 起启用").arg(Qt.formatTime(IdleInhibitor.enabledSince, GlobalConfig.services.useTwelveHourClock ? "hh:mm a" : "hh:mm"))
                 color: Colours.palette.m3onPrimary
                 font: Tokens.font.body.builders.small.size(Math.round(Tokens.font.body.small.pointSize * 0.9)).build()
             }

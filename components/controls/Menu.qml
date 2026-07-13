@@ -39,9 +39,50 @@ MouseArea {
         return contentWin ? contentWin.interactionWrapper : (win as QsWindow).contentItem;
     }
     anchors.fill: parent
+    // Must paint above panels (utilities z:200, etc.) — menus reparent to interactionWrapper
+    z: expanded ? 10000 : 0
+
+    // Dismiss only on a short, still click outside the popup. Trackpad
+    // scrolls / drags and long presses must not collapse the menu.
+    property real pressX
+    property real pressY
+    property real pressAt
+    property bool pressOnBackdrop
+    property bool pressMoved
 
     enabled: expanded
-    onClicked: expanded = false
+    hoverEnabled: true
+    preventStealing: true
+    // Keep receiving events while open even if parent scroll containers move.
+    acceptedButtons: Qt.LeftButton
+
+    onPressed: e => {
+        const local = mapToItem(menu, e.x, e.y);
+        pressOnBackdrop = !(local.x >= 0 && local.y >= 0 && local.x <= menu.width && local.y <= menu.height);
+        pressX = e.x;
+        pressY = e.y;
+        pressAt = Date.now();
+        pressMoved = false;
+    }
+    onPositionChanged: e => {
+        if (pressed && (Math.abs(e.x - pressX) > 6 || Math.abs(e.y - pressY) > 6))
+            pressMoved = true;
+    }
+    onReleased: e => {
+        if (!pressOnBackdrop || pressMoved)
+            return;
+        // Ignore scroll-end flicks that show up as a tiny, quick press.
+        if (Date.now() - pressAt > 500)
+            return;
+        expanded = false;
+    }
+    onWheel: e => {
+        e.accepted = true;
+    }
+    onCanceled: {
+        pressOnBackdrop = false;
+        pressMoved = true;
+    }
 
     opacity: expanded ? 1 : 0
     layer.enabled: opacity < 1
@@ -100,10 +141,20 @@ MouseArea {
             onWheel: e => e.accepted = true
         }
 
-        StyledRect {
+        // Fully opaque shell — palette colours are often translucent (Colours.layer)
+        // so floating menus looked empty over scrim / desktop.
+        Rectangle {
             anchors.fill: parent
             radius: parent.radius
-            color: Colours.palette.m3surfaceContainerLow
+            color: {
+                const c = Colours.palette.m3surfaceContainer;
+                return Qt.rgba(c.r, c.g, c.b, 1);
+            }
+            border.width: 1
+            border.color: {
+                const c = Colours.palette.m3outlineVariant;
+                return Qt.rgba(c.r, c.g, c.b, 0.4);
+            }
 
             ColumnLayout {
                 id: column

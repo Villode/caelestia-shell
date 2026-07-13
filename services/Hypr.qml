@@ -101,10 +101,11 @@ Singleton {
         if (!GlobalConfig.utilities.toasts.capsLockChanged)
             return;
 
+        // Short capsule labels — no long subtitle
         if (capsLock)
-            Toaster.toast(qsTr("Caps lock enabled"), qsTr("Caps lock is currently enabled"), "keyboard_capslock_badge");
+            Toaster.toast(qsTr("大写锁定 开"), "", "keyboard_capslock_badge", Toast.Success, 2200);
         else
-            Toaster.toast(qsTr("Caps lock disabled"), qsTr("Caps lock is currently disabled"), "keyboard_capslock");
+            Toaster.toast(qsTr("大写锁定 关"), "", "keyboard_capslock", Toast.Info, 2200);
     }
 
     onNumLockChanged: {
@@ -112,14 +113,14 @@ Singleton {
             return;
 
         if (numLock)
-            Toaster.toast(qsTr("Num lock enabled"), qsTr("Num lock is currently enabled"), "looks_one");
+            Toaster.toast(qsTr("数字锁定 开"), "", "dialpad", Toast.Success, 2200);
         else
-            Toaster.toast(qsTr("Num lock disabled"), qsTr("Num lock is currently disabled"), "timer_1");
+            Toaster.toast(qsTr("数字锁定 关"), "", "dialpad", Toast.Info, 2200);
     }
 
     onKbLayoutFullChanged: {
         if (hadKeyboard && GlobalConfig.utilities.toasts.kbLayoutChanged)
-            Toaster.toast(qsTr("Keyboard layout changed"), qsTr("Layout changed to: %1").arg(kbLayoutFull), "keyboard");
+            Toaster.toast(qsTr("布局 %1").arg(kbLayoutFull), "", "keyboard", Toast.Info, 2500);
 
         hadKeyboard = !!keyboard;
     }

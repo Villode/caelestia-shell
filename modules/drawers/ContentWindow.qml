@@ -59,6 +59,7 @@ StyledWindow {
     onHasFullscreenChanged: {
         visibilities.launcher = false;
         visibilities.session = false;
+        visibilities.multitasking = false;
         visibilities.dashboard = false;
         panels.popouts.close();
     }
@@ -66,7 +67,7 @@ StyledWindow {
     name: "drawers"
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
     WlrLayershell.layer: (fsTransitionProg > 0 && contentItem.Config.general.showOverFullscreen) || (hasSpecialWorkspace && hasFullscreenOnNormalWs) ? WlrLayer.Overlay : WlrLayer.Top
-    WlrLayershell.keyboardFocus: visibilities.launcher || visibilities.session ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: visibilities.launcher || visibilities.session || visibilities.multitasking ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
     mask: hasFullscreen ? emptyRegion : regions
 
@@ -110,11 +111,14 @@ StyledWindow {
     HyprlandFocusGrab {
         id: focusGrab
 
+        // Do NOT include multitasking — FocusGrab can monopolize input and freeze the external dock.
+        // Multitasking uses Esc on its own content + click empty strip + logo toggle.
         active: (visibilities.launcher && root.contentItem.Config.launcher.enabled) || (visibilities.session && root.contentItem.Config.session.enabled) || (visibilities.sidebar && root.contentItem.Config.sidebar.enabled) || (!root.contentItem.Config.dashboard.showOnHover && visibilities.dashboard && root.contentItem.Config.dashboard.enabled) || (panels.popouts.currentName.startsWith("traymenu") && (panels.popouts.current as StackView)?.depth > 1)
         windows: [root]
         onCleared: {
             visibilities.launcher = false;
             visibilities.session = false;
+            // leave multitasking alone here — closed by its own UI / logo
             visibilities.sidebar = false;
             visibilities.dashboard = false;
             panels.popouts.hasCurrent = false;
@@ -122,10 +126,25 @@ StyledWindow {
         }
     }
 
+    // Dim desktop (must sit UNDER blob panel backgrounds so top popouts keep glass).
+    // Full-screen visual only — dock is Overlay above this Top layer. Input for
+    // dismiss is handled by Regions (Combine mask) + Interactions click handler;
+    // do NOT put a full-window MouseArea here (it cannot clear the Overlay dock,
+    // and under Xor masks free-area clicks never reach it anyway).
     StyledRect {
+        id: modalScrim
         anchors.fill: parent
-        opacity: (visibilities.session && Config.session.enabled) || panels.popouts.detachedMode !== "" ? 0.5 : 0
-        color: Colours.palette.m3scrim
+        color: "#000000"
+        opacity: {
+            if (visibilities.multitasking)
+                return 0.55;
+            if (visibilities.session && Config.session.enabled)
+                return 0.55;
+            if (panels.popouts.detachedMode !== "")
+                return 0.55;
+            return 0;
+        }
+        z: 0
 
         Behavior on opacity {
             Anim {
@@ -136,6 +155,8 @@ StyledWindow {
 
     Item {
         anchors.fill: parent
+        // Above scrim so frosted panel shells stay solid/visible
+        z: 1
         opacity: root.surfaceColour.a
         layer.enabled: true
         layer.effect: MultiEffect {
@@ -179,11 +200,13 @@ StyledWindow {
         PanelBg {
             id: sessionBg
 
+            // Floating center panel — standard panel tracking, light deform
             panel: panels.sessionWrapper
-            deformAmount: 0.2
-            x: panels.sessionWrapper.x + panels.session.x + bar.implicitWidth
-            implicitWidth: panels.session.width
+            deformAmount: 0.06
+            visible: panels.session.visible
         }
+
+        // Multitasking uses only the scrim — no BlobRect panel background
 
         PanelBg {
             id: sidebarBg
@@ -244,6 +267,8 @@ StyledWindow {
 
     Interactions {
         id: interactions
+        // Above blob + scrim so interactive content (cards, popouts) is visible
+        z: 2
 
         screen: root.screen
         popouts: panels.popouts
@@ -255,6 +280,7 @@ StyledWindow {
 
         Panels {
             id: panels
+            z: 1
 
             screen: root.screen
             visibilities: visibilities
@@ -270,9 +296,8 @@ StyledWindow {
             launcher.transform: Matrix4x4 {
                 matrix: launcherBg.deformMatrix
             }
-            session.transform: Matrix4x4 {
-                matrix: sessionBg.deformMatrix
-            }
+            // Session is a centered floating menu — do not apply edge-rail deform
+            // (that matrix is for side panels and can hide/shift center content).
             sidebar.transform: Matrix4x4 {
                 matrix: sidebarBg.deformMatrix
             }
@@ -285,13 +310,17 @@ StyledWindow {
             utilities.transform: Matrix4x4 {
                 matrix: utilsBg.deformMatrix
             }
+            // Keep popout content aligned with blob; when multitasking scrim is
+            // active, skip deform so the solid popout shell stays crisp.
             popouts.transform: Matrix4x4 {
-                matrix: popoutBg.deformMatrix
+                matrix: visibilities.multitasking ? Qt.matrix4x4() : popoutBg.deformMatrix
             }
         }
 
+        // Bar always above multitasking / panels content (logo, status, popouts anchor)
         BarWrapper {
             id: bar
+            z: 500
 
             anchors.top: parent.top
             anchors.bottom: parent.bottom

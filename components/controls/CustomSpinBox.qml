@@ -6,7 +6,7 @@ import Caelestia.Config
 import qs.components
 import qs.services
 
-RowLayout {
+FocusScope {
     id: root
 
     property real value
@@ -15,142 +15,177 @@ RowLayout {
     property real step: 1
     property alias repeatRate: timer.interval
 
-    property bool isEditing: false
-    property string displayText: root.value.toString()
-
     signal valueModified(value: real)
 
-    spacing: Tokens.spacing.small
+    implicitWidth: row.implicitWidth
+    implicitHeight: row.implicitHeight
+
+    function decimalsForStep(): int {
+        return root.step < 1 ? Math.max(1, Math.ceil(-Math.log10(root.step))) : 0;
+    }
+
+    function roundToStep(v: real): real {
+        const d = root.decimalsForStep();
+        const f = Math.pow(10, d);
+        return Math.round(v * f) / f;
+    }
+
+    function clamp(v: real): real {
+        return Math.max(root.min, Math.min(root.max, v));
+    }
+
+    function formatValue(v: real): string {
+        const d = root.decimalsForStep();
+        if (d <= 0)
+            return String(Math.round(v));
+        // Trim trailing zeros for fractional steps (e.g. 1.50 → 1.5)
+        let s = Number(v).toFixed(d);
+        if (s.indexOf(".") >= 0)
+            s = s.replace(/\.?0+$/, "");
+        return s;
+    }
+
+    function syncFieldFromValue(): void {
+        const t = root.formatValue(root.value);
+        if (textField.text !== t)
+            textField.text = t;
+    }
+
+    function applyFieldText(emitSignal: bool): bool {
+        const numValue = parseFloat(textField.text);
+        if (isNaN(numValue)) {
+            root.syncFieldFromValue();
+            return false;
+        }
+        const clamped = root.roundToStep(root.clamp(numValue));
+        const changed = Math.abs(clamped - root.value) > 1e-9;
+        root.value = clamped;
+        root.syncFieldFromValue();
+        if (emitSignal && changed)
+            root.valueModified(clamped);
+        else if (emitSignal && !changed)
+            root.valueModified(clamped); // still notify so parent can re-apply
+        return true;
+    }
+
+    function stepBy(delta: real): void {
+        // Leave edit mode so the field always shows the stepped value.
+        if (textField.activeFocus)
+            root.forceActiveFocus();
+        const next = root.roundToStep(root.clamp(root.value + delta));
+        if (Math.abs(next - root.value) < 1e-9 && delta !== 0) {
+            root.syncFieldFromValue();
+            return;
+        }
+        root.value = next;
+        root.syncFieldFromValue();
+        root.valueModified(next);
+    }
 
     onValueChanged: {
-        if (!root.isEditing) {
-            root.displayText = root.value.toString();
-        }
+        // External / binding updates — don't clobber while typing.
+        if (!textField.activeFocus)
+            root.syncFieldFromValue();
     }
 
-    StyledTextField {
-        id: textField
+    Component.onCompleted: root.syncFieldFromValue()
 
-        inputMethodHints: Qt.ImhFormattedNumbersOnly
-        text: root.isEditing ? text : root.displayText
-        validator: DoubleValidator {
-            bottom: root.min
-            top: root.max
-            decimals: root.step < 1 ? Math.max(1, Math.ceil(-Math.log10(root.step))) : 0
-        }
-        onActiveFocusChanged: {
-            if (activeFocus) {
-                root.isEditing = true;
-            } else {
-                root.isEditing = false;
-                root.displayText = root.value.toString();
+    RowLayout {
+        id: row
+
+        anchors.fill: parent
+        spacing: Tokens.spacing.small
+
+        StyledTextField {
+            id: textField
+
+            Layout.preferredWidth: 72
+            inputMethodHints: Qt.ImhFormattedNumbersOnly
+            horizontalAlignment: TextInput.AlignHCenter
+            validator: DoubleValidator {
+                bottom: root.min
+                top: root.max
+                decimals: root.decimalsForStep()
             }
-        }
-        onAccepted: {
-            const numValue = parseFloat(text);
-            if (!isNaN(numValue)) {
-                const clampedValue = Math.max(root.min, Math.min(root.max, numValue));
-                root.value = clampedValue;
-                root.displayText = clampedValue.toString();
-                root.valueModified(clampedValue);
-            } else {
-                text = root.displayText;
-            }
-            root.isEditing = false;
-        }
-        onEditingFinished: {
-            if (text !== root.displayText) {
-                const numValue = parseFloat(text);
-                if (!isNaN(numValue)) {
-                    const clampedValue = Math.max(root.min, Math.min(root.max, numValue));
-                    root.value = clampedValue;
-                    root.displayText = clampedValue.toString();
-                    root.valueModified(clampedValue);
+
+            onActiveFocusChanged: {
+                if (activeFocus) {
+                    selectAll();
                 } else {
-                    text = root.displayText;
+                    root.applyFieldText(true);
                 }
             }
-            root.isEditing = false;
+            onAccepted: {
+                root.applyFieldText(true);
+                root.forceActiveFocus();
+            }
+            Keys.onEscapePressed: {
+                root.syncFieldFromValue();
+                root.forceActiveFocus();
+            }
+
+            padding: Tokens.padding.extraSmall
+            leftPadding: Tokens.padding.medium
+            rightPadding: Tokens.padding.medium
+
+            background: StyledRect {
+                implicitWidth: 72
+                radius: Tokens.rounding.medium
+                color: Colours.tPalette.m3surfaceContainerHigh
+            }
         }
 
-        padding: Tokens.padding.extraSmall
-        leftPadding: Tokens.padding.medium
-        rightPadding: Tokens.padding.medium
-
-        background: StyledRect {
-            implicitWidth: 100
+        StyledRect {
             radius: Tokens.rounding.medium
-            color: Colours.tPalette.m3surfaceContainerHigh
-        }
-    }
+            color: Colours.palette.m3primary
 
-    StyledRect {
-        radius: Tokens.rounding.medium
-        color: Colours.palette.m3primary
+            implicitWidth: implicitHeight
+            implicitHeight: upIcon.implicitHeight + Tokens.padding.small
 
-        implicitWidth: implicitHeight
-        implicitHeight: upIcon.implicitHeight + Tokens.padding.small
+            StateLayer {
+                id: upState
 
-        StateLayer {
-            id: upState
+                color: Colours.palette.m3onPrimary
+                // Take focus off the text field before handling the click.
+                onPressed: root.forceActiveFocus()
+                onPressAndHold: timer.start()
+                onReleased: timer.stop()
+                onCanceled: timer.stop()
+                onClicked: root.stepBy(root.step)
+            }
 
-            color: Colours.palette.m3onPrimary
-
-            onPressAndHold: timer.start()
-            onReleased: timer.stop()
-
-            onClicked: {
-                let newValue = Math.min(root.max, root.value + root.step);
-                // Round to avoid floating point precision errors
-                const decimals = root.step < 1 ? Math.max(1, Math.ceil(-Math.log10(root.step))) : 0;
-                newValue = Math.round(newValue * Math.pow(10, decimals)) / Math.pow(10, decimals);
-                root.value = newValue;
-                root.displayText = newValue.toString();
-                root.valueModified(newValue);
+            MaterialIcon {
+                id: upIcon
+                anchors.centerIn: parent
+                text: "keyboard_arrow_up"
+                color: Colours.palette.m3onPrimary
             }
         }
 
-        MaterialIcon {
-            id: upIcon
+        StyledRect {
+            radius: Tokens.rounding.medium
+            color: Colours.palette.m3primary
 
-            anchors.centerIn: parent
-            text: "keyboard_arrow_up"
-            color: Colours.palette.m3onPrimary
-        }
-    }
+            implicitWidth: implicitHeight
+            implicitHeight: downIcon.implicitHeight + Tokens.padding.small
 
-    StyledRect {
-        radius: Tokens.rounding.medium
-        color: Colours.palette.m3primary
+            StateLayer {
+                id: downState
 
-        implicitWidth: implicitHeight
-        implicitHeight: downIcon.implicitHeight + Tokens.padding.small
-
-        StateLayer {
-            id: downState
-
-            onClicked: {
-                let newValue = Math.max(root.min, root.value - root.step);
-                // Round to avoid floating point precision errors
-                const decimals = root.step < 1 ? Math.max(1, Math.ceil(-Math.log10(root.step))) : 0;
-                newValue = Math.round(newValue * Math.pow(10, decimals)) / Math.pow(10, decimals);
-                root.value = newValue;
-                root.displayText = newValue.toString();
-                root.valueModified(newValue);
+                color: Colours.palette.m3onPrimary
+                onPressed: root.forceActiveFocus()
+                onPressAndHold: timer.start()
+                onReleased: timer.stop()
+                onCanceled: timer.stop()
+                onClicked: root.stepBy(-root.step)
             }
 
-            color: Colours.palette.m3onPrimary
-
-            onPressAndHold: timer.start()
-            onReleased: timer.stop()
-        }
-
-        MaterialIcon {
-            id: downIcon
-
-            anchors.centerIn: parent
-            text: "keyboard_arrow_down"
-            color: Colours.palette.m3onPrimary
+            MaterialIcon {
+                id: downIcon
+                anchors.centerIn: parent
+                text: "keyboard_arrow_down"
+                color: Colours.palette.m3onPrimary
+            }
         }
     }
 
@@ -162,9 +197,9 @@ RowLayout {
         triggeredOnStart: true
         onTriggered: {
             if (upState.pressed)
-                upState.clicked();
+                root.stepBy(root.step);
             else if (downState.pressed)
-                downState.clicked();
+                root.stepBy(-root.step);
         }
     }
 }

@@ -6,8 +6,11 @@ import Quickshell
 import Quickshell.Services.SystemTray
 import Caelestia.Config
 import qs.components
+import qs.services as Svc
+// Namespace services so local Audio.qml is not shadowed by Svc.Audio singleton.
 
-Item {
+// Root is an opaque Rectangle so the shell cannot pick up scrim/transparency.
+Rectangle {
     id: root
 
     required property PopoutState popouts
@@ -16,6 +19,22 @@ Item {
 
     implicitWidth: (currentPopout?.implicitWidth ?? 0) + Tokens.padding.extraLargeIncreased
     implicitHeight: (currentPopout?.implicitHeight ?? 0) + Tokens.padding.extraLargeIncreased
+
+    radius: Tokens.rounding.extraLarge
+    // Fully opaque shell. Prefer palette RGB but never inherit palette alpha
+    // (Colours.layer() leaves many m3* colours translucent for blur).
+    color: {
+        const c = Svc.Colours.palette.m3surfaceContainer;
+        // Fallback if palette not ready
+        if (!c || c === undefined)
+            return "#1C1B1F";
+        return Qt.rgba(c.r, c.g, c.b, 1);
+    }
+    border.width: 1
+    border.color: "#5C5A62"
+    // Ensure this paints as an opaque layer and is not treated as blur glass
+    layer.enabled: true
+    layer.smooth: true
 
     Item {
         id: content

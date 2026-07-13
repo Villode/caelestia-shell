@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Layouts
 import Quickshell
 import Caelestia
 import Caelestia.Config
@@ -10,22 +11,22 @@ import qs.components.controls
 import qs.services
 import qs.utils
 
-Column {
+// Centered power menu: horizontal actions (not a side rail).
+RowLayout {
     id: root
 
     required property DrawerVisibilities visibilities
 
-    padding: Tokens.padding.large
-    rightPadding: CUtils.clamp(padding - Config.border.thickness, 0, padding)
     spacing: Tokens.spacing.large
 
     SessionButton {
         id: logout
 
-        icon: Config.session.icons.logout
+        iconName: Config.session.icons.logout
         command: Config.session.commands.logout
-
-        KeyNavigation.down: shutdown
+        caption: qsTr("注销")
+        navLeft: null
+        navRight: shutdown
 
         Component.onCompleted: forceActiveFocus()
 
@@ -42,18 +43,19 @@ Column {
     SessionButton {
         id: shutdown
 
-        icon: Config.session.icons.shutdown
+        iconName: Config.session.icons.shutdown
         command: Config.session.commands.shutdown
-
-        KeyNavigation.up: logout
-        KeyNavigation.down: hibernate
+        caption: qsTr("关机")
+        navLeft: logout
+        navRight: hibernate
     }
 
     AnimatedImage {
-        width: Tokens.sizes.session.button
-        height: Tokens.sizes.session.button
+        Layout.alignment: Qt.AlignVCenter
+        Layout.preferredWidth: Tokens.sizes.session.button * 0.85
+        Layout.preferredHeight: Tokens.sizes.session.button * 0.85
         sourceSize.width: width * ((QsWindow.window as QsWindow)?.devicePixelRatio ?? 1)
-
+        visible: status === AnimatedImage.Ready && source.toString().length > 0
         playing: visible
         asynchronous: true
         speed: Config.general.sessionGifSpeed
@@ -64,65 +66,87 @@ Column {
     SessionButton {
         id: hibernate
 
-        icon: Config.session.icons.hibernate
+        iconName: Config.session.icons.hibernate
         command: Config.session.commands.hibernate
-
-        KeyNavigation.up: shutdown
-        KeyNavigation.down: reboot
+        caption: qsTr("休眠")
+        navLeft: shutdown
+        navRight: reboot
     }
 
     SessionButton {
         id: reboot
 
-        icon: Config.session.icons.reboot
+        iconName: Config.session.icons.reboot
         command: Config.session.commands.reboot
-
-        KeyNavigation.up: hibernate
+        caption: qsTr("重启")
+        navLeft: hibernate
+        navRight: null
     }
 
-    component SessionButton: IconButton {
-        id: button
+    component SessionButton: ColumnLayout {
+        id: buttonRoot
 
         required property list<string> command
+        required property string iconName
+        property string caption: ""
+        property var navLeft: null
+        property var navRight: null
+
+        spacing: Tokens.spacing.extraSmall
+        Layout.alignment: Qt.AlignVCenter
 
         function exec(): void {
+            root.visibilities.session = false;
             if (!SessionManager.exec(command))
                 Quickshell.execDetached(command);
         }
 
-        implicitWidth: Tokens.sizes.session.button
-        implicitHeight: Tokens.sizes.session.button
+        function forceActiveFocus(): void {
+            btn.forceActiveFocus();
+        }
 
-        inactiveColour: activeFocus ? Colours.palette.m3secondaryContainer : Colours.tPalette.m3surfaceContainer
-        inactiveOnColour: activeFocus ? Colours.palette.m3onSecondaryContainer : Colours.palette.m3onSurface
-        radius: pressed ? Tokens.rounding.medium : activeFocus ? Tokens.rounding.extraLarge : Tokens.rounding.largeIncreased
-        font: Tokens.font.icon.builders.large.scale(1.3).build()
-        onClicked: exec()
+        IconButton {
+            id: btn
 
-        Keys.onEnterPressed: exec()
-        Keys.onReturnPressed: exec()
-        Keys.onEscapePressed: root.visibilities.session = false
-        Keys.onPressed: event => {
-            if (!Config.session.vimKeybinds)
-                return;
+            Layout.alignment: Qt.AlignHCenter
+            Layout.preferredWidth: Tokens.sizes.session.button
+            Layout.preferredHeight: Tokens.sizes.session.button
 
-            if (event.modifiers & Qt.ControlModifier) {
-                if ((event.key === Qt.Key_J || event.key === Qt.Key_N) && KeyNavigation.down) {
-                    KeyNavigation.down.focus = true;
+            icon: buttonRoot.iconName
+            inactiveColour: activeFocus ? Colours.palette.m3secondaryContainer : Colours.tPalette.m3surfaceContainerHigh
+            inactiveOnColour: activeFocus ? Colours.palette.m3onSecondaryContainer : Colours.palette.m3onSurface
+            radius: pressed ? Tokens.rounding.medium : activeFocus ? Tokens.rounding.extraLarge : Tokens.rounding.largeIncreased
+            font: Tokens.font.icon.builders.large.scale(1.25).build()
+            onClicked: buttonRoot.exec()
+
+            Keys.onEnterPressed: buttonRoot.exec()
+            Keys.onReturnPressed: buttonRoot.exec()
+            Keys.onEscapePressed: root.visibilities.session = false
+            Keys.onPressed: event => {
+                if ((event.key === Qt.Key_Right || event.key === Qt.Key_Tab) && buttonRoot.navRight) {
+                    buttonRoot.navRight.forceActiveFocus();
                     event.accepted = true;
-                } else if ((event.key === Qt.Key_K || event.key === Qt.Key_P) && KeyNavigation.up) {
-                    KeyNavigation.up.focus = true;
+                } else if ((event.key === Qt.Key_Left || event.key === Qt.Key_Backtab) && buttonRoot.navLeft) {
+                    buttonRoot.navLeft.forceActiveFocus();
                     event.accepted = true;
-                }
-            } else if (event.key === Qt.Key_Tab && KeyNavigation.down) {
-                KeyNavigation.down.focus = true;
-                event.accepted = true;
-            } else if (event.key === Qt.Key_Backtab || (event.key === Qt.Key_Tab && (event.modifiers & Qt.ShiftModifier))) {
-                if (KeyNavigation.up) {
-                    KeyNavigation.up.focus = true;
-                    event.accepted = true;
+                } else if (Config.session.vimKeybinds && (event.modifiers & Qt.ControlModifier)) {
+                    if ((event.key === Qt.Key_L || event.key === Qt.Key_J || event.key === Qt.Key_N) && buttonRoot.navRight) {
+                        buttonRoot.navRight.forceActiveFocus();
+                        event.accepted = true;
+                    } else if ((event.key === Qt.Key_H || event.key === Qt.Key_K || event.key === Qt.Key_P) && buttonRoot.navLeft) {
+                        buttonRoot.navLeft.forceActiveFocus();
+                        event.accepted = true;
+                    }
                 }
             }
+        }
+
+        StyledText {
+            Layout.alignment: Qt.AlignHCenter
+            visible: buttonRoot.caption.length > 0
+            text: buttonRoot.caption
+            color: Colours.palette.m3onSurfaceVariant
+            font: Tokens.font.label.small
         }
     }
 }

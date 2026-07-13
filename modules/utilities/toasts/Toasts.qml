@@ -10,7 +10,7 @@ import qs.services
 Item {
     id: root
 
-    readonly property int spacing: Tokens.spacing.small
+    readonly property int spacing: Tokens.spacing.extraSmall
     property bool flag
 
     function shouldShowToast(toast: Toast): bool {
@@ -23,7 +23,16 @@ Item {
         return false;
     }
 
-    implicitWidth: Tokens.sizes.utilities.toastWidth - Tokens.padding.medium * 2
+    // Content-sized stack (capsules hug text); keep a modest max width.
+    implicitWidth: {
+        let w = 0;
+        for (let i = 0; i < repeater.count; i++) {
+            const item = repeater.itemAt(i) as ToastWrapper;
+            if (item && !item.modelData.closed && !item.previewHidden)
+                w = Math.max(w, item.implicitWidth);
+        }
+        return Math.max(w, 1);
+    }
     implicitHeight: {
         let h = -spacing;
         for (let i = 0; i < repeater.count; i++) {
@@ -31,7 +40,7 @@ Item {
             if (!item.modelData.closed && !item.previewHidden)
                 h += item.implicitHeight + spacing;
         }
-        return h;
+        return Math.max(h, 0);
     }
 
     Repeater {
@@ -79,8 +88,10 @@ Item {
         }
 
         opacity: modelData.closed || previewHidden ? 0 : 1
-        scale: modelData.closed || previewHidden ? 0.7 : 1
+        scale: modelData.closed || previewHidden ? 0.85 : 1
 
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
         anchors.bottomMargin: {
             root.flag; // Force update
             let y = 0;
@@ -92,9 +103,7 @@ Item {
             return y;
         }
 
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
+        implicitWidth: toastInner.implicitWidth
         implicitHeight: toastInner.implicitHeight
 
         acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
@@ -127,7 +136,7 @@ Item {
             Anim {
                 target: toast
                 property: "scale"
-                to: 0.7
+                to: 0.85
             }
         }
 

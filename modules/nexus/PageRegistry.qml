@@ -55,6 +55,12 @@ QtObject {
             category: "system"
         },
         {
+            label: qsTr("锁屏与电源"),
+            icon: "power_settings_new",
+            description: qsTr("锁屏、关屏、睡眠与空闲超时"),
+            category: "system"
+        },
+        {
             label: qsTr("插件"),
             icon: "extension",
             description: qsTr("管理插件"),

@@ -13,7 +13,11 @@ ShapePath {
     readonly property real roundingY: flatten ? wrapper.height / 2 : rounding
 
     strokeWidth: -1
-    fillColor: Colours.palette.m3surface
+    // Fully opaque panel fill (palette colours are often translucent for blur)
+    fillColor: {
+        const c = Colours.palette.m3surface;
+        return Qt.rgba(c.r, c.g, c.b, 1);
+    }
 
     PathLine {
         relativeX: -(root.wrapper.width + root.rounding)

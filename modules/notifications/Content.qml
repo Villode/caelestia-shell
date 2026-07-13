@@ -41,11 +41,7 @@ Item {
                 height = h;
         }
 
-        if (visibilities.session) {
-            const h = sessionPanel.y - clampedPadding;
-            if (height > h)
-                height = h;
-        }
+        // Session is a centered modal with scrim — do not clamp notif height by panel.y
 
         if (visibilities.utilities) {
             const h = ((QsWindow.window as QsWindow)?.screen.height ?? 0) - (utilitiesPanel as Utilities.Wrapper).nonAnimHeight - Config.border.thickness * 2 - padding * 2 - Tokens.spacing.extraLarge;

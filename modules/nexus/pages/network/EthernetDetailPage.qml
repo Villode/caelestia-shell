@@ -39,7 +39,6 @@ PageBase {
             if (!cfg)
                 return;
             root.ipMethod = cfg.method;
-            methodSelect.active = cfg.method === "manual" ? manualItem : (cfg.method === "auto-dns" ? autoDnsItem : autoItem);
             addressField.text = cfg.address;
             gatewayField.text = cfg.gateway;
             dnsField.text = cfg.dns;
@@ -191,39 +190,36 @@ PageBase {
             text: qsTr("IPv4")
         }
 
-        SelectRow {
-            id: methodSelect
-
+        // Inline options — avoids popup menus that auto-dismiss on page scroll.
+        ConnectedRect {
             Layout.fillWidth: true
             first: true
             last: root.ipMethod === "auto"
-            label: qsTr("IP assignment")
-            fallbackText: qsTr("Automatic (DHCP)")
-            fallbackIcon: "lan"
+            implicitHeight: ethIpMethodCol.implicitHeight + Tokens.padding.small * 2
 
-            menuItems: [autoItem, autoDnsItem, manualItem]
+            ColumnLayout {
+                id: ethIpMethodCol
+                anchors.fill: parent
+                anchors.margins: Tokens.padding.extraSmall
+                spacing: 0
 
-            onSelected: item => root.ipMethod = item === manualItem ? "manual" : (item === autoDnsItem ? "auto-dns" : "auto")
+                EthIpMethodOption {
+                    methodId: "auto"
+                    iconName: "lan"
+                    label: qsTr("自动 (DHCP)")
+                }
 
-            MenuItem {
-                id: autoItem
+                EthIpMethodOption {
+                    methodId: "auto-dns"
+                    iconName: "dns"
+                    label: qsTr("自动，仅自定义 DNS")
+                }
 
-                icon: "lan"
-                text: qsTr("Automatic (DHCP)")
-            }
-
-            MenuItem {
-                id: autoDnsItem
-
-                icon: "dns"
-                text: qsTr("Automatic, DNS only")
-            }
-
-            MenuItem {
-                id: manualItem
-
-                icon: "edit"
-                text: qsTr("Manual")
+                EthIpMethodOption {
+                    methodId: "manual"
+                    iconName: "edit"
+                    label: qsTr("手动")
+                }
             }
         }
 
@@ -324,6 +320,54 @@ PageBase {
                         animate: true
                     }
                 }
+            }
+        }
+    }
+
+    component EthIpMethodOption: Item {
+        id: opt
+
+        required property string methodId
+        required property string iconName
+        required property string label
+        readonly property bool selected: root.ipMethod === methodId
+
+        Layout.fillWidth: true
+        implicitHeight: optRow.implicitHeight + Tokens.padding.medium * 2
+
+        StateLayer {
+            anchors.fill: parent
+            radius: Tokens.rounding.large
+            onClicked: root.ipMethod = opt.methodId
+        }
+
+        RowLayout {
+            id: optRow
+            anchors.fill: parent
+            anchors.leftMargin: Tokens.padding.largeIncreased
+            anchors.rightMargin: Tokens.padding.largeIncreased
+            anchors.topMargin: Tokens.padding.medium
+            anchors.bottomMargin: Tokens.padding.medium
+            spacing: Tokens.spacing.medium
+
+            MaterialIcon {
+                text: opt.iconName
+                color: opt.selected ? Colours.palette.m3primary : Colours.palette.m3onSurfaceVariant
+                fontStyle: Tokens.font.icon.small
+            }
+
+            StyledText {
+                Layout.fillWidth: true
+                text: opt.label
+                color: opt.selected ? Colours.palette.m3primary : Colours.palette.m3onSurface
+                font: Tokens.font.body.small
+            }
+
+            MaterialIcon {
+                visible: opt.selected
+                text: "check"
+                color: Colours.palette.m3primary
+                fontStyle: Tokens.font.icon.small
             }
         }
     }

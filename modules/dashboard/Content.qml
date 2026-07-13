@@ -8,6 +8,7 @@ import Caelestia
 import Caelestia.Config
 import qs.components
 import qs.components.filedialog
+import qs.services
 
 Item {
     id: root
@@ -21,25 +22,25 @@ Item {
             {
                 component: dashComponent,
                 iconName: "dashboard",
-                text: qsTr("Dashboard"),
+                text: qsTr("仪表盘"),
                 enabled: Config.dashboard.showDashboard
             },
             {
                 component: mediaComponent,
                 iconName: "queue_music",
-                text: qsTr("Media"),
+                text: qsTr("媒体"),
                 enabled: Config.dashboard.showMedia
             },
             {
                 component: performanceComponent,
                 iconName: "speed",
-                text: qsTr("Performance"),
+                text: qsTr("性能"),
                 enabled: Config.dashboard.showPerformance
             },
             {
                 component: weatherComponent,
                 iconName: "cloud",
-                text: qsTr("Weather"),
+                text: qsTr("天气"),
                 enabled: Config.dashboard.showWeather
             }
         ];
@@ -49,8 +50,26 @@ Item {
     readonly property real nonAnimWidth: view.implicitWidth + viewWrapper.anchors.margins * 2
     readonly property real nonAnimHeight: tabs.implicitHeight + tabs.anchors.topMargin + view.implicitHeight + viewWrapper.anchors.margins * 2
 
+    // Opaque shell — dashboard relied on translucent blob glass which looks empty over multitasking scrim
+    readonly property color shellBg: {
+        const c = Colours.palette.m3surface;
+        return Qt.rgba(c.r, c.g, c.b, 1);
+    }
+
     implicitWidth: nonAnimWidth
     implicitHeight: nonAnimHeight
+
+    Rectangle {
+        anchors.fill: parent
+        radius: Tokens.rounding.extraLarge
+        color: root.shellBg
+        border.width: 1
+        border.color: {
+            const c = Colours.palette.m3outlineVariant;
+            return Qt.rgba(c.r, c.g, c.b, 0.4);
+        }
+        z: -1
+    }
 
     Tabs {
         id: tabs

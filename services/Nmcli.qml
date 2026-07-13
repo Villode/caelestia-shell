@@ -36,6 +36,9 @@ Singleton {
     // nmcli reports "unavailable" for ethernet NICs with no link, so we treat
     // anything other than that as a usable connection.
     readonly property bool hasAvailableEthernet: ethernetDevices.some(d => d.state !== "unavailable")
+    // NetworkManager VPN / WireGuard profiles (NAME,TYPE,DEVICE,STATE).
+    property list<var> vpnConnections: []
+    readonly property var activeVpn: vpnConnections.find(c => c.active) ?? null
     property list<var> activeProcesses: []
 
     readonly property alias connectionCheckTimer: connectionCheckTimer
@@ -45,6 +48,8 @@ Singleton {
     readonly property string deviceTypeWifi: "wifi"
     readonly property string deviceTypeEthernet: "ethernet"
     readonly property string connectionTypeWireless: "802-11-wireless"
+    readonly property string connectionTypeVpn: "vpn"
+    readonly property string connectionTypeWireguard: "wireguard"
     readonly property string nmcliCommandDevice: "device"
     readonly property string nmcliCommandConnection: "connection"
     readonly property string nmcliCommandWifi: "wifi"
@@ -184,8 +189,12 @@ Singleton {
     }
 
     function executeCommand(args: list<string>, callback: var): void {
+        executeRawCommand(["nmcli", ...args], callback);
+    }
+
+    function executeRawCommand(cmdArgs: list<string>, callback: var): void {
         const proc = commandProc.createObject(root);
-        proc.cmdArgs = ["nmcli", ...args];
+        proc.cmdArgs = cmdArgs;
         proc.callback = callback;
 
         activeProcesses.push(proc);
@@ -199,6 +208,104 @@ Singleton {
 
         Qt.callLater(() => {
             proc.exec(proc.cmdArgs);
+        });
+    }
+
+    // Escape special characters for WIFI: QR payloads (ZXing / Android / iOS).
+    function escapeWifiQrField(value: string): string {
+        return String(value ?? "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/:/g, "\\:").replace(/"/g, "\\\"");
+    }
+
+    function wifiQrAuthType(keyMgmt: string, password: string): string {
+        if (!password)
+            return "nopass";
+        const k = (keyMgmt || "").toLowerCase();
+        if (k.includes("wep"))
+            return "WEP";
+        // WPA / WPA2 / WPA3-SAE all use WPA in the common QR scheme.
+        return "WPA";
+    }
+
+    function buildWifiQrPayload(ssid: string, password: string, keyMgmt: string, hidden: bool): string {
+        const t = wifiQrAuthType(keyMgmt, password);
+        const s = escapeWifiQrField(ssid);
+        const p = escapeWifiQrField(password || "");
+        const h = hidden ? "true" : "false";
+        if (t === "nopass")
+            return `WIFI:T:nopass;S:${s};H:${h};;`;
+        return `WIFI:T:${t};S:${s};P:${p};H:${h};;`;
+    }
+
+    // Returns { ssid, password, keyMgmt, hidden, authType, payload, hasPassword }.
+    function getWifiSecrets(connectionName: string, callback: var): void {
+        if (!connectionName) {
+            if (callback)
+                callback(null);
+            return;
+        }
+        executeCommand(["-s", "-t", "-f", "802-11-wireless.ssid,802-11-wireless-security.key-mgmt,802-11-wireless-security.psk,802-11-wireless-security.wep-key0,802-11-wireless.hidden", "connection", "show", connectionName], result => {
+            if (!result.success) {
+                if (callback)
+                    callback(null);
+                return;
+            }
+            let ssid = "";
+            let keyMgmt = "";
+            let psk = "";
+            let wep = "";
+            let hidden = false;
+            for (const line of result.output.trim().split("\n")) {
+                const idx = line.indexOf(":");
+                if (idx < 0)
+                    continue;
+                const key = line.slice(0, idx).trim();
+                const value = line.slice(idx + 1);
+                if (key === "802-11-wireless.ssid")
+                    ssid = value;
+                else if (key === "802-11-wireless-security.key-mgmt")
+                    keyMgmt = value;
+                else if (key === "802-11-wireless-security.psk")
+                    psk = value;
+                else if (key === "802-11-wireless-security.wep-key0")
+                    wep = value;
+                else if (key === "802-11-wireless.hidden")
+                    hidden = value === "yes" || value === "true";
+            }
+            const password = psk || wep || "";
+            const authType = wifiQrAuthType(keyMgmt, password);
+            const payload = buildWifiQrPayload(ssid || connectionName, password, keyMgmt, hidden);
+            if (callback)
+                callback({
+                    ssid: ssid || connectionName,
+                    password: password,
+                    keyMgmt: keyMgmt,
+                    hidden: hidden,
+                    authType: authType,
+                    payload: payload,
+                    hasPassword: password.length > 0
+                });
+        });
+    }
+
+    // Renders WIFI QR to a PNG via qrencode. Callback: { success, path, error }.
+    function generateWifiQrImage(payload: string, outPath: string, callback: var): void {
+        if (!payload || !outPath) {
+            if (callback)
+                callback({
+                    success: false,
+                    path: "",
+                    error: "missing payload or path"
+                });
+            return;
+        }
+        // $1 = path, $2 = payload — avoids shell-injecting WiFi secrets into -c string.
+        executeRawCommand(["sh", "-c", 'mkdir -p -- "$(dirname -- "$1")" && qrencode -o "$1" -s 8 -m 2 -- "$2"', "wifi-qr", outPath, payload], result => {
+            if (callback)
+                callback({
+                    success: !!(result && result.success),
+                    path: outPath,
+                    error: result?.error || ""
+                });
         });
     }
 
@@ -613,16 +720,148 @@ Singleton {
             return;
         }
 
-        const connectionName = root.savedConnections.find(conn => conn && conn.toLowerCase().trim() === ssid.toLowerCase().trim()) || ssid;
+        const connectionName = resolveWifiConnectionName(ssid);
 
         executeCommand([root.nmcliCommandConnection, "delete", connectionName], result => {
             if (result.success) {
                 Qt.callLater(() => {
                     loadSavedConnections(() => {});
+                    getNetworks(() => {});
                 }, 500);
             }
             if (callback)
                 callback(result);
+        });
+    }
+
+    // Map an SSID to the NetworkManager connection profile name.
+    function resolveWifiConnectionName(ssid: string): string {
+        if (!ssid)
+            return "";
+        const activeIface = root.wirelessInterfaces.find(i => isConnectedState(i.state) && i.connection);
+        if (activeIface && activeIface.connection && (activeIface.connection === ssid || root.active?.ssid === ssid))
+            return activeIface.connection;
+        const saved = root.savedConnections.find(conn => conn && conn.toLowerCase().trim() === ssid.toLowerCase().trim());
+        return saved || ssid;
+    }
+
+    function isVpnConnectionType(type: string): bool {
+        if (!type)
+            return false;
+        const t = type.toLowerCase();
+        return t === root.connectionTypeVpn || t === root.connectionTypeWireguard || t.startsWith("vpn") || t.includes("openvpn") || t.includes("wireguard");
+    }
+
+    function refreshVpnConnections(callback: var): void {
+        executeCommand(["-t", "-f", "NAME,TYPE,DEVICE,STATE", root.nmcliCommandConnection, "show"], result => {
+            const list = [];
+            if (result.success && result.output) {
+                for (const line of result.output.trim().split("\n")) {
+                    if (!line)
+                        continue;
+                    const parts = line.split(":");
+                    if (parts.length < 2)
+                        continue;
+                    const name = parts[0] || "";
+                    const type = parts[1] || "";
+                    const device = parts[2] || "";
+                    const state = parts[3] || "";
+                    if (!name || !isVpnConnectionType(type))
+                        continue;
+                    const active = state === "activated" || state.startsWith("activat") || (device.length > 0 && device !== "--");
+                    list.push({
+                        name: name,
+                        type: type,
+                        device: device === "--" ? "" : device,
+                        state: state,
+                        active: active
+                    });
+                }
+            }
+            // Active first, then name.
+            list.sort((a, b) => (b.active - a.active) || a.name.localeCompare(b.name));
+            root.vpnConnections = list;
+            if (callback)
+                callback(list);
+        });
+    }
+
+    function setVpnActive(connectionName: string, active: bool, callback: var): void {
+        if (!connectionName) {
+            if (callback)
+                callback({
+                    success: false,
+                    error: "No VPN connection specified"
+                });
+            return;
+        }
+        executeCommand([root.nmcliCommandConnection, active ? "up" : "down", connectionName], result => {
+            Qt.callLater(() => root.refreshVpnConnections(() => {}), 400);
+            if (callback)
+                callback(result);
+        });
+    }
+
+    function setAutoconnect(connectionName: string, enabled: bool, callback: var): void {
+        if (!connectionName) {
+            if (callback)
+                callback({
+                    success: false,
+                    error: "No connection specified"
+                });
+            return;
+        }
+        executeCommand([root.nmcliCommandConnection, "modify", connectionName, "connection.autoconnect", enabled ? "yes" : "no"], result => {
+            if (callback)
+                callback(result);
+        });
+    }
+
+    function setConnectionMetered(connectionName: string, metered: string, callback: var): void {
+        // metered: yes | no | unknown (NM: yes/no/unknown)
+        if (!connectionName) {
+            if (callback)
+                callback({
+                    success: false,
+                    error: "No connection specified"
+                });
+            return;
+        }
+        executeCommand([root.nmcliCommandConnection, "modify", connectionName, "connection.metered", metered], result => {
+            if (callback)
+                callback(result);
+        });
+    }
+
+    function getConnectionFlags(connectionName: string, callback: var): void {
+        if (!connectionName) {
+            if (callback)
+                callback(null);
+            return;
+        }
+        executeCommand(["-t", "-f", "connection.autoconnect,connection.metered", root.nmcliCommandConnection, "show", connectionName], result => {
+            if (!result.success) {
+                if (callback)
+                    callback(null);
+                return;
+            }
+            const flags = {
+                autoconnect: true,
+                metered: "unknown"
+            };
+            for (const line of result.output.trim().split("\n")) {
+                const idx = line.indexOf(":");
+                if (idx < 0)
+                    continue;
+                const key = line.slice(0, idx).trim();
+                const value = line.slice(idx + 1).trim();
+                if (key === "connection.autoconnect")
+                    flags.autoconnect = value !== "no";
+                else if (key === "connection.metered")
+                    flags.metered = value || "unknown";
+            }
+            if (callback)
+                callback(flags);
         });
     }
 
@@ -1262,6 +1501,7 @@ Singleton {
         getNetworks(() => {});
         loadSavedConnections(() => {});
         getEthernetInterfaces(() => {});
+        refreshVpnConnections(() => {});
 
         Qt.callLater(() => {
             if (root.wirelessInterfaces.length > 0) {

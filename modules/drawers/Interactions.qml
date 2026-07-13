@@ -64,6 +64,13 @@ CustomMouseArea {
     hoverEnabled: true
 
     onPressed: event => dragStart = Qt.point(event.x, event.y)
+
+    // Multitasking dismiss: free-area clicks land here (scrim is visual-only).
+    // Card / strip MouseAreas accept first; if we get the click it's empty dim.
+    onClicked: {
+        if (visibilities.multitasking)
+            visibilities.multitasking = false;
+    }
     onContainsMouseChanged: {
         if (!containsMouse) {
             // Only hide if not activated by shortcut

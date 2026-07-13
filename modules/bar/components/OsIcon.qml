@@ -11,12 +11,16 @@ Item {
     implicitWidth: Math.round(Tokens.font.body.large.pointSize * 1.2)
     implicitHeight: Math.round(Tokens.font.body.large.pointSize * 1.2)
 
+    // Logo opens mobile-style multitasking / app switcher
     MouseArea {
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
         onClicked: {
             const visibilities = Visibilities.getForActive();
-            visibilities.launcher = !visibilities.launcher;
+            // Close other center modals if open
+            visibilities.session = false;
+            visibilities.launcher = false;
+            visibilities.multitasking = !visibilities.multitasking;
         }
     }
 

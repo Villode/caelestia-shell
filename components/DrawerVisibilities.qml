@@ -8,4 +8,6 @@ PersistentProperties {
     property bool dashboard
     property bool utilities
     property bool sidebar
+    // Mobile-style app switcher / multitasking overview
+    property bool multitasking
 }
