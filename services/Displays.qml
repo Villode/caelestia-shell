@@ -271,8 +271,12 @@ Singleton {
     }
 
     function isMirrored(monitor: var): bool {
+        // hyprctl reports mirrorOf as "none", a name ("eDP-1"), or a numeric id (0).
+        // Do NOT use truthiness: id 0 is a valid mirror source and is falsy in JS.
         const mirror = monitor?.mirrorOf;
-        return !!(mirror && mirror !== "none" && mirror !== "");
+        if (mirror === undefined || mirror === null || mirror === "" || mirror === "none")
+            return false;
+        return true;
     }
 
     // Detect current arrangement: internal | external | duplicate | extend | single
@@ -294,18 +298,22 @@ Singleton {
         if (enabled.some(m => isMirrored(m)))
             return "duplicate";
 
+        // Two enabled, different positions => extend; stacked at same origin often looks like mirror.
         return "extend";
     }
 
     function monitorRuleKeyword(rule: var): string {
         // rule: { name, disabled, mode, x, y, scale, mirror }
+        // Use hyprctl keyword form: "monitor NAME,SPEC"
         if (rule.disabled)
             return `monitor ${rule.name},disable`;
         const mode = rule.mode || "preferred";
         const scale = rule.scale || "1";
         if (rule.mirror)
+            // Clear previous position by using auto + explicit mirror of primary name
             return `monitor ${rule.name},${mode},auto,${scale},mirror,${rule.mirror}`;
         const pos = `${rule.x ?? 0}x${rule.y ?? 0}`;
+        // Explicit non-mirror rule clears an earlier mirror, of any.
         return `monitor ${rule.name},${mode},${pos},${scale}`;
     }
 
@@ -341,20 +349,25 @@ Singleton {
         if (!rules.length || busy)
             return;
 
-        // Prefer enabling primary first so mirror targets exist.
+        // Prefer enabling primary first so mirror targets exist; apply mirrors last.
         const ordered = [...rules].sort((a, b) => {
-            if (a.disabled !== b.disabled)
+            if (!!a.disabled !== !!b.disabled)
                 return a.disabled ? 1 : -1;
             if (!!a.mirror !== !!b.mirror)
                 return a.mirror ? 1 : -1;
             return 0;
         });
 
-        const batch = ordered.map(r => `keyword ${monitorRuleKeyword(r)}`).join(" ; ");
+        // Sequential keywords are more reliable than one long --batch for monitor rules.
+        const cmds = ordered.map(r => {
+            const spec = monitorRuleKeyword(r).replace(/^monitor\s+/, "");
+            // hyprctl keyword monitor "NAME,mode,pos,scale[,mirror,SRC]"
+            return `hyprctl keyword monitor "${spec}"`;
+        });
         pendingPersistRules = ordered;
         busy = true;
         statusMessage = message || "";
-        applyProc.command = ["hyprctl", "--batch", batch];
+        applyProc.command = ["bash", "-lc", cmds.join(" && ") + "; sleep 0.2; hyprctl monitors all -j >/dev/null"];
         applyProc.running = true;
     }
 

@@ -303,6 +303,27 @@ PageBase {
                         font: Tokens.font.label.small
                         wrapMode: Text.WordWrap
                     }
+
+                    StyledText {
+                        Layout.fillWidth: true
+                        visible: Displays.multiMonitor
+                        text: {
+                            const mode = Displays.projectionMode();
+                            const labels = {
+                                internal: "当前：仅电脑屏幕",
+                                external: "当前：仅第二屏幕",
+                                duplicate: "当前：复制（镜像）",
+                                extend: "当前：扩展（并排）",
+                                single: "当前：单屏"
+                            };
+                            const m = Displays.selected;
+                            const pos = m ? ` · 选中 ${m.name} @ ${m.x},${m.y}` : "";
+                            return (labels[mode] || mode) + pos;
+                        }
+                        color: Colours.palette.m3primary
+                        font: Tokens.font.label.small
+                        wrapMode: Text.WordWrap
+                    }
                 }
             }
         }
