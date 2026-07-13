@@ -18,24 +18,23 @@ PageBase {
     property bool checkedOnce
     property string errorText
     property string lastChecked
+    property string checkedAtIso: ""
     readonly property int updateCount: components.filter(item => item.status === "有更新" || item.status === "需要修复").length
+
+    title: "Villode 更新"
 
     property Process checkProcess: Process {
         id: checkProcess
-
-        command: ["villode-caelestia-update", "--check"]
-
+        command: ["villode-caelestia-update", "--check-json"]
         stdout: StdioCollector {
-            onStreamFinished: root.parseUpdates(text)
+            onStreamFinished: root.parseUpdatesJson(text)
         }
-
         stderr: StdioCollector {
             onStreamFinished: {
                 if (text.trim())
                     root.errorText = text.trim();
             }
         }
-
         onExited: code => { // qmllint disable signal-handler-parameters
             root.checking = false;
             if (code !== 0 && !root.errorText)
@@ -48,7 +47,6 @@ PageBase {
             return;
         root.checking = true;
         root.errorText = "";
-        root.components = [];
         checkProcess.running = true;
     }
 
@@ -57,7 +55,35 @@ PageBase {
         Quickshell.execDetached([Quickshell.shellPath("assets/villode_terminal_exec.sh"), String(terminal.length), ...terminal, "--", "sh", "-lc", "villode-caelestia-update; code=$?; echo; if [ $code -eq 0 ]; then echo '更新完成。'; else echo '更新失败，退出码：'$code; fi; echo '按回车键关闭…'; read -r; exit $code"]);
     }
 
-    function parseUpdates(text: string): void {
+    function parseUpdatesJson(text: string): void {
+        try {
+            const data = JSON.parse(text);
+            const rows = [];
+            for (const c of (data.components || [])) {
+                rows.push({
+                    id: c.id || "",
+                    name: c.name || c.id || "组件",
+                    installed: c.installed || "—",
+                    latest: c.latest || "—",
+                    installedFull: c.installedFull || "",
+                    latestFull: c.latestFull || "",
+                    status: c.status || "未知",
+                    installedAt: c.installedAt || "",
+                    releasedAt: c.releasedAt || "",
+                    changes: Array.isArray(c.changes) ? c.changes : []
+                });
+            }
+            root.components = rows;
+            root.checkedOnce = true;
+            root.checkedAtIso = data.checkedAt || "";
+            root.lastChecked = root.formatDateTime(data.checkedAt) || Qt.formatDateTime(new Date(), "yyyy-MM-dd HH:mm");
+            root.errorText = "";
+        } catch (e) {
+            root.parseUpdatesTsv(text);
+        }
+    }
+
+    function parseUpdatesTsv(text: string): void {
         const rows = [];
         for (const line of text.trim().split("\n")) {
             if (!line)
@@ -70,15 +96,58 @@ PageBase {
                 name: fields[1],
                 installed: fields[2] || "—",
                 latest: fields[3] || "—",
-                status: fields[4]
+                installedFull: "",
+                latestFull: "",
+                status: fields[4],
+                installedAt: "",
+                releasedAt: "",
+                changes: []
             });
         }
         root.components = rows;
         root.checkedOnce = true;
-        root.lastChecked = Qt.formatDateTime(new Date(), "HH:mm");
+        root.lastChecked = Qt.formatDateTime(new Date(), "yyyy-MM-dd HH:mm");
     }
 
-    title: "Villode 更新"
+    function formatDateTime(iso: string): string {
+        if (!iso)
+            return "";
+        const m = String(iso).match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})/);
+        if (m)
+            return `${m[1]} ${m[2]}`;
+        return iso;
+    }
+
+    function hasUpdate(status: string): bool {
+        return status === "有更新" || status === "需要修复";
+    }
+
+    function statusColour(status: string): color {
+        if (status === "有更新")
+            return Colours.palette.m3primary;
+        if (status === "需要修复")
+            return Colours.palette.m3tertiary;
+        if (status === "未安装")
+            return Colours.palette.m3outline;
+        return Colours.palette.m3secondary;
+    }
+
+    function componentIcon(id: string): string {
+        switch (id) {
+        case "shell":
+            return "terminal";
+        case "zh":
+            return "translate";
+        case "dock":
+            return "dock_to_bottom";
+        case "desktop":
+            return "wallpaper";
+        case "launcher":
+            return "apps";
+        default:
+            return "extension";
+        }
+    }
 
     Component.onCompleted: checkUpdates()
 
@@ -88,40 +157,36 @@ PageBase {
         width: root.cappedWidth
         spacing: Tokens.spacing.extraSmall / 2
 
+        // ── 摘要：单行信息 + 右侧操作 ──
         ConnectedRect {
             Layout.fillWidth: true
             first: true
             last: true
-            implicitHeight: summaryLayout.implicitHeight + Tokens.padding.large * 2
+            implicitHeight: summaryRow.implicitHeight + Tokens.padding.large * 2
 
             RowLayout {
-                id: summaryLayout
-
+                id: summaryRow
                 anchors.fill: parent
                 anchors.margins: Tokens.padding.large
+                anchors.leftMargin: Tokens.padding.largeIncreased
+                anchors.rightMargin: Tokens.padding.largeIncreased
                 spacing: Tokens.spacing.medium
 
-                StyledRect {
-                    implicitWidth: implicitHeight
-                    implicitHeight: summaryIcon.implicitHeight + Tokens.padding.large
-                    radius: Tokens.rounding.full
-                    color: root.updateCount > 0 ? Colours.palette.m3primaryContainer : Colours.palette.m3secondaryContainer
+                MaterialIcon {
+                    text: root.checking ? "sync" : root.errorText ? "error" : root.updateCount > 0 ? "system_update_alt" : "verified"
+                    color: root.errorText
+                        ? Colours.palette.m3error
+                        : root.updateCount > 0
+                          ? Colours.palette.m3primary
+                          : Colours.palette.m3secondary
+                    fontStyle: Tokens.font.icon.large
 
-                    MaterialIcon {
-                        id: summaryIcon
-
-                        anchors.centerIn: parent
-                        text: root.checking ? "sync" : root.updateCount > 0 ? "system_update" : "check_circle"
-                        color: root.updateCount > 0 ? Colours.palette.m3onPrimaryContainer : Colours.palette.m3onSecondaryContainer
-                        fontStyle: Tokens.font.icon.large
-
-                        RotationAnimator on rotation {
-                            running: root.checking
-                            from: 0
-                            to: 360
-                            duration: 900
-                            loops: Animation.Infinite
-                        }
+                    RotationAnimator on rotation {
+                        running: root.checking
+                        from: 0
+                        to: 360
+                        duration: 900
+                        loops: Animation.Infinite
                     }
                 }
 
@@ -131,25 +196,40 @@ PageBase {
 
                     StyledText {
                         Layout.fillWidth: true
-                        text: root.checking ? "正在检查更新…" : root.errorText ? "无法检查更新" : root.updateCount > 0 ? `发现 ${root.updateCount} 个更新或修复项` : "所有组件均为最新"
+                        text: root.checking
+                            ? "正在检查更新…"
+                            : root.errorText
+                              ? "检查失败"
+                              : root.updateCount > 0
+                                ? `有 ${root.updateCount} 个组件可更新`
+                                : "全部为最新版本"
                         font: Tokens.font.body.large
+                        elide: Text.ElideRight
                     }
 
                     StyledText {
                         Layout.fillWidth: true
-                        text: root.errorText || (root.lastChecked ? `上次检查：${root.lastChecked}` : "从 Villode GitHub 发布通道获取更新")
-                        color: root.errorText ? Colours.palette.m3error : Colours.palette.m3onSurfaceVariant
-                        font: Tokens.font.body.small
-                        wrapMode: Text.Wrap
+                        text: root.errorText || (root.lastChecked ? `上次检查 ${root.lastChecked}` : "来自 Villode 发布通道")
+                        color: root.errorText ? Colours.palette.m3error : Colours.palette.m3outline
+                        font: Tokens.font.label.small
+                        elide: Text.ElideRight
                     }
                 }
 
                 IconTextButton {
                     icon: "refresh"
-                    text: "检查"
+                    text: root.checking ? "检查中" : "检查"
                     type: IconTextButton.Tonal
-                    disabled: root.checking
+                    enabled: !root.checking
                     onClicked: root.checkUpdates()
+                }
+
+                IconTextButton {
+                    icon: "system_update"
+                    text: root.updateCount > 0 ? `更新 (${root.updateCount})` : "更新"
+                    type: IconTextButton.Filled
+                    enabled: !root.checking && root.updateCount > 0
+                    onClicked: root.launchUpdate()
                 }
             }
         }
@@ -158,47 +238,186 @@ PageBase {
             text: "组件"
         }
 
+        // ── 组件列表：折叠行 + 展开详情 ──
         Repeater {
             model: root.components
 
             ConnectedRect {
-                id: componentRow
+                id: card
 
                 required property var modelData
                 required property int index
 
+                property bool expanded: root.hasUpdate(modelData.status)
+
                 Layout.fillWidth: true
-                first: componentRow.index === 0
-                last: componentRow.index === root.components.length - 1
-                implicitHeight: componentLayout.implicitHeight + Tokens.padding.large * 2
+                first: card.index === 0
+                last: card.index === root.components.length - 1
+                implicitHeight: cardCol.implicitHeight + Tokens.padding.medium * 2
 
-                RowLayout {
-                    id: componentLayout
-
+                ColumnLayout {
+                    id: cardCol
                     anchors.fill: parent
-                    anchors.margins: Tokens.padding.large
-                    spacing: Tokens.spacing.medium
+                    anchors.margins: Tokens.padding.medium
+                    anchors.leftMargin: Tokens.padding.largeIncreased
+                    anchors.rightMargin: Tokens.padding.largeIncreased
+                    spacing: Tokens.spacing.small
 
-                    ColumnLayout {
+                    // 主行：点整行展开
+                    Item {
                         Layout.fillWidth: true
-                        spacing: 0
+                        implicitHeight: mainRow.implicitHeight
 
-                        StyledText {
-                            text: componentRow.modelData.name
-                            font: Tokens.font.body.medium
+                        StateLayer {
+                            anchors.fill: parent
+                            radius: Tokens.rounding.medium
+                            onClicked: card.expanded = !card.expanded
                         }
 
-                        StyledText {
-                            text: `已安装 ${componentRow.modelData.installed}  ·  发布 ${componentRow.modelData.latest}`
-                            color: Colours.palette.m3onSurfaceVariant
-                            font: Tokens.font.body.small
+                        RowLayout {
+                            id: mainRow
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            spacing: Tokens.spacing.medium
+
+                            MaterialIcon {
+                                text: root.componentIcon(card.modelData.id)
+                                color: root.statusColour(card.modelData.status)
+                                fontStyle: Tokens.font.icon.medium
+                            }
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 0
+
+                                StyledText {
+                                    Layout.fillWidth: true
+                                    text: card.modelData.name
+                                    font: Tokens.font.body.small
+                                    elide: Text.ElideRight
+                                }
+
+                                StyledText {
+                                    Layout.fillWidth: true
+                                    text: card.modelData.installed === card.modelData.latest
+                                        ? `版本 ${card.modelData.installed}`
+                                        : `${card.modelData.installed} → ${card.modelData.latest}`
+                                    color: Colours.palette.m3outline
+                                    font: Tokens.font.label.small
+                                    elide: Text.ElideRight
+                                }
+                            }
+
+                            StyledText {
+                                text: card.modelData.status
+                                color: root.statusColour(card.modelData.status)
+                                font: Tokens.font.label.medium
+                            }
+
+                            MaterialIcon {
+                                text: card.expanded ? "expand_less" : "expand_more"
+                                color: Colours.palette.m3onSurfaceVariant
+                                fontStyle: Tokens.font.icon.small
+                            }
                         }
                     }
 
-                    StyledText {
-                        text: componentRow.modelData.status
-                        color: componentRow.modelData.status === "有更新" || componentRow.modelData.status === "需要修复" ? Colours.palette.m3primary : Colours.palette.m3onSurfaceVariant
-                        font: Tokens.font.label.medium
+                    // 详情：时间 + 变更（仅展开时）
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        Layout.leftMargin: Tokens.font.icon.medium.pointSize + Tokens.spacing.medium
+                        spacing: Tokens.spacing.extraSmall
+                        visible: card.expanded
+
+                        // 时间键值
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Tokens.spacing.large
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: Tokens.spacing.small
+
+                                StyledText {
+                                    text: "上次更新"
+                                    color: Colours.palette.m3outline
+                                    font: Tokens.font.label.small
+                                }
+
+                                StyledText {
+                                    Layout.fillWidth: true
+                                    text: root.formatDateTime(card.modelData.installedAt) || "—"
+                                    font: Tokens.font.label.small
+                                    elide: Text.ElideRight
+                                }
+                            }
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: Tokens.spacing.small
+
+                                StyledText {
+                                    text: "最新发布"
+                                    color: Colours.palette.m3outline
+                                    font: Tokens.font.label.small
+                                }
+
+                                StyledText {
+                                    Layout.fillWidth: true
+                                    text: root.formatDateTime(card.modelData.releasedAt) || "—"
+                                    font: Tokens.font.label.small
+                                    elide: Text.ElideRight
+                                }
+                            }
+                        }
+
+                        // 分隔
+                        StyledRect {
+                            Layout.fillWidth: true
+                            Layout.topMargin: Tokens.spacing.extraSmall
+                            Layout.bottomMargin: Tokens.spacing.extraSmall
+                            implicitHeight: 1
+                            color: Colours.palette.m3outlineVariant
+                            opacity: 0.45
+                        }
+
+                        StyledText {
+                            text: root.hasUpdate(card.modelData.status) ? "本次更新内容" : "最近变更"
+                            color: Colours.palette.m3outline
+                            font: Tokens.font.label.small
+                        }
+
+                        Repeater {
+                            model: card.modelData.changes
+
+                            RowLayout {
+                                required property string modelData
+                                Layout.fillWidth: true
+                                spacing: Tokens.spacing.small
+
+                                StyledText {
+                                    Layout.alignment: Qt.AlignTop
+                                    text: "•"
+                                    color: root.statusColour(card.modelData.status)
+                                    font: Tokens.font.body.small
+                                }
+
+                                StyledText {
+                                    Layout.fillWidth: true
+                                    text: parent.modelData
+                                    color: Colours.palette.m3onSurfaceVariant
+                                    font: Tokens.font.body.small
+                                    wrapMode: Text.WordWrap
+                                }
+                            }
+                        }
+
+                        StyledText {
+                            visible: !card.modelData.changes || card.modelData.changes.length === 0
+                            text: "暂无变更说明"
+                            color: Colours.palette.m3outline
+                            font: Tokens.font.label.small
+                        }
                     }
                 }
             }
@@ -213,25 +432,15 @@ PageBase {
             font: Tokens.font.body.medium
         }
 
-        IconTextButton {
-            Layout.alignment: Qt.AlignHCenter
-            Layout.topMargin: Tokens.spacing.large
-            icon: "system_update"
-            text: root.updateCount > 0 ? `更新 ${root.updateCount} 个组件` : "已是最新"
-            type: IconTextButton.Filled
-            disabled: root.checking || root.updateCount === 0
-            onClicked: root.launchUpdate()
-        }
-
         StyledText {
             Layout.alignment: Qt.AlignHCenter
-            Layout.topMargin: Tokens.spacing.small
-            Layout.maximumWidth: root.cappedWidth * 0.8
-            text: "仅安装 Villode 发布清单锁定的版本。用户配置与数据不会被清除。"
-            color: Colours.palette.m3onSurfaceVariant
-            font: Tokens.font.body.small
+            Layout.topMargin: Tokens.spacing.large
+            Layout.maximumWidth: root.cappedWidth * 0.9
+            text: "仅安装发布清单锁定的版本，不会清除用户配置。点击组件可展开详情。"
+            color: Colours.palette.m3outline
+            font: Tokens.font.label.small
             horizontalAlignment: Text.AlignHCenter
-            wrapMode: Text.Wrap
+            wrapMode: Text.WordWrap
         }
     }
 }
