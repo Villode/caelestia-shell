@@ -14,23 +14,14 @@ PageBase {
 
     title: "显示"
 
-    property int draftDisplayScale: 100
     property int draftShellScale: 100
-    property bool displayScaleDragging: false
 
     readonly property var mon: Displays.selected
     readonly property string currentMode: mon ? Displays.currentModeString(mon) : ""
-    readonly property int scalePercent: mon ? Math.round((mon.scale || 1) * 100) : 100
+    readonly property real scaleValue: mon?.scale || 1
+    readonly property int scalePercent: Math.round(scaleValue * 100)
     readonly property int shellScalePercent: Math.round(Displays.shellUiScale * 100)
-
-    readonly property Timer displayScaleTimer: Timer {
-        interval: 280
-        onTriggered: {
-            if (root.draftDisplayScale !== root.scalePercent)
-                Displays.applyScalePercent(root.draftDisplayScale);
-            root.displayScaleDragging = false;
-        }
-    }
+    readonly property list<real> scaleChoices: mon ? Displays.scaleChoicesForMonitor(mon, currentMode) : [1]
 
     readonly property Timer shellScaleTimer: Timer {
         interval: 120
@@ -41,19 +32,17 @@ PageBase {
     }
 
     function syncDraftsFromLive(): void {
-        if (!displayScaleDragging)
-            draftDisplayScale = scalePercent;
         draftShellScale = shellScalePercent;
+    }
+
+    function formatScalePercent(scale: real): string {
+        const pct = Math.round(scale * 1000) / 10;
+        return Number.isInteger(pct) ? `${pct}%` : `${pct}%`;
     }
 
     Component.onCompleted: {
         Displays.refresh();
         syncDraftsFromLive();
-    }
-
-    onScalePercentChanged: {
-        if (!displayScaleDragging)
-            draftDisplayScale = scalePercent;
     }
 
     onShellScalePercentChanged: draftShellScale = shellScalePercent
@@ -82,6 +71,16 @@ PageBase {
             MenuItem {
                 required property string modelData
                 text: Displays.formatMode(modelData)
+            }
+        }
+
+        Variants {
+            id: scaleVariants
+            model: root.scaleChoices
+
+            MenuItem {
+                required property real modelData
+                text: root.formatScalePercent(modelData)
             }
         }
 
@@ -138,18 +137,32 @@ PageBase {
             text: "缩放"
         }
 
-        SliderRow {
+        SelectRow {
             first: true
-            icon: "zoom_in"
+            last: true
             label: "显示缩放"
-            valueLabel: `${root.draftDisplayScale}%`
-            // Map 50%–300% onto 0–1 for the shared slider control.
-            value: Math.min(1, Math.max(0, (root.draftDisplayScale - 50) / 250))
-            enabled: !!mon && !Displays.busy
-            onMoved: v => {
-                root.displayScaleDragging = true;
-                root.draftDisplayScale = Math.round((v * 250 + 50) / 5) * 5;
-                root.displayScaleTimer.restart();
+            subtext: "仅显示当前分辨率下合法的缩放（逻辑像素必须为整数）"
+            menuItems: scaleVariants.instances
+            active: {
+                if (!scaleVariants.instances.length)
+                    return null;
+                let best = scaleVariants.instances[0];
+                let bestDiff = Math.abs((best.modelData || 1) - root.scaleValue);
+                for (const item of scaleVariants.instances) {
+                    const diff = Math.abs((item.modelData || 1) - root.scaleValue);
+                    if (diff < bestDiff) {
+                        best = item;
+                        bestDiff = diff;
+                    }
+                }
+                return best;
+            }
+            fallbackText: root.formatScalePercent(root.scaleValue)
+            fallbackIcon: "zoom_in"
+            enabled: !!mon && scaleChoices.length > 0 && !Displays.busy
+            onSelected: item => {
+                if (item?.modelData !== undefined && Math.abs(item.modelData - root.scaleValue) > 1e-4)
+                    Displays.applyScale(item.modelData);
             }
         }
 
@@ -165,7 +178,7 @@ PageBase {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.leftMargin: Tokens.padding.largeIncreased
                 anchors.rightMargin: Tokens.padding.largeIncreased
-                text: "调整 Hyprland 输出缩放（影响所有应用）。推荐 100%、125%、150% 等档位。"
+                text: "Hyprland 要求缩放后的逻辑分辨率必须是整数像素。非法值（例如 90%）会被拒绝并弹出警告，因此这里只列出当前分辨率下的合法档位。"
                 color: Colours.palette.m3outline
                 font: Tokens.font.label.small
                 wrapMode: Text.WordWrap
