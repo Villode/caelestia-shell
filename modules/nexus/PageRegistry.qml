@@ -22,6 +22,12 @@ QtObject {
             category: "connectivity"
         },
         {
+            label: qsTr("鼠标和触摸板"),
+            icon: "touchpad_mouse",
+            description: qsTr("触摸板开关"),
+            category: "connectivity"
+        },
+        {
             label: qsTr("网络"),
             icon: "wifi",
             description: qsTr("无线网络、有线网络"),

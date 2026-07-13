@@ -49,6 +49,14 @@ QtObject {
             }
         },
         Component {
+            // Mouse & touchpad
+            StackPage {
+                Component {
+                    InputPage {}
+                }
+            }
+        },
+        Component {
             // Network
             StackPage {
                 Component {
