@@ -39,6 +39,55 @@ install_dependencies() {
         caelestia-shell caelestia-cli cmake ninja
         adwaita-icon-theme hicolor-icon-theme
     )
+    local missing=()
+    local repo_missing=()
+    local aur_missing=()
+    local pkg
+
+    # Already-installed packages must not force an AUR RPC round-trip.
+    # yay still queries aur.archlinux.org for --needed targets, and that can
+    # fail on broken IPv6 even when every package is already present.
+    if command -v pacman >/dev/null 2>&1; then
+        for pkg in "${packages[@]}"; do
+            if ! pacman -Q "$pkg" &>/dev/null; then
+                missing+=("$pkg")
+            fi
+        done
+    else
+        missing=("${packages[@]}")
+    fi
+
+    if ((${#missing[@]} == 0)); then
+        echo "系统依赖已齐全，跳过包管理器安装。"
+        return 0
+    fi
+
+    # Prefer pacman for official-repo packages; only hit AUR for the rest.
+    for pkg in "${missing[@]}"; do
+        case "$pkg" in
+            caelestia-shell|caelestia-cli) aur_missing+=("$pkg") ;;
+            *) repo_missing+=("$pkg") ;;
+        esac
+    done
+
+    if ((${#repo_missing[@]})) && command -v pacman >/dev/null 2>&1; then
+        echo "通过 pacman 安装：${repo_missing[*]}"
+        sudo pacman -S --needed --noconfirm "${repo_missing[@]}"
+    fi
+
+    # Recompute AUR targets after pacman in case a package was satisfied.
+    aur_missing=()
+    for pkg in caelestia-shell caelestia-cli; do
+        if ! pacman -Q "$pkg" &>/dev/null; then
+            aur_missing+=("$pkg")
+        fi
+    done
+
+    if ((${#aur_missing[@]} == 0)); then
+        echo "AUR 依赖已齐全，跳过 yay/paru。"
+        return 0
+    fi
+
     if ! command -v yay >/dev/null 2>&1 &&
        ! command -v paru >/dev/null 2>&1 &&
        command -v pacman >/dev/null 2>&1; then
@@ -54,12 +103,13 @@ install_dependencies() {
         rm -rf "$bootstrap_dir"
     fi
 
+    echo "通过 AUR 安装：${aur_missing[*]}"
     if command -v yay >/dev/null 2>&1; then
-        yay -S --needed "${packages[@]}"
+        yay -S --needed "${aur_missing[@]}"
     elif command -v paru >/dev/null 2>&1; then
-        paru -S --needed "${packages[@]}"
+        paru -S --needed "${aur_missing[@]}"
     else
-        echo "未找到 yay 或 paru，无法自动安装 Caelestia 依赖。" >&2
+        echo "未找到 yay 或 paru，无法自动安装：${aur_missing[*]}" >&2
         return 1
     fi
 }
