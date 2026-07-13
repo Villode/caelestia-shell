@@ -538,7 +538,10 @@ Singleton {
             height: mon.height
         };
         // Never send an illegal scale: Hyprland toasts and rewrites it (e.g. 0.90 → 0.83).
-        const desired = Math.max(0.5, Math.min(3.0, scale));
+        // Also clamp extreme scales that can make a session unusable (especially on HEADLESS).
+        let desired = Math.max(0.5, Math.min(3.0, scale));
+        if (isInternalName(mon.name) && desired > 2.0)
+            desired = 2.0;
         const cleanScale = isCleanScale(size.width, size.height, desired) ? desired : nearestValidScale(size.width, size.height, desired);
         const scaleStr = formatScale(cleanScale);
         const pos = `${mon.x}x${mon.y}`;
