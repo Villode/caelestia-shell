@@ -169,6 +169,15 @@ printf 'Villode Caelestia Shell\nUpstream: %s\nRevision: %s\n' \
 mkdir -p "$HOME/.local/bin"
 install -m755 "$repo_dir/bin/caelestia-villode" "$HOME/.local/bin/caelestia"
 
+# Pointer shake-to-find (Mac-style). Safe to re-run; wires Hyprland when present.
+if [[ -x "$repo_dir/contrib/villode-cursor/install.sh" ]]; then
+    cursor_args=()
+    $restart || cursor_args+=(--no-start)
+    bash "$repo_dir/contrib/villode-cursor/install.sh" "${cursor_args[@]}" || {
+        echo "警告：指针放大组件安装失败，Shell 本体已部署。" >&2
+    }
+fi
+
 if $build_native; then
     version="$(<"$repo_dir/UPSTREAM_VERSION")"
     revision="$(git -C "$repo_dir" rev-parse HEAD 2>/dev/null || echo villode)"

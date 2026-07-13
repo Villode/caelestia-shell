@@ -19,7 +19,7 @@ PageBase {
     property string errorText
     property string lastChecked
     property string checkedAtIso: ""
-    readonly property int updateCount: components.filter(item => item.status === "有更新" || item.status === "需要修复").length
+    readonly property int updateCount: components.filter(item => item.status === "有更新" || item.status === "需要修复" || item.status === "未安装").length
 
     title: "Villode 更新"
 
@@ -119,7 +119,7 @@ PageBase {
     }
 
     function hasUpdate(status: string): bool {
-        return status === "有更新" || status === "需要修复";
+        return status === "有更新" || status === "需要修复" || status === "未安装";
     }
 
     function statusColour(status: string): color {
@@ -128,8 +128,21 @@ PageBase {
         if (status === "需要修复")
             return Colours.palette.m3tertiary;
         if (status === "未安装")
-            return Colours.palette.m3outline;
-        return Colours.palette.m3secondary;
+            return Colours.palette.m3secondary;
+        return Colours.palette.m3outline;
+    }
+
+    function actionLabel(): string {
+        const n = root.updateCount;
+        if (n <= 0)
+            return "更新";
+        const hasInstall = root.components.some(item => item.status === "未安装");
+        const hasUpdate = root.components.some(item => item.status === "有更新" || item.status === "需要修复");
+        if (hasInstall && hasUpdate)
+            return `安装/更新 (${n})`;
+        if (hasInstall)
+            return `安装 (${n})`;
+        return `更新 (${n})`;
     }
 
     function componentIcon(id: string): string {
@@ -144,6 +157,8 @@ PageBase {
             return "wallpaper";
         case "launcher":
             return "apps";
+        case "cursor":
+            return "mouse";
         default:
             return "extension";
         }
@@ -201,7 +216,7 @@ PageBase {
                             : root.errorText
                               ? "检查失败"
                               : root.updateCount > 0
-                                ? `有 ${root.updateCount} 个组件可更新`
+                                ? `有 ${root.updateCount} 个组件可安装或更新`
                                 : "全部为最新版本"
                         font: Tokens.font.body.large
                         elide: Text.ElideRight
@@ -226,7 +241,7 @@ PageBase {
 
                 IconTextButton {
                     icon: "system_update"
-                    text: root.updateCount > 0 ? `更新 (${root.updateCount})` : "更新"
+                    text: root.actionLabel()
                     type: IconTextButton.Filled
                     enabled: !root.checking && root.updateCount > 0
                     onClicked: root.launchUpdate()
@@ -299,9 +314,15 @@ PageBase {
 
                                 StyledText {
                                     Layout.fillWidth: true
-                                    text: card.modelData.installed === card.modelData.latest
-                                        ? `版本 ${card.modelData.installed}`
-                                        : `${card.modelData.installed} → ${card.modelData.latest}`
+                                    text: {
+                                        if (card.modelData.status === "未安装")
+                                            return card.modelData.latest && card.modelData.latest !== "—"
+                                                ? `可安装 ${card.modelData.latest}`
+                                                : "尚未安装";
+                                        if (card.modelData.installed === card.modelData.latest)
+                                            return `版本 ${card.modelData.installed}`;
+                                        return `${card.modelData.installed} → ${card.modelData.latest}`;
+                                    }
                                     color: Colours.palette.m3outline
                                     font: Tokens.font.label.small
                                     elide: Text.ElideRight
@@ -382,7 +403,9 @@ PageBase {
                         }
 
                         StyledText {
-                            text: root.hasUpdate(card.modelData.status) ? "本次更新内容" : "最近变更"
+                            text: card.modelData.status === "未安装"
+                                ? "组件说明"
+                                : root.hasUpdate(card.modelData.status) ? "本次更新内容" : "最近变更"
                             color: Colours.palette.m3outline
                             font: Tokens.font.label.small
                         }
@@ -436,7 +459,7 @@ PageBase {
             Layout.alignment: Qt.AlignHCenter
             Layout.topMargin: Tokens.spacing.large
             Layout.maximumWidth: root.cappedWidth * 0.9
-            text: "仅安装发布清单锁定的版本，不会清除用户配置。点击组件可展开详情。"
+            text: "可安装尚未安装的组件，或更新已有组件。仅使用发布清单锁定版本，不会清除用户配置。点击组件可展开详情。"
             color: Colours.palette.m3outline
             font: Tokens.font.label.small
             horizontalAlignment: Text.AlignHCenter

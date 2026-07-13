@@ -3,20 +3,22 @@
 Mac-style pointer magnification for Hyprland. Enlarges the **pointer sprite**
 (not the desktop). Uses a click-through SVG overlay with springy easing.
 
-## Install (user)
+## Install
+
+### Via Villode updates (recommended)
+
+In **设置 → Villode 更新**, install **Villode 指针放大**
+(or update Shell — Shell install deploys this automatically).
 
 ```bash
-install -Dm755 villode-cursor-shake ~/.local/bin/villode-cursor-shake
-install -Dm644 shake.conf ~/.config/villode-cursor/shake.conf
-install -Dm644 assets/left_ptr.svg ~/.local/share/villode-cursor/left_ptr.svg
-# Hyprland: source cursor.conf from your session config
-install -Dm644 cursor.conf ~/.config/villode-hyprland/cursor.conf
+villode-caelestia-update --online
 ```
 
-Then `source = ~/.config/villode-hyprland/cursor.conf` and restart the daemon:
+### Manual
 
 ```bash
-villode-cursor-shake &
+./install.sh
+# ./install.sh --no-start --no-hyprland
 ```
 
-`Super+Shift+C` pulses the pointer. Shake vigorously left-right to magnify.
+`Super+Shift+C` pulses the pointer. Shake vigorously left-right to locate it.
