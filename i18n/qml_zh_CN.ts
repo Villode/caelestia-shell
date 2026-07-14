@@ -3959,13 +3959,13 @@ Turning off displays does not end the session; sleep suspends the system. Use Ke
     <context>
         <name>ShortcutsPage</name>
         <message>
-            <location filename="../modules/nexus/pages/ShortcutsPage.qml" line="+39" />
-            <location line="+355" />
+            <location filename="../modules/nexus/pages/ShortcutsPage.qml" line="+56" />
+            <location line="+789" />
             <source>Keyboard shortcuts</source>
             <translation>快捷键</translation>
         </message>
         <message>
-            <location line="-302" />
+            <location line="-513" />
             <source>Open terminal</source>
             <translation>打开终端</translation>
         </message>
@@ -4030,23 +4030,33 @@ Turning off displays does not end the session; sleep suspends the system. Use Ke
             <translation>切换窗口浮动</translation>
         </message>
         <message>
-            <location line="+116" />
-            <location line="+159" />
+            <location line="+143" />
+            <source>Cancelled; original shortcut kept</source>
+            <translation>已取消，保留原来的快捷键</translation>
+        </message>
+        <message>
+            <location line="+23" />
+            <location line="+182" />
             <source>Shortcut cleared</source>
             <translation>已清除快捷键</translation>
         </message>
         <message>
-            <location line="-140" />
+            <location line="-158" />
             <source>Already used by %1</source>
             <translation>已被「%1」使用</translation>
         </message>
         <message>
-            <location line="+5" />
+            <location line="+6" />
             <source>Applied immediately</source>
             <translation>已立即应用</translation>
         </message>
         <message>
-            <location line="+86" />
+            <location line="+70" />
+            <source>Press the new key combination; Esc cancels, Backspace clears</source>
+            <translation>请按新的组合键；Esc 取消，退格键清除</translation>
+        </message>
+        <message>
+            <location line="+21" />
             <source>Waiting for keys…</source>
             <translation>正在等待按键…</translation>
         </message>
@@ -4056,7 +4066,7 @@ Turning off displays does not end the session; sleep suspends the system. Use Ke
             <translation>未设置</translation>
         </message>
         <message>
-            <location line="+160" />
+            <location line="+439" />
             <source>Applications</source>
             <translation>应用</translation>
         </message>
@@ -4066,32 +4076,17 @@ Turning off displays does not end the session; sleep suspends the system. Use Ke
             <translation>Shell 控制</translation>
         </message>
         <message>
-            <location line="-189" />
-            <source>Press the new key combination; Backspace clears it</source>
-            <translation>请按新的组合键；按退格键可清除</translation>
-        </message>
-        <message>
-            <location line="+111" />
-            <source>Previewing %1</source>
-            <translation>正在预览：%1</translation>
-        </message>
-        <message>
-            <location line="+7" />
-            <source>Highlighted keys: %1</source>
-            <translation>已高亮按键：%1</translation>
-        </message>
-        <message>
-            <location line="+0" />
+            <location line="-167" />
             <source>No shortcut assigned</source>
             <translation>未分配快捷键</translation>
         </message>
         <message>
-            <location line="+56" />
-            <source>Select a shortcut below to preview or change it. Changes apply immediately.</source>
-            <translation>选择下方快捷键即可预览或修改，修改会立即生效。</translation>
+            <location line="+151" />
+            <source>Select a shortcut below to preview it on the keyboard. Changes apply immediately.</source>
+            <translation>选择下方快捷键即可在键盘上预览，修改会立即生效。</translation>
         </message>
         <message>
-            <location line="+23" />
+            <location line="+24" />
             <source>Window management</source>
             <translation>窗口管理</translation>
         </message>

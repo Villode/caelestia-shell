@@ -105,7 +105,7 @@
     "Idle timeouts": "空闲超时",
     "Actions run in order after inactivity. Times are measured from when idle begins; disabling an item disables that action.": "无人操作一段时间后依次执行。时间从空闲开始累计；关闭某项即禁用该动作。",
     "Automatic lock": "自动锁屏",
-    "Disabled": "已关闭",
+    "Disabled": "已禁用",
     "Lock delay": "锁屏等待",
     "Turn off displays": "关闭屏幕",
     "Display-off delay": "关屏等待",
@@ -218,188 +218,190 @@
     "Violet": "紫罗兰",
     "Forest": "森林",
     "Rose": "玫瑰",
-    "Transparency": "透明度"
-    ,"Failed": "失败"
-    ,"Unavailable": "无法"
-    ,"Detected mice: %1": "已检测鼠标：%1"
-    ,"Recently recorded: %1": "最近录制：%1"
-    ,"Device: %1": "设备：%1"
-    ,"%1 minutes": "%1 分钟"
-    ,"%1 hours %2 minutes": "%1 小时 %2 分钟"
-    ,"%1 hours": "%1 小时"
-    ,"Lock after %1 of inactivity": "空闲 %1 后锁定"
-    ,"Turn off displays after %1 of inactivity": "空闲 %1 后关闭显示器"
-    ,"%1 after %2 of inactivity": "空闲 %2 后%1"
-    ,"Fall back to password after %1 failed attempts": "失败 %1 次后回退到密码"
-    ,"(disabled)": "（已关闭）"
-    ,"(mirrored)": "（镜像）"
-    ,"Display %1 · %2%3": "显示器 %1 · %2%3"
-    ," · Selected %1 @ %2,%3": " · 选中 %1 @ %2,%3"
-    ,"Mirrored from %1 · %2 × %3": "镜像自 %1 · %2 × %3"
-    ,"%1 × %2 · %3 Hz · Scale %4": "%1 × %2 · %3 Hz · 缩放 %4"
-    ,"Logical %1 × %2": "逻辑 %1 × %2"
-    ,"Villode updates": "Villode 更新"
-    ,"Could not check for updates. Check your network connection.": "检查更新失败，请确认网络连接。"
-    ,"Component": "组件"
-    ,"Unknown": "未知"
-    ,"Update": "更新"
-    ,"Install / update (%1)": "安装/更新 (%1)"
-    ,"Install (%1)": "安装 (%1)"
-    ,"Update (%1)": "更新 (%1)"
-    ,"Checking for updates...": "正在检查更新…"
-    ,"Update check failed": "检查失败"
-    ,"%1 components can be installed or updated": "有 %1 个组件可安装或更新"
-    ,"Everything is up to date": "全部为最新版本"
-    ,"Last checked %1": "上次检查 %1"
-    ,"Villode release channel": "来自 Villode 发布通道"
-    ,"Checking": "检查中"
-    ,"Check": "检查"
-    ,"Components": "组件"
-    ,"Available %1": "可安装 %1"
-    ,"Not installed": "尚未安装"
-    ,"Version %1": "版本 %1"
-    ,"Last updated": "上次更新"
-    ,"Latest release": "最新发布"
-    ,"Component information": "组件说明"
-    ,"Changes in this update": "本次更新内容"
-    ,"Recent changes": "最近变更"
-    ,"No change notes": "暂无变更说明"
-    ,"No installed Villode components were detected.": "没有检测到已安装的 Villode 组件。"
-    ,"Install missing components or update installed ones. Only versions locked by the release manifest are used, and user configuration is preserved. Select a component for details.": "可安装尚未安装的组件，或更新已有组件。仅使用发布清单锁定版本，不会清除用户配置。点击组件可展开详情。"
-    ,"Up to date": "已是最新"
-    ,"Update available": "有更新"
-    ,"Repair required": "需要修复"
-    ,"System default (pass through to applications)": "系统默认（透传给应用）"
-    ,"Browser back": "浏览器后退"
-    ,"Browser forward": "浏览器前进"
-    ,"Previous workspace": "上一个工作区"
-    ,"Next workspace": "下一个工作区"
-    ,"Focus left": "焦点向左"
-    ,"Focus right": "焦点向右"
-    ,"Volume +": "音量 +"
-    ,"Volume −": "音量 −"
-    ,"Play / pause": "播放 / 暂停"
-    ,"Close current window": "关闭当前窗口"
-    ,"Floating window": "浮动窗口"
-    ,"Test notification": "测试通知（验证按键）"
-    ,"No touchpad detected.": "未检测到触摸板。"
-    ,"System default": "系统默认"
-    ,"Side button": "侧键"
-    ,"Forward side button": "前进侧键"
-    ,"Extra button 3": "扩展键 3"
-    ,"Extra button 4": "扩展键 4"
-    ,"Extra button 5": "扩展键 5"
-    ,"Mouse button · %1": "鼠标按键 · %1"
-    ,"Media/function key · %1": "媒体/功能键 · %1"
-    ,"Press a mouse side button...": "请按下鼠标侧键…"
-    ,"Recording: existing mappings are paused. Press a side button.": "录制中：已暂停现有映射，请按下侧键。"
-    ,"Cleared all side-button and accidental keyboard mappings.": "已清除全部侧键 / 误绑键盘映射。"
-    ,"Recording cancelled": "已取消录制"
-    ,"Button recording cancelled; mappings restored.": "已取消按键录制，映射已恢复。"
-    ,"Recorded: %1": "已录制：%1"
-    ,"Bound %1 → %2": "已绑定 %1 → %2"
-    ,"Could not bind button: %1": "无法绑定该按键：%1"
-    ,"Mouse settings saved.": "鼠标设置已保存。"
-    ,"Could not read pointer device list.": "无法读取指针设备列表。"
-    ,"Touchpad enabled.": "触摸板已启用。"
-    ,"Touchpad disabled.": "触摸板已禁用。"
-    ,"Could not toggle touchpad.": "切换触摸板失败。"
-    ,"Side-button mappings updated.": "侧键映射已更新。"
-    ,"Could not read mouse devices. Add the user to the input group and log in again.": "无法读取鼠标设备。请将用户加入 input 组后重新登录。"
-    ,"Recording timed out; try again": "录制超时，请重试"
-    ,"Recording timed out; previous mappings restored.": "录制超时，已恢复原有映射。"
-    ,"Could not create configuration directory.": "无法创建配置目录。"
-    ,"Identifying %1 displays...": "正在标识 %1 台显示器…"
-    ,"Identifying display...": "正在标识显示器…"
-    ,"At least two displays are required to change projection mode.": "需要至少两台显示器才能切换投影模式。"
-    ,"Could not determine the primary display.": "无法确定主显示器。"
-    ,"Duplicate these displays": "复制这些显示器"
-    ,"Extend these displays": "扩展这些显示器"
-    ,"Second screen only requires a physical external display. The second output is virtual, so the laptop display cannot be disabled.": "仅第二屏幕需要真实外接显示器。当前第二块是虚拟屏，不能关闭笔记本主屏。"
-    ,"Unknown projection mode.": "未知投影模式。"
-    ,"Switched to “%1”.": "已切换为「%1」。"
-    ,"Adjusted to valid scale %1 (about %2%).": "已自动调整为合法缩放 %1（约 %2%）。"
-    ,"Could not parse display list.": "无法解析显示器列表。"
-    ,"Could not read display information.": "无法读取显示器信息。"
-    ,"Display settings applied.": "显示设置已应用。"
-    ,"Display settings applied and saved.": "显示设置已应用并保存。"
-    ,"Could not apply display settings.": "应用显示设置失败。"
-    ,"Settings applied, but writing the Hyprland source failed.": "设置已应用，但写入 Hyprland source 失败。"
-    ,"Settings applied, but saving configuration failed.": "设置已应用，但保存配置失败。"
-    ,"Display numbers are now shown on screen.": "已在屏幕上显示显示器编号。"
-    ,"Could not identify displays.": "标识显示器失败。"
-    ,"Side button test succeeded": "侧键测试成功"
-    ,"Recorded button": "已录制按键"
-    ,"Adjusted to valid scale": "已自动调整"
-    ," Display settings applied.": " 显示设置已应用。"
-    ,"Could not create display configuration directory.": "无法创建显示配置目录。"
-    ,"Shell": "Shell"
-    ,"Quickshell": "Quickshell"
-    ,"Qt": "Qt"
-    ,"...": "..."
-    ,"%1 device%2 available": "有 %1 个可用设备%2"
-    ," (%1 connected)": "（已连接 %1 个）"
-    ,"\"%1\" selected": "已选择“%1”"
-    ,"GPU": "GPU"
-    ,"CPU": "CPU"
-    ,"Floating: %1": "浮动：%1"
-    ,"Xwayland: %1": "Xwayland：%1"
-    ,"Pinned: %1": "置顶：%1"
-    ,"Fullscreen state: %1": "全屏状态：%1"
-    ,"Fullscreen state: unknown": "全屏状态：未知"
-    ,"—": "—"
-    ,"IPv4": "IPv4"
-    ,"192.168.1.50/24": "192.168.1.50/24"
-    ,"192.168.1.1": "192.168.1.1"
-    ,"1.1.1.1, 8.8.8.8": "1.1.1.1, 8.8.8.8"
-    ,"+%1": "+%1"
-    ,"VPN": "VPN"
-    ,"Wallpaper, fonts, colours": "壁纸、字体、颜色"
-    ,"Wi-Fi, ethernet": "无线网络、有线网络"
-    ,"Bluetooth, pairing": "蓝牙、配对"
-    ,"App volumes, sound devices": "应用音量、声音设备"
-    ,"Manage plugins": "管理插件"
-    ,"Dashboard, taskbar, launcher, sidebar": "仪表盘、任务栏、启动器、侧边栏"
-    ,"Default apps, favourites, hidden apps": "默认应用、收藏、隐藏应用"
-    ,"Poll intervals, lyrics backend": "轮询间隔、歌词后端"
-    ,"Language & region": "语言和地区"
-    ,"UI language, weather location, display units": "界面语言、天气位置、显示单位"
-    ,"System information, credits": "系统信息、致谢"
-    ,"%1 on monitor %2 at %3, %4": "%1 位于显示器 %2 的 %3, %4"
-    ,"DNS": "DNS"
-    ,"Keyboard shortcuts": "快捷键"
-    ,"Record keys for apps, Shell and windows": "为应用、Shell 和窗口录制快捷键"
-    ,"Open terminal": "打开终端"
-    ,"Open file manager": "打开文件管理器"
-    ,"Open app launcher": "打开应用启动器"
-    ,"Show or hide desktop": "显示或隐藏桌面"
-    ,"Open settings": "打开设置"
-    ,"Open multitasking overview": "打开多任务界面"
-    ,"Toggle dashboard": "切换仪表盘"
-    ,"Toggle sidebar": "切换侧边栏"
-    ,"Open power menu": "打开电源菜单"
-    ,"Close active window": "关闭当前窗口"
-    ,"Toggle fullscreen": "切换全屏"
-    ,"Toggle floating window": "切换窗口浮动"
-    ,"Shortcut cleared": "已清除快捷键"
-    ,"Already used by %1": "已被「%1」使用"
-    ,"Already used": "已被使用"
-    ,"Applied immediately": "已立即应用"
-    ,"Press shortcut": "请按快捷键"
-    ,"Disabled": "已禁用"
-    ,"Press the new key combination; Backspace clears it": "请按新的组合键；按退格键可清除"
-    ,"Apps and Shell": "应用与 Shell"
-    ,"Window management": "窗口管理"
-    ,"Restore defaults": "恢复默认值"
-    ,"Take a screenshot": "截图"
-    ,"Waiting for keys…": "正在等待按键…"
-    ,"Not assigned": "未设置"
-    ,"Click a shortcut to record a new key combination": "点击快捷键即可录制新的组合键"
-    ,"Changes apply immediately. Backspace or Delete removes a shortcut.": "修改会立即生效；按退格键或删除键可移除快捷键。"
-    ,"Previewing %1": "正在预览：%1"
-    ,"Highlighted keys: %1": "已高亮按键：%1"
-    ,"No shortcut assigned": "未分配快捷键"
-    ,"Select a shortcut below to preview or change it. Changes apply immediately.": "选择下方快捷键即可预览或修改，修改会立即生效。"
-    ,"Applications": "应用"
-    ,"Shell controls": "Shell 控制"
+    "Transparency": "透明度",
+    "Failed": "失败",
+    "Unavailable": "无法",
+    "Detected mice: %1": "已检测鼠标：%1",
+    "Recently recorded: %1": "最近录制：%1",
+    "Device: %1": "设备：%1",
+    "%1 minutes": "%1 分钟",
+    "%1 hours %2 minutes": "%1 小时 %2 分钟",
+    "%1 hours": "%1 小时",
+    "Lock after %1 of inactivity": "空闲 %1 后锁定",
+    "Turn off displays after %1 of inactivity": "空闲 %1 后关闭显示器",
+    "%1 after %2 of inactivity": "空闲 %2 后%1",
+    "Fall back to password after %1 failed attempts": "失败 %1 次后回退到密码",
+    "(disabled)": "（已关闭）",
+    "(mirrored)": "（镜像）",
+    "Display %1 · %2%3": "显示器 %1 · %2%3",
+    " · Selected %1 @ %2,%3": " · 选中 %1 @ %2,%3",
+    "Mirrored from %1 · %2 × %3": "镜像自 %1 · %2 × %3",
+    "%1 × %2 · %3 Hz · Scale %4": "%1 × %2 · %3 Hz · 缩放 %4",
+    "Logical %1 × %2": "逻辑 %1 × %2",
+    "Villode updates": "Villode 更新",
+    "Could not check for updates. Check your network connection.": "检查更新失败，请确认网络连接。",
+    "Component": "组件",
+    "Unknown": "未知",
+    "Update": "更新",
+    "Install / update (%1)": "安装/更新 (%1)",
+    "Install (%1)": "安装 (%1)",
+    "Update (%1)": "更新 (%1)",
+    "Checking for updates...": "正在检查更新…",
+    "Update check failed": "检查失败",
+    "%1 components can be installed or updated": "有 %1 个组件可安装或更新",
+    "Everything is up to date": "全部为最新版本",
+    "Last checked %1": "上次检查 %1",
+    "Villode release channel": "来自 Villode 发布通道",
+    "Checking": "检查中",
+    "Check": "检查",
+    "Components": "组件",
+    "Available %1": "可安装 %1",
+    "Not installed": "尚未安装",
+    "Version %1": "版本 %1",
+    "Last updated": "上次更新",
+    "Latest release": "最新发布",
+    "Component information": "组件说明",
+    "Changes in this update": "本次更新内容",
+    "Recent changes": "最近变更",
+    "No change notes": "暂无变更说明",
+    "No installed Villode components were detected.": "没有检测到已安装的 Villode 组件。",
+    "Install missing components or update installed ones. Only versions locked by the release manifest are used, and user configuration is preserved. Select a component for details.": "可安装尚未安装的组件，或更新已有组件。仅使用发布清单锁定版本，不会清除用户配置。点击组件可展开详情。",
+    "Up to date": "已是最新",
+    "Update available": "有更新",
+    "Repair required": "需要修复",
+    "System default (pass through to applications)": "系统默认（透传给应用）",
+    "Browser back": "浏览器后退",
+    "Browser forward": "浏览器前进",
+    "Previous workspace": "上一个工作区",
+    "Next workspace": "下一个工作区",
+    "Focus left": "焦点向左",
+    "Focus right": "焦点向右",
+    "Volume +": "音量 +",
+    "Volume −": "音量 −",
+    "Play / pause": "播放 / 暂停",
+    "Close current window": "关闭当前窗口",
+    "Floating window": "浮动窗口",
+    "Test notification": "测试通知（验证按键）",
+    "No touchpad detected.": "未检测到触摸板。",
+    "System default": "系统默认",
+    "Side button": "侧键",
+    "Forward side button": "前进侧键",
+    "Extra button 3": "扩展键 3",
+    "Extra button 4": "扩展键 4",
+    "Extra button 5": "扩展键 5",
+    "Mouse button · %1": "鼠标按键 · %1",
+    "Media/function key · %1": "媒体/功能键 · %1",
+    "Press a mouse side button...": "请按下鼠标侧键…",
+    "Recording: existing mappings are paused. Press a side button.": "录制中：已暂停现有映射，请按下侧键。",
+    "Cleared all side-button and accidental keyboard mappings.": "已清除全部侧键 / 误绑键盘映射。",
+    "Recording cancelled": "已取消录制",
+    "Button recording cancelled; mappings restored.": "已取消按键录制，映射已恢复。",
+    "Recorded: %1": "已录制：%1",
+    "Bound %1 → %2": "已绑定 %1 → %2",
+    "Could not bind button: %1": "无法绑定该按键：%1",
+    "Mouse settings saved.": "鼠标设置已保存。",
+    "Could not read pointer device list.": "无法读取指针设备列表。",
+    "Touchpad enabled.": "触摸板已启用。",
+    "Touchpad disabled.": "触摸板已禁用。",
+    "Could not toggle touchpad.": "切换触摸板失败。",
+    "Side-button mappings updated.": "侧键映射已更新。",
+    "Could not read mouse devices. Add the user to the input group and log in again.": "无法读取鼠标设备。请将用户加入 input 组后重新登录。",
+    "Recording timed out; try again": "录制超时，请重试",
+    "Recording timed out; previous mappings restored.": "录制超时，已恢复原有映射。",
+    "Could not create configuration directory.": "无法创建配置目录。",
+    "Identifying %1 displays...": "正在标识 %1 台显示器…",
+    "Identifying display...": "正在标识显示器…",
+    "At least two displays are required to change projection mode.": "需要至少两台显示器才能切换投影模式。",
+    "Could not determine the primary display.": "无法确定主显示器。",
+    "Duplicate these displays": "复制这些显示器",
+    "Extend these displays": "扩展这些显示器",
+    "Second screen only requires a physical external display. The second output is virtual, so the laptop display cannot be disabled.": "仅第二屏幕需要真实外接显示器。当前第二块是虚拟屏，不能关闭笔记本主屏。",
+    "Unknown projection mode.": "未知投影模式。",
+    "Switched to “%1”.": "已切换为「%1」。",
+    "Adjusted to valid scale %1 (about %2%).": "已自动调整为合法缩放 %1（约 %2%）。",
+    "Could not parse display list.": "无法解析显示器列表。",
+    "Could not read display information.": "无法读取显示器信息。",
+    "Display settings applied.": "显示设置已应用。",
+    "Display settings applied and saved.": "显示设置已应用并保存。",
+    "Could not apply display settings.": "应用显示设置失败。",
+    "Settings applied, but writing the Hyprland source failed.": "设置已应用，但写入 Hyprland source 失败。",
+    "Settings applied, but saving configuration failed.": "设置已应用，但保存配置失败。",
+    "Display numbers are now shown on screen.": "已在屏幕上显示显示器编号。",
+    "Could not identify displays.": "标识显示器失败。",
+    "Side button test succeeded": "侧键测试成功",
+    "Recorded button": "已录制按键",
+    "Adjusted to valid scale": "已自动调整",
+    " Display settings applied.": " 显示设置已应用。",
+    "Could not create display configuration directory.": "无法创建显示配置目录。",
+    "Shell": "Shell",
+    "Quickshell": "Quickshell",
+    "Qt": "Qt",
+    "...": "...",
+    "%1 device%2 available": "有 %1 个可用设备%2",
+    " (%1 connected)": "（已连接 %1 个）",
+    "\"%1\" selected": "已选择“%1”",
+    "GPU": "GPU",
+    "CPU": "CPU",
+    "Floating: %1": "浮动：%1",
+    "Xwayland: %1": "Xwayland：%1",
+    "Pinned: %1": "置顶：%1",
+    "Fullscreen state: %1": "全屏状态：%1",
+    "Fullscreen state: unknown": "全屏状态：未知",
+    "—": "—",
+    "IPv4": "IPv4",
+    "192.168.1.50/24": "192.168.1.50/24",
+    "192.168.1.1": "192.168.1.1",
+    "1.1.1.1, 8.8.8.8": "1.1.1.1, 8.8.8.8",
+    "+%1": "+%1",
+    "VPN": "VPN",
+    "Wallpaper, fonts, colours": "壁纸、字体、颜色",
+    "Wi-Fi, ethernet": "无线网络、有线网络",
+    "Bluetooth, pairing": "蓝牙、配对",
+    "App volumes, sound devices": "应用音量、声音设备",
+    "Manage plugins": "管理插件",
+    "Dashboard, taskbar, launcher, sidebar": "仪表盘、任务栏、启动器、侧边栏",
+    "Default apps, favourites, hidden apps": "默认应用、收藏、隐藏应用",
+    "Poll intervals, lyrics backend": "轮询间隔、歌词后端",
+    "Language & region": "语言和地区",
+    "UI language, weather location, display units": "界面语言、天气位置、显示单位",
+    "System information, credits": "系统信息、致谢",
+    "%1 on monitor %2 at %3, %4": "%1 位于显示器 %2 的 %3, %4",
+    "DNS": "DNS",
+    "Keyboard shortcuts": "快捷键",
+    "Record keys for apps, Shell and windows": "为应用、Shell 和窗口录制快捷键",
+    "Open terminal": "打开终端",
+    "Open file manager": "打开文件管理器",
+    "Open app launcher": "打开应用启动器",
+    "Show or hide desktop": "显示或隐藏桌面",
+    "Open settings": "打开设置",
+    "Open multitasking overview": "打开多任务界面",
+    "Toggle dashboard": "切换仪表盘",
+    "Toggle sidebar": "切换侧边栏",
+    "Open power menu": "打开电源菜单",
+    "Close active window": "关闭当前窗口",
+    "Toggle fullscreen": "切换全屏",
+    "Toggle floating window": "切换窗口浮动",
+    "Shortcut cleared": "已清除快捷键",
+    "Already used by %1": "已被「%1」使用",
+    "Already used": "已被使用",
+    "Applied immediately": "已立即应用",
+    "Press shortcut": "请按快捷键",
+    "Press the new key combination; Backspace clears it": "请按新的组合键；按退格键可清除",
+    "Press the new key combination; Esc cancels, Backspace clears": "请按新的组合键；Esc 取消，退格键清除",
+    "Cancelled; original shortcut kept": "已取消，保留原来的快捷键",
+    "Apps and Shell": "应用与 Shell",
+    "Window management": "窗口管理",
+    "Restore defaults": "恢复默认值",
+    "Take a screenshot": "截图",
+    "Waiting for keys…": "正在等待按键…",
+    "Not assigned": "未设置",
+    "Click a shortcut to record a new key combination": "点击快捷键即可录制新的组合键",
+    "Changes apply immediately. Backspace or Delete removes a shortcut.": "修改会立即生效；按退格键或删除键可移除快捷键。",
+    "Previewing %1": "正在预览：%1",
+    "Highlighted keys: %1": "已高亮按键：%1",
+    "No shortcut assigned": "未分配快捷键",
+    "Select a shortcut below to preview it on the keyboard. Changes apply immediately.": "选择下方快捷键即可在键盘上预览，修改会立即生效。",
+    "Applications": "应用",
+    "Shell controls": "Shell 控制",
+    "Select a shortcut below to preview or change it. Changes apply immediately.": "选择下方快捷键即可在键盘上预览，修改会立即生效。"
 }
