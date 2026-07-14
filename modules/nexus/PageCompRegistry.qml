@@ -113,6 +113,14 @@ QtObject {
             }
         },
         Component {
+            // Keyboard shortcuts
+            StackPage {
+                Component {
+                    ShortcutsPage {}
+                }
+            }
+        },
+        Component {
             PlaceholderComp {}
         },
 

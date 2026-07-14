@@ -214,6 +214,12 @@ The choice is stored as `services.uiLanguage` in `shell.json`; supported values 
 and `en_US`. Translations live in `i18n/qml_<locale>.ts` and are compiled to `.qm` catalogs with
 `scripts/update-translations.py`.
 
+### Keyboard shortcuts
+
+Villode builds can record and change shortcuts from **Settings → Keyboard shortcuts**. Changes are
+stored under `general.shortcuts` in `shell.json` and are applied to Hyprland immediately. Backspace or
+Delete clears a shortcut while recording, and the page can restore all Villode defaults.
+
 ### Per-monitor configuration
 
 You can configure options per-monitor in `~/.config/caelestia/monitors/<screen-name>/shell.json`. Options

@@ -86,6 +86,28 @@ public:
         : ConfigObject(parent) {}
 };
 
+class GeneralShortcuts : public ConfigObject {
+    Q_OBJECT
+    QML_ANONYMOUS
+
+    CONFIG_GLOBAL_PROPERTY(QString, terminal, u"Super+Return"_s)
+    CONFIG_GLOBAL_PROPERTY(QString, fileManager, u"Super+E"_s)
+    CONFIG_GLOBAL_PROPERTY(QString, launcher, u"Super+D"_s)
+    CONFIG_GLOBAL_PROPERTY(QString, desktop, u"Super+Shift+D"_s)
+    CONFIG_GLOBAL_PROPERTY(QString, nexus, u"Super+Comma"_s)
+    CONFIG_GLOBAL_PROPERTY(QString, multitasking, u"Super+Tab"_s)
+    CONFIG_GLOBAL_PROPERTY(QString, dashboard, u"Super+A"_s)
+    CONFIG_GLOBAL_PROPERTY(QString, sidebar, u"Super+S"_s)
+    CONFIG_GLOBAL_PROPERTY(QString, session, u"Super+Escape"_s)
+    CONFIG_GLOBAL_PROPERTY(QString, closeWindow, u"Super+Q"_s)
+    CONFIG_GLOBAL_PROPERTY(QString, fullscreen, u"Super+F"_s)
+    CONFIG_GLOBAL_PROPERTY(QString, toggleFloating, u"Super+V"_s)
+
+public:
+    explicit GeneralShortcuts(QObject* parent = nullptr)
+        : ConfigObject(parent) {}
+};
+
 class GeneralConfig : public ConfigObject {
     Q_OBJECT
     QML_ANONYMOUS
@@ -97,13 +119,15 @@ class GeneralConfig : public ConfigObject {
     CONFIG_SUBOBJECT(GeneralApps, apps)
     CONFIG_SUBOBJECT(GeneralIdle, idle)
     CONFIG_SUBOBJECT(GeneralBattery, battery)
+    CONFIG_SUBOBJECT(GeneralShortcuts, shortcuts)
 
 public:
     explicit GeneralConfig(QObject* parent = nullptr)
         : ConfigObject(parent)
         , m_apps(new GeneralApps(this))
         , m_idle(new GeneralIdle(this))
-        , m_battery(new GeneralBattery(this)) {}
+        , m_battery(new GeneralBattery(this))
+        , m_shortcuts(new GeneralShortcuts(this)) {}
 };
 
 } // namespace caelestia::config

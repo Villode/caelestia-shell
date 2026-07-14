@@ -61,6 +61,12 @@ QtObject {
             category: "system"
         },
         {
+            label: qsTr("Keyboard shortcuts"),
+            icon: "keyboard_command_key",
+            description: qsTr("Record keys for apps, Shell and windows"),
+            category: "system"
+        },
+        {
             label: qsTr("Plugins"),
             icon: "extension",
             description: qsTr("Manage plugins"),

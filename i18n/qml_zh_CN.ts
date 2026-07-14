@@ -2968,7 +2968,7 @@ Middle-button scrolling: hold the middle button and move the mouse. Side buttons
     <context>
         <name>PageCompRegistry</name>
         <message>
-            <location filename="../modules/nexus/PageCompRegistry.qml" line="+221" />
+            <location filename="../modules/nexus/PageCompRegistry.qml" line="+229" />
             <source>Page under construction</source>
             <translation>页面正在建设中</translation>
         </message>
@@ -3062,6 +3062,16 @@ Middle-button scrolling: hold the middle button and move the mouse. Side buttons
         </message>
         <message>
             <location line="+4" />
+            <source>Keyboard shortcuts</source>
+            <translation>快捷键</translation>
+        </message>
+        <message>
+            <location line="+2" />
+            <source>Record keys for apps, Shell and windows</source>
+            <translation>为应用、Shell 和窗口录制快捷键</translation>
+        </message>
+        <message>
+            <location line="+4" />
             <source>Plugins</source>
             <translation>插件</translation>
         </message>
@@ -3145,7 +3155,7 @@ Middle-button scrolling: hold the middle button and move the mouse. Side buttons
             <location line="+14" />
             <location line="+8" />
             <source>Disabled</source>
-            <translation>已关闭</translation>
+            <translation>已禁用</translation>
         </message>
         <message>
             <location line="-16" />
@@ -3519,7 +3529,7 @@ Middle-button scrolling: hold the middle button and move the mouse. Side buttons
             <location line="+24" />
             <location line="+26" />
             <source>Disabled</source>
-            <translation>已关闭</translation>
+            <translation>已禁用</translation>
         </message>
         <message>
             <location line="-40" />
@@ -3944,6 +3954,120 @@ Turning off displays does not end the session; sleep suspends the system. Use Ke
             <location line="+0" />
             <source>Override for GPU type</source>
             <translation>覆盖 GPU 类型</translation>
+        </message>
+    </context>
+    <context>
+        <name>ShortcutsPage</name>
+        <message>
+            <location filename="../modules/nexus/pages/ShortcutsPage.qml" line="+12" />
+            <source>Keyboard shortcuts</source>
+            <translation>快捷键</translation>
+        </message>
+        <message>
+            <location line="+4" />
+            <source>Open terminal</source>
+            <translation>打开终端</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>Open file manager</source>
+            <translation>打开文件管理器</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>Open app launcher</source>
+            <translation>打开应用启动器</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>Show or hide desktop</source>
+            <translation>显示或隐藏桌面</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>Open settings</source>
+            <translation>打开设置</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>Open multitasking overview</source>
+            <translation>打开多任务界面</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>Toggle dashboard</source>
+            <translation>切换仪表盘</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>Toggle sidebar</source>
+            <translation>切换侧边栏</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>Open power menu</source>
+            <translation>打开电源菜单</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>Close active window</source>
+            <translation>关闭当前窗口</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>Toggle fullscreen</source>
+            <translation>切换全屏</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>Toggle floating window</source>
+            <translation>切换窗口浮动</translation>
+        </message>
+        <message>
+            <location line="+64" />
+            <location line="+78" />
+            <source>Shortcut cleared</source>
+            <translation>已清除快捷键</translation>
+        </message>
+        <message>
+            <location line="-59" />
+            <source>Already used by %1</source>
+            <translation>已被「%1」使用</translation>
+        </message>
+        <message>
+            <location line="+4" />
+            <source>Applied immediately</source>
+            <translation>已立即应用</translation>
+        </message>
+        <message>
+            <location line="+39" />
+            <source>Press shortcut</source>
+            <translation>请按快捷键</translation>
+        </message>
+        <message>
+            <location line="+0" />
+            <source>Disabled</source>
+            <translation>已禁用</translation>
+        </message>
+        <message>
+            <location line="+3" />
+            <source>Press the new key combination; Backspace clears it</source>
+            <translation>请按新的组合键；按退格键可清除</translation>
+        </message>
+        <message>
+            <location line="+28" />
+            <source>Apps and Shell</source>
+            <translation>应用与 Shell</translation>
+        </message>
+        <message>
+            <location line="+13" />
+            <source>Window management</source>
+            <translation>窗口管理</translation>
+        </message>
+        <message>
+            <location line="+10" />
+            <source>Restore defaults</source>
+            <translation>恢复默认值</translation>
         </message>
     </context>
     <context>

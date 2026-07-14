@@ -12,7 +12,10 @@ import Quickshell
 ShellRoot {
     settings.watchFiles: false
 
-    Component.onCompleted: UiLanguage.apply()
+    Component.onCompleted: {
+        UiLanguage.apply();
+        ShortcutBindings.apply();
+    }
 
     GSFLoader {}
 
