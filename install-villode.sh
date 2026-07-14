@@ -200,13 +200,73 @@ fi
 printf '%s\n' "$(git -C "$repo_dir" rev-parse HEAD 2>/dev/null || echo unknown)" > "$state_home/revision"
 
 if $restart; then
-    "$HOME/.local/bin/caelestia" shell -k >/dev/null 2>&1 || true
-    LANG="${LANG:-zh_CN.UTF-8}" "$HOME/.local/bin/caelestia" shell -d \
-        >/tmp/villode-caelestia-shell.log 2>&1 || {
-            echo "安装完成，但 Caelestia 自动启动失败。" >&2
-            echo "日志：/tmp/villode-caelestia-shell.log" >&2
-            exit 70
-        }
+    # Keep the direct shell installer aligned with villode-caelestia: kill by the
+    # real quickshell process, wait out races with -n, and verify a live process.
+    if [[ -x "$HOME/.local/bin/caelestia" ]]; then
+        caelestia_bin="$HOME/.local/bin/caelestia"
+    else
+        caelestia_bin=caelestia
+    fi
+    if [[ -x "$HOME/.local/lib/caelestia/bin/qs" ]]; then
+        qs_bin="$HOME/.local/lib/caelestia/bin/qs"
+    else
+        qs_bin="$(command -v qs || true)"
+    fi
+
+    shell_running() {
+        local out pid cmdline
+        if [[ -n "$qs_bin" ]]; then
+            out="$("$qs_bin" -c caelestia list --json --any-display 2>/dev/null || true)"
+            if [[ "$out" == \[* && "$out" != "[]" ]] && grep -q '"pid"[[:space:]]*:' <<<"$out"; then
+                return 0
+            fi
+        fi
+        while IFS= read -r pid; do
+            [[ -r "/proc/$pid/cmdline" ]] || continue
+            cmdline="$(tr '\0' ' ' <"/proc/$pid/cmdline" 2>/dev/null || true)"
+            if [[ "$cmdline" == *'-c caelestia'* ||
+                  "$cmdline" == *'--config caelestia'* ||
+                  "$cmdline" == *'/quickshell/caelestia'* ]]; then
+                return 0
+            fi
+        done < <(pgrep -u "$UID" -x quickshell 2>/dev/null || true; pgrep -u "$UID" -x qs 2>/dev/null || true)
+        return 1
+    }
+
+    "$caelestia_bin" shell -k >/dev/null 2>&1 || true
+    if [[ -n "$qs_bin" ]]; then
+        "$qs_bin" -c caelestia kill --any-display >/dev/null 2>&1 || true
+        "$qs_bin" -c caelestia kill --any-display --newest >/dev/null 2>&1 || true
+    fi
+    pkill -u "$UID" -f '(^|/)qs[[:space:]]+-c[[:space:]]*caelestia([[:space:]]|$)' >/dev/null 2>&1 || true
+    pkill -u "$UID" -f '(^|/)quickshell[[:space:]].*-c[[:space:]]*caelestia([[:space:]]|$)' >/dev/null 2>&1 || true
+    pkill -u "$UID" -f '(^|/)quickshell[[:space:]].*/quickshell/caelestia' >/dev/null 2>&1 || true
+
+    started=false
+    for attempt in 1 2 3; do
+        : >/tmp/villode-caelestia-shell.log
+        LANG="${LANG:-zh_CN.UTF-8}" LC_ALL="${LC_ALL:-$LANG}" \
+            "$caelestia_bin" shell -d >/tmp/villode-caelestia-shell.log 2>&1 || true
+        if grep -Fq 'An instance of this configuration is already running.' \
+            /tmp/villode-caelestia-shell.log; then
+            sleep 0.2
+            continue
+        fi
+        deadline=$((SECONDS + 5))
+        while ! shell_running && (( SECONDS < deadline )); do
+            sleep 0.1
+        done
+        if shell_running; then
+            started=true
+            break
+        fi
+        sleep 0.2
+    done
+    if ! $started; then
+        echo "安装完成，但 Caelestia 自动启动失败。" >&2
+        echo "日志：/tmp/villode-caelestia-shell.log" >&2
+        exit 70
+    fi
 fi
 
 echo "Villode Caelestia Shell 已安装。"
