@@ -27,6 +27,12 @@ if [[ -f "$HOME/.local/bin/caelestia" ]] &&
    grep -q 'Managed by Villode Caelestia Shell' "$HOME/.local/bin/caelestia" 2>/dev/null; then
     rm -f "$HOME/.local/bin/caelestia"
 fi
+if [[ -f "$HOME/.local/lib/caelestia/bin/qs" ]] &&
+   grep -q 'Run the binary by its full `quickshell` name' \
+       "$HOME/.local/lib/caelestia/bin/qs" 2>/dev/null; then
+    rm -f "$HOME/.local/lib/caelestia/bin/qs"
+    rmdir "$HOME/.local/lib/caelestia/bin" 2>/dev/null || true
+fi
 
 if [[ -f "$config_dir/.villode-managed" ]]; then
     rm -rf "$config_dir"

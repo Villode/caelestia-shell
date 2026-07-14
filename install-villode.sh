@@ -141,7 +141,8 @@ if $build_native; then
     done
 fi
 
-for path in assets components modules services utils shell.qml LICENSE UPSTREAM_VERSION; do
+for path in assets components modules services utils bin/caelestia-villode \
+    bin/qs-villode shell.qml LICENSE UPSTREAM_VERSION; do
     [[ -e "$repo_dir/$path" ]] || { echo "源码不完整，缺少：$path" >&2; exit 66; }
 done
 
@@ -168,6 +169,7 @@ printf 'Villode Caelestia Shell\nUpstream: %s\nRevision: %s\n' \
 
 mkdir -p "$HOME/.local/bin"
 install -m755 "$repo_dir/bin/caelestia-villode" "$HOME/.local/bin/caelestia"
+install -Dm755 "$repo_dir/bin/qs-villode" "$HOME/.local/lib/caelestia/bin/qs"
 
 # Pointer shake-to-find (Mac-style). Safe to re-run; wires Hyprland when present.
 if [[ -x "$repo_dir/contrib/villode-cursor/install.sh" ]]; then

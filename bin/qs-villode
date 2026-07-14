@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Run the binary by its full `quickshell` name. Some Ananicy rule sets classify
+# every process named `qs` as a background service (nice +10), which starves
+# desktop animations under CPU load. The dedicated name avoids that generic
+# rule without changing priorities globally or affecting other shell configs.
+if [[ -x /usr/bin/quickshell ]]; then
+    exec /usr/bin/quickshell "$@"
+fi
+
+quickshell_bin="$(command -v quickshell || true)"
+if [[ -n "$quickshell_bin" && "$quickshell_bin" != "$0" ]]; then
+    exec "$quickshell_bin" "$@"
+fi
+
+echo "未找到 Quickshell 可执行文件。" >&2
+exit 69
