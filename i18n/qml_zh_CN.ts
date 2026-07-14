@@ -3959,13 +3959,13 @@ Turning off displays does not end the session; sleep suspends the system. Use Ke
     <context>
         <name>ShortcutsPage</name>
         <message>
-            <location filename="../modules/nexus/pages/ShortcutsPage.qml" line="+32" />
-            <location line="+324" />
+            <location filename="../modules/nexus/pages/ShortcutsPage.qml" line="+39" />
+            <location line="+355" />
             <source>Keyboard shortcuts</source>
             <translation>快捷键</translation>
         </message>
         <message>
-            <location line="-278" />
+            <location line="-302" />
             <source>Open terminal</source>
             <translation>打开终端</translation>
         </message>
@@ -4030,18 +4030,18 @@ Turning off displays does not end the session; sleep suspends the system. Use Ke
             <translation>切换窗口浮动</translation>
         </message>
         <message>
-            <location line="+94" />
-            <location line="+157" />
+            <location line="+116" />
+            <location line="+159" />
             <source>Shortcut cleared</source>
             <translation>已清除快捷键</translation>
         </message>
         <message>
-            <location line="-138" />
+            <location line="-140" />
             <source>Already used by %1</source>
             <translation>已被「%1」使用</translation>
         </message>
         <message>
-            <location line="+4" />
+            <location line="+5" />
             <source>Applied immediately</source>
             <translation>已立即应用</translation>
         </message>
@@ -4056,7 +4056,7 @@ Turning off displays does not end the session; sleep suspends the system. Use Ke
             <translation>未设置</translation>
         </message>
         <message>
-            <location line="+159" />
+            <location line="+160" />
             <source>Applications</source>
             <translation>应用</translation>
         </message>
@@ -4066,12 +4066,12 @@ Turning off displays does not end the session; sleep suspends the system. Use Ke
             <translation>Shell 控制</translation>
         </message>
         <message>
-            <location line="-188" />
+            <location line="-189" />
             <source>Press the new key combination; Backspace clears it</source>
             <translation>请按新的组合键；按退格键可清除</translation>
         </message>
         <message>
-            <location line="+110" />
+            <location line="+111" />
             <source>Previewing %1</source>
             <translation>正在预览：%1</translation>
         </message>

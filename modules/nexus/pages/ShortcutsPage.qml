@@ -10,7 +10,8 @@ PageBase {
     id: root
 
     property string selectedAction: "terminal"
-    readonly property string selectedShortcut: ShortcutBindings.shortcut(selectedAction)
+    property string selectedShortcut
+    property var highlightedKeys: ({})
     readonly property var keyboardRows: [
         ["Esc", "__gap", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12", "__gap", "Print", "Scroll", "Pause", "__gap", "__blank", "__blank", "__blank", "__blank"],
         ["`", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "=", "Backspace", "__gap", "Insert", "Home", "PgUp", "__gap", "Num", "/", "*", "-"],
@@ -19,14 +20,20 @@ PageBase {
         ["Shift", "Z", "X", "C", "V", "B", "N", "M", ",", ".", "/", "Shift", "__gap", "__blank", "↑", "__blank", "__gap", "1", "2", "3", "Enter"],
         ["Ctrl", "Super", "Alt", "Space", "Alt", "Super", "Ctrl", "__gap", "←", "↓", "→", "__gap", "0", "__blank", ".", "Enter"]
     ]
-    readonly property var highlightedKeys: {
+    function refreshPreview(): void {
+        selectedShortcut = ShortcutBindings.shortcut(selectedAction);
         const keys = {};
         for (const part of selectedShortcut.split("+")) {
             const key = normalizedKey(part.trim());
             if (key)
                 keys[key] = true;
         }
-        return keys;
+        highlightedKeys = keys;
+    }
+
+    function selectAction(action: string): void {
+        selectedAction = action;
+        refreshPreview();
     }
 
     title: qsTr("Keyboard shortcuts")
@@ -69,6 +76,13 @@ PageBase {
         case "Return": return "↵";
         case "Enter": return "↵";
         case "Shift": return "⇧";
+        case "Print": return "Prt";
+        case "Scroll": return "Scr";
+        case "Pause": return "Pse";
+        case "Insert": return "Ins";
+        case "Delete": return "Del";
+        case "PgUp": return "Pg↑";
+        case "PgDn": return "Pg↓";
         }
         return key;
     }
@@ -114,6 +128,27 @@ PageBase {
     function resetAll(): void {
         for (const action of ShortcutBindings.actionIds)
             ShortcutBindings.setShortcut(action, ShortcutBindings.defaults[action]);
+        refreshPreview();
+    }
+
+    Component.onCompleted: refreshPreview()
+
+    property Connections shortcutConnections: Connections {
+        target: GlobalConfig.general.shortcuts
+
+        function onTerminalChanged(): void { root.refreshPreview(); }
+        function onFileManagerChanged(): void { root.refreshPreview(); }
+        function onLauncherChanged(): void { root.refreshPreview(); }
+        function onDesktopChanged(): void { root.refreshPreview(); }
+        function onScreenshotChanged(): void { root.refreshPreview(); }
+        function onNexusChanged(): void { root.refreshPreview(); }
+        function onMultitaskingChanged(): void { root.refreshPreview(); }
+        function onDashboardChanged(): void { root.refreshPreview(); }
+        function onSidebarChanged(): void { root.refreshPreview(); }
+        function onSessionChanged(): void { root.refreshPreview(); }
+        function onCloseWindowChanged(): void { root.refreshPreview(); }
+        function onFullscreenChanged(): void { root.refreshPreview(); }
+        function onToggleFloatingChanged(): void { root.refreshPreview(); }
     }
 
     component ShortcutEditor: ConnectedRect {
@@ -138,7 +173,7 @@ PageBase {
         focus: recording
 
         TapHandler {
-            onTapped: root.selectedAction = editor.action
+            onTapped: root.selectAction(editor.action)
         }
 
         function keyName(event): string {
@@ -181,6 +216,7 @@ PageBase {
             event.accepted = true;
             if (event.key === Qt.Key_Backspace || event.key === Qt.Key_Delete) {
                 ShortcutBindings.setShortcut(action, "");
+                root.refreshPreview();
                 message = qsTr("Shortcut cleared");
                 hasError = false;
                 recording = false;
@@ -204,6 +240,7 @@ PageBase {
                 hasError = true;
             } else {
                 ShortcutBindings.setShortcut(action, chord);
+                root.refreshPreview();
                 message = qsTr("Applied immediately");
                 hasError = false;
             }
@@ -268,7 +305,7 @@ PageBase {
                 activeColour: Colours.palette.m3primary
                 activeOnColour: Colours.palette.m3onPrimary
                 onClicked: {
-                    root.selectedAction = editor.action;
+                    root.selectAction(editor.action);
                     editor.message = qsTr("Press the new key combination; Backspace clears it");
                     editor.hasError = false;
                     editor.recording = true;
@@ -336,8 +373,9 @@ PageBase {
                 type: IconButton.Text
                 enabled: editor.shortcut.length > 0
                 onClicked: {
-                    root.selectedAction = editor.action;
+                    root.selectAction(editor.action);
                     ShortcutBindings.setShortcut(editor.action, "");
+                    root.refreshPreview();
                     editor.message = qsTr("Shortcut cleared");
                     editor.hasError = false;
                 }
