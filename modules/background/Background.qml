@@ -58,7 +58,9 @@ Variants {
             active: Config.background.desktopClock.enabled
 
             anchors.margins: Tokens.padding.extraLargeIncreased
-            anchors.leftMargin: Tokens.padding.extraLargeIncreased + Tokens.sizes.bar.innerWidth + Math.max(Tokens.padding.small, Config.border.thickness)
+            anchors.leftMargin: Tokens.padding.extraLargeIncreased + ((String(Config.bar.position || "left").toLowerCase() === "left") ? Tokens.sizes.bar.innerWidth + Math.max(Tokens.padding.small, Config.border.thickness) : 0)
+            anchors.rightMargin: Tokens.padding.extraLargeIncreased + ((String(Config.bar.position || "left").toLowerCase() === "right") ? Tokens.sizes.bar.innerWidth + Math.max(Tokens.padding.small, Config.border.thickness) : 0)
+            anchors.topMargin: Tokens.padding.extraLargeIncreased + ((String(Config.bar.position || "left").toLowerCase() === "top") ? Tokens.sizes.bar.innerWidth + Math.max(Tokens.padding.small, Config.border.thickness) : 0)
 
             state: Config.background.desktopClock.position
             states: [

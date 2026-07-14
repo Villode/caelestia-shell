@@ -89,7 +89,7 @@
     <context>
         <name>ActiveWindow</name>
         <message>
-            <location filename="../modules/bar/components/ActiveWindow.qml" line="+19" />
+            <location filename="../modules/bar/components/ActiveWindow.qml" line="+20" />
             <source>Desktop</source>
             <translation>桌面</translation>
         </message>
@@ -3959,13 +3959,13 @@ Turning off displays does not end the session; sleep suspends the system. Use Ke
     <context>
         <name>ShortcutsPage</name>
         <message>
-            <location filename="../modules/nexus/pages/ShortcutsPage.qml" line="+56" />
-            <location line="+789" />
+            <location filename="../modules/nexus/pages/ShortcutsPage.qml" line="+76" />
+            <location line="+811" />
             <source>Keyboard shortcuts</source>
             <translation>快捷键</translation>
         </message>
         <message>
-            <location line="-513" />
+            <location line="-523" />
             <source>Open terminal</source>
             <translation>打开终端</translation>
         </message>
@@ -4030,28 +4030,30 @@ Turning off displays does not end the session; sleep suspends the system. Use Ke
             <translation>切换窗口浮动</translation>
         </message>
         <message>
-            <location line="+143" />
+            <location line="+151" />
+            <location line="+7" />
             <source>Cancelled; original shortcut kept</source>
             <translation>已取消，保留原来的快捷键</translation>
         </message>
         <message>
-            <location line="+23" />
-            <location line="+182" />
+            <location line="+18" />
+            <location line="+183" />
             <source>Shortcut cleared</source>
             <translation>已清除快捷键</translation>
         </message>
         <message>
-            <location line="-158" />
+            <location line="-160" />
             <source>Already used by %1</source>
             <translation>已被「%1」使用</translation>
         </message>
         <message>
-            <location line="+6" />
+            <location line="+7" />
             <source>Applied immediately</source>
             <translation>已立即应用</translation>
         </message>
         <message>
-            <location line="+70" />
+            <location line="-50" />
+            <location line="+120" />
             <source>Press the new key combination; Esc cancels, Backspace clears</source>
             <translation>请按新的组合键；Esc 取消，退格键清除</translation>
         </message>
@@ -4243,17 +4245,42 @@ Keyboard layout: %1</source>
     <context>
         <name>TaskbarPanel</name>
         <message>
-            <location filename="../modules/nexus/pages/panels/TaskbarPanel.qml" line="+10" />
+            <location filename="../modules/nexus/pages/panels/TaskbarPanel.qml" line="+12" />
             <source>Taskbar</source>
             <translation>任务栏</translation>
         </message>
         <message>
-            <location line="+12" />
+            <location line="+6" />
+            <source>Left</source>
+            <translation>左侧</translation>
+        </message>
+        <message>
+            <location line="+3" />
+            <source>Right</source>
+            <translation>右侧</translation>
+        </message>
+        <message>
+            <location line="+3" />
+            <source>Top</source>
+            <translation>顶部</translation>
+        </message>
+        <message>
+            <location line="+18" />
             <source>Behaviour</source>
             <translation>行为</translation>
         </message>
         <message>
             <location line="+5" />
+            <source>Position</source>
+            <translation>位置</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>Experimental: place the taskbar on the left, right, or top edge</source>
+            <translation>实验功能：将任务栏放在左侧、右侧或顶部</translation>
+        </message>
+        <message>
+            <location line="+7" />
             <source>Persistent</source>
             <translation>常驻</translation>
         </message>

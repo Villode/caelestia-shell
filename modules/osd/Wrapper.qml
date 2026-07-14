@@ -14,10 +14,12 @@ Item {
     required property bool sidebarOrSessionVisible
 
     property bool hovered
+    // When true, dock to the left edge (used when the taskbar occupies the right).
+    property bool edgeLeft: false
     readonly property Brightness.Monitor monitor: Brightness.getMonitorForScreen(root.screen)
     readonly property bool shouldBeActive: visibilities.osd && Config.osd.enabled && !(visibilities.utilities && Config.utilities.enabled)
     property real offsetScale: shouldBeActive ? 0 : 1
-    property real sidebarOffset: sidebarOrSessionVisible ? 12 : 0
+    property real sidebarOffset: edgeLeft ? 0 : (sidebarOrSessionVisible ? 12 : 0)
 
     property real volume
     property bool muted
@@ -39,7 +41,6 @@ Item {
     }
 
     visible: offsetScale < 1
-    anchors.rightMargin: (-implicitWidth - 5 - sidebarOffset) * offsetScale
     implicitWidth: content.implicitWidth
     implicitHeight: content.implicitHeight
     opacity: 1 - offsetScale
@@ -95,7 +96,7 @@ Item {
         id: content
 
         anchors.verticalCenter: parent.verticalCenter
-        anchors.left: parent.left
+        anchors.horizontalCenter: parent.horizontalCenter
 
         asynchronous: true
         active: root.shouldBeActive || root.visible

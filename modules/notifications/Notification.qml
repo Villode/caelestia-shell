@@ -16,6 +16,8 @@ StyledRect {
     id: root
 
     required property NotifData modelData
+    // When true, enter from the left (chrome on left edge).
+    property bool edgeLeft: false
     readonly property bool hasImage: modelData.image.length > 0
     readonly property bool hasAppIcon: modelData.appIcon.length > 0
     readonly property int bodyTextFormat: /[<*_`#\[\]]/.test(modelData.body) ? Text.MarkdownText : Text.PlainText
@@ -27,7 +29,7 @@ StyledRect {
 
     implicitHeight: inner.implicitHeight
 
-    x: implicitWidth
+    x: edgeLeft ? -implicitWidth : implicitWidth
     Component.onCompleted: {
         x = 0;
         modelData.lock(this);

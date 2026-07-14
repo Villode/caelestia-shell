@@ -6,6 +6,8 @@ Item {
 
     required property DrawerVisibilities visibilities
     required property Item sidebarPanel
+    // When true, chrome sits on the left edge (taskbar on the right).
+    property bool edgeLeft: false
     property alias osdPanel: content.osdPanel
     property alias sessionPanel: content.sessionPanel
     property alias utilitiesPanel: content.utilitiesPanel
@@ -19,6 +21,7 @@ Item {
         id: content
 
         anchors.topMargin: -root.anchors.topMargin
+        edgeLeft: root.edgeLeft
         visibilities: root.visibilities
     }
 }

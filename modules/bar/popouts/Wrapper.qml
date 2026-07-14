@@ -15,6 +15,9 @@ Item {
 
     required property ShellScreen screen
     required property real offsetScale
+    // When true (right taskbar edge slide), only the outer offsetScale motion runs —
+    // no competing width/height/opacity flashes that make the open feel rushed.
+    property bool edgeSlide: false
 
     readonly property alias content: content
     readonly property alias winfo: winfo
@@ -151,6 +154,8 @@ Item {
     }
 
     Behavior on implicitWidth {
+        // Edge-slide open already moves the whole panel; morphing width fights that motion.
+        enabled: !root.edgeSlide
         Anim {
             duration: root.animLength
             easing: root.animCurve
@@ -158,7 +163,7 @@ Item {
     }
 
     Behavior on implicitHeight {
-        enabled: root.offsetScale < 1
+        enabled: !root.edgeSlide && root.offsetScale < 1
 
         Anim {
             duration: root.animLength
@@ -172,7 +177,7 @@ Item {
         property bool shouldBeActive
 
         active: false
-        opacity: 0
+        opacity: root.edgeSlide ? 1 : 0
 
         // Makes the loader load on the same frame shouldBeActive becomes true, which ensures size is set
         states: State {
@@ -180,6 +185,7 @@ Item {
             when: comp.shouldBeActive
 
             PropertyChanges {
+                // Outer ClipWrapper already fades on edge-slide; keep content fully opaque.
                 comp.opacity: 1
                 comp.active: true
             }
@@ -189,6 +195,7 @@ Item {
             Transition {
                 from: ""
                 to: "active"
+                enabled: !root.edgeSlide
 
                 SequentialAnimation {
                     PropertyAction {
@@ -203,11 +210,40 @@ Item {
             Transition {
                 from: "active"
                 to: ""
+                enabled: !root.edgeSlide
 
                 SequentialAnimation {
                     Anim {
                         type: Anim.DefaultEffects
                         property: "opacity"
+                    }
+                    PropertyAction {
+                        property: "active"
+                    }
+                }
+            },
+            // Edge-slide: swap content immediately so only the outer dashboard-style slide is seen.
+            Transition {
+                from: ""
+                to: "active"
+                enabled: root.edgeSlide
+
+                PropertyAction {
+                    property: "active"
+                }
+                PropertyAction {
+                    property: "opacity"
+                }
+            },
+            Transition {
+                from: "active"
+                to: ""
+                enabled: root.edgeSlide
+
+                // Keep content painted until the outer close slide finishes (offsetScale → 1).
+                SequentialAnimation {
+                    PauseAnimation {
+                        duration: root.animLength
                     }
                     PropertyAction {
                         property: "active"

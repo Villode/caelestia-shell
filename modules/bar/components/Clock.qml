@@ -9,21 +9,33 @@ import qs.services
 StyledRect {
     id: root
 
+    readonly property string barPosition: {
+        const value = String(Config.bar.position || "left").toLowerCase();
+        if (value === "right" || value === "top")
+            return value;
+        return "left";
+    }
+    readonly property bool isVertical: barPosition !== "top"
+
     readonly property color colour: Colours.palette.m3tertiary
     readonly property int padding: Config.bar.clock.background ? Tokens.padding.medium : Tokens.padding.extraSmall
     readonly property var font: Tokens.font.body.builders.small.scale(1.1)
 
-    implicitWidth: Tokens.sizes.bar.innerWidth
-    implicitHeight: layout.implicitHeight + root.padding * 2
+    implicitWidth: root.isVertical ? Tokens.sizes.bar.innerWidth : (layout.implicitWidth + root.padding * 2)
+    implicitHeight: root.isVertical ? (layout.implicitHeight + root.padding * 2) : Tokens.sizes.bar.innerWidth
 
     color: Qt.alpha(Colours.tPalette.m3surfaceContainer, Config.bar.clock.background ? Colours.tPalette.m3surfaceContainer.a : 0)
     radius: Tokens.rounding.full
 
-    ColumnLayout {
+    GridLayout {
         id: layout
 
         anchors.centerIn: parent
-        spacing: Tokens.spacing.extraSmall
+        columns: root.isVertical ? 1 : 100
+        rows: root.isVertical ? 100 : 1
+        flow: root.isVertical ? GridLayout.TopToBottom : GridLayout.LeftToRight
+        columnSpacing: Tokens.spacing.extraSmall
+        rowSpacing: Tokens.spacing.extraSmall
 
         Loader {
             Layout.alignment: Qt.AlignHCenter
@@ -43,8 +55,12 @@ StyledRect {
             active: Config.bar.clock.showDate
             visible: active
 
-            sourceComponent: ColumnLayout {
-                spacing: layout.spacing - 4
+            sourceComponent: GridLayout {
+                columns: root.isVertical ? 1 : 100
+                rows: root.isVertical ? 100 : 1
+                flow: root.isVertical ? GridLayout.TopToBottom : GridLayout.LeftToRight
+                columnSpacing: Math.max(0, (root.isVertical ? layout.rowSpacing : layout.columnSpacing) - 4)
+                rowSpacing: Math.max(0, (root.isVertical ? layout.rowSpacing : layout.columnSpacing) - 4)
 
                 StyledText {
                     Layout.alignment: Qt.AlignHCenter
@@ -61,12 +77,14 @@ StyledRect {
                 }
 
                 StyledRect {
-                    Layout.fillWidth: true
-                    Layout.leftMargin: -Tokens.padding.extraSmall
-                    Layout.rightMargin: -Tokens.padding.extraSmall
-                    Layout.topMargin: 4
-                    Layout.bottomMargin: Tokens.padding.extraSmall / 2
-                    implicitHeight: 1
+                    Layout.fillWidth: root.isVertical
+                    Layout.fillHeight: !root.isVertical
+                    Layout.leftMargin: root.isVertical ? -Tokens.padding.extraSmall : Tokens.padding.extraSmall / 2
+                    Layout.rightMargin: root.isVertical ? -Tokens.padding.extraSmall : Tokens.padding.extraSmall / 2
+                    Layout.topMargin: root.isVertical ? 4 : -Tokens.padding.extraSmall
+                    Layout.bottomMargin: root.isVertical ? Tokens.padding.extraSmall / 2 : -Tokens.padding.extraSmall
+                    implicitWidth: root.isVertical ? 0 : 1
+                    implicitHeight: root.isVertical ? 1 : 0
                     color: Colours.palette.m3outlineVariant
                 }
             }
@@ -90,7 +108,8 @@ StyledRect {
         }
 
         StyledText {
-            Layout.topMargin: -parent.spacing - 4
+            Layout.topMargin: root.isVertical ? -parent.rowSpacing - 4 : 0
+            Layout.leftMargin: root.isVertical ? 0 : -parent.columnSpacing - 4
             Layout.alignment: Qt.AlignHCenter
             text: Time.minuteStr
             font: {
@@ -108,7 +127,8 @@ StyledRect {
         }
 
         Loader {
-            Layout.topMargin: -parent.spacing - 4
+            Layout.topMargin: root.isVertical ? -parent.rowSpacing - 4 : 0
+            Layout.leftMargin: root.isVertical ? 0 : -parent.columnSpacing - 4
             Layout.alignment: Qt.AlignHCenter
             asynchronous: true
             active: GlobalConfig.services.useTwelveHourClock

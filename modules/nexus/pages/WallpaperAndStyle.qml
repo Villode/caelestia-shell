@@ -134,7 +134,13 @@ PageBase {
 
     property Process desktopStop: Process {
         id: desktopStop
-        command: ["villode-desktop", "--quit"]
+        // Do not only --quit: that leaves mode=video/html in config.json, so the
+        // next login / daemon start brings the old dynamic wallpaper back.
+        // Switch explicitly to the current Caelestia static wallpaper.
+        command: {
+            const path = Wallpapers.actualCurrent || Wallpapers.fallback;
+            return path ? ["villode-desktop", "--set-static", path, "--fit", "cover"] : ["villode-desktop", "--quit"];
+        }
         onExited: code => { // qmllint disable signal-handler-parameters
             root.desktopBusy = false;
             root.desktopMessage = code === 0 ? qsTr("Dynamic wallpaper stopped; static wallpaper remains active.") : qsTr("Could not stop dynamic wallpaper.");

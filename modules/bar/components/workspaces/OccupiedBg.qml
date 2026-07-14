@@ -62,11 +62,15 @@ Item {
                 return i % Config.bar.workspaces.shown;
             }
 
-            anchors.horizontalCenter: root.horizontalCenter
+            readonly property bool isVertical: String(Config.bar.position || "left").toLowerCase() !== "top"
 
-            y: (start?.y ?? 0) - 1
-            implicitWidth: Tokens.sizes.bar.innerWidth - Tokens.padding.small + 2
-            implicitHeight: start && end ? end.y + end.size - start.y + 2 : 0
+            anchors.horizontalCenter: isVertical ? root.horizontalCenter : undefined
+            anchors.verticalCenter: isVertical ? undefined : root.verticalCenter
+
+            x: isVertical ? 0 : ((start?.x ?? 0) - 1)
+            y: isVertical ? ((start?.y ?? 0) - 1) : 0
+            implicitWidth: isVertical ? (Tokens.sizes.bar.innerWidth - Tokens.padding.small + 2) : (start && end ? end.x + end.size - start.x + 2 : 0)
+            implicitHeight: isVertical ? (start && end ? end.y + end.size - start.y + 2 : 0) : (Tokens.sizes.bar.innerWidth - Tokens.padding.small + 2)
 
             color: Colours.layer(Colours.palette.m3surfaceContainerHigh, 2)
             radius: Tokens.rounding.full
@@ -80,7 +84,15 @@ Item {
                 }
             }
 
+            Behavior on x {
+                Anim {}
+            }
+
             Behavior on y {
+                Anim {}
+            }
+
+            Behavior on implicitWidth {
                 Anim {}
             }
 

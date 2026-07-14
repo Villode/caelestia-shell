@@ -18,12 +18,15 @@ Item {
     required property Item osdPanel
     required property Item sessionPanel
     required property Item utilitiesPanel
+    // Chrome on left edge: pin notifs to the outer (left) side of the host.
+    property bool edgeLeft: false
     readonly property int padding: Tokens.padding.large
     readonly property int clampedPadding: CUtils.clamp(padding - Config.border.thickness, 0, padding)
 
     anchors.top: parent.top
     anchors.bottom: parent.bottom
-    anchors.right: parent.right
+    anchors.left: edgeLeft ? parent.left : undefined
+    anchors.right: edgeLeft ? undefined : parent.right
 
     implicitWidth: Tokens.sizes.notifs.width
     implicitHeight: {
@@ -56,7 +59,9 @@ Item {
         anchors.fill: parent
         anchors.margins: root.padding
         anchors.topMargin: root.clampedPadding
-        anchors.rightMargin: root.clampedPadding
+        // Outer edge (screen side) uses the thinner clamped pad; inner edge keeps full pad.
+        anchors.leftMargin: root.edgeLeft ? root.clampedPadding : root.padding
+        anchors.rightMargin: root.edgeLeft ? root.padding : root.clampedPadding
 
         color: "transparent"
         radius: Tokens.rounding.large
@@ -204,6 +209,7 @@ Item {
                 id: notif
 
                 modelData: wrapper.modelData
+                edgeLeft: root.edgeLeft
                 implicitWidth: root.implicitWidth - root.padding - root.clampedPadding
             }
         }

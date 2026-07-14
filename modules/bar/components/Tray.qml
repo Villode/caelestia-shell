@@ -10,6 +10,14 @@ import qs.services
 StyledRect {
     id: root
 
+    readonly property string barPosition: {
+        const value = String(Config.bar.position || "left").toLowerCase();
+        if (value === "right" || value === "top")
+            return value;
+        return "left";
+    }
+    readonly property bool isVertical: barPosition !== "top"
+
     readonly property alias layout: layout
     readonly property alias items: items
     readonly property alias expandIcon: expandIcon
@@ -19,27 +27,36 @@ StyledRect {
 
     property bool expanded
 
-    readonly property real nonAnimHeight: {
+    readonly property real nonAnimExtent: {
         if (!Config.bar.tray.compact)
-            return layout.implicitHeight + padding * 2;
-        return (expanded ? expandIcon.implicitHeight + layout.implicitHeight + spacing : expandIcon.implicitHeight) + padding * 2;
+            return (root.isVertical ? layout.implicitHeight : layout.implicitWidth) + padding * 2;
+        const expandSize = root.isVertical ? expandIcon.implicitHeight : expandIcon.implicitWidth;
+        const layoutSize = root.isVertical ? layout.implicitHeight : layout.implicitWidth;
+        return (expanded ? expandSize + layoutSize + spacing : expandSize) + padding * 2;
     }
+    readonly property real nonAnimHeight: nonAnimExtent
 
     clip: true
-    visible: height > 0
+    visible: (root.isVertical ? height : width) > 0
 
-    implicitWidth: Tokens.sizes.bar.innerWidth
-    implicitHeight: nonAnimHeight
+    implicitWidth: root.isVertical ? Tokens.sizes.bar.innerWidth : nonAnimExtent
+    implicitHeight: root.isVertical ? nonAnimExtent : Tokens.sizes.bar.innerWidth
 
     color: Qt.alpha(Colours.tPalette.m3surfaceContainer, (Config.bar.tray.background && items.count > 0) ? Colours.tPalette.m3surfaceContainer.a : 0)
     radius: Tokens.rounding.full
 
-    Column {
+    Grid {
         id: layout
 
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: parent.top
-        anchors.topMargin: root.padding
+        anchors.horizontalCenter: root.isVertical ? parent.horizontalCenter : undefined
+        anchors.verticalCenter: root.isVertical ? undefined : parent.verticalCenter
+        anchors.top: root.isVertical ? parent.top : undefined
+        anchors.left: root.isVertical ? undefined : parent.left
+        anchors.topMargin: root.isVertical ? root.padding : 0
+        anchors.leftMargin: root.isVertical ? 0 : root.padding
+        columns: root.isVertical ? 1 : 100
+        rows: root.isVertical ? 100 : 1
+        flow: root.isVertical ? Grid.TopToBottom : Grid.LeftToRight
         spacing: Tokens.spacing.small
 
         opacity: root.expanded || !Config.bar.tray.compact ? 1 : 0
@@ -86,22 +103,27 @@ StyledRect {
 
         asynchronous: true
 
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottom: parent.bottom
+        anchors.horizontalCenter: root.isVertical ? parent.horizontalCenter : undefined
+        anchors.verticalCenter: root.isVertical ? undefined : parent.verticalCenter
+        anchors.bottom: root.isVertical ? parent.bottom : undefined
+        anchors.right: root.isVertical ? undefined : parent.right
 
         active: Config.bar.tray.compact && items.count > 0
 
         sourceComponent: Item {
-            implicitWidth: expandIconInner.implicitWidth
-            implicitHeight: expandIconInner.implicitHeight - Tokens.padding.small
+            implicitWidth: expandIconInner.implicitWidth - (root.isVertical ? 0 : Tokens.padding.small)
+            implicitHeight: expandIconInner.implicitHeight - (root.isVertical ? Tokens.padding.small : 0)
 
             MaterialIcon {
                 id: expandIconInner
 
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: Config.bar.tray.background ? Tokens.padding.extraSmall : -Tokens.padding.extraSmall
-                text: "expand_less"
+                anchors.horizontalCenter: root.isVertical ? parent.horizontalCenter : undefined
+                anchors.verticalCenter: root.isVertical ? undefined : parent.verticalCenter
+                anchors.bottom: root.isVertical ? parent.bottom : undefined
+                anchors.right: root.isVertical ? undefined : parent.right
+                anchors.bottomMargin: root.isVertical ? (Config.bar.tray.background ? Tokens.padding.extraSmall : -Tokens.padding.extraSmall) : 0
+                anchors.rightMargin: root.isVertical ? 0 : (Config.bar.tray.background ? Tokens.padding.extraSmall : -Tokens.padding.extraSmall)
+                text: root.isVertical ? "expand_less" : "chevron_left"
                 fontStyle: Tokens.font.icon.large
                 rotation: root.expanded ? 180 : 0
 
@@ -114,6 +136,10 @@ StyledRect {
                 }
             }
         }
+    }
+
+    Behavior on implicitWidth {
+        Anim {}
     }
 
     Behavior on implicitHeight {

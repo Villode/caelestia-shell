@@ -13,6 +13,14 @@ import qs.utils
 StyledRect {
     id: root
 
+    readonly property string barPosition: {
+        const value = String(Config.bar.position || "left").toLowerCase();
+        if (value === "right" || value === "top")
+            return value;
+        return "left";
+    }
+    readonly property bool isVertical: barPosition !== "top"
+
     property color colour: Colours.palette.m3secondary
     readonly property alias items: iconColumn
 
@@ -20,18 +28,26 @@ StyledRect {
     radius: Tokens.rounding.full
 
     clip: true
-    implicitWidth: Tokens.sizes.bar.innerWidth
-    implicitHeight: iconColumn.implicitHeight + Tokens.padding.medium * 2 - (Config.bar.status.showLockStatus && !Hypr.capsLock && !Hypr.numLock ? iconColumn.spacing : 0)
+    implicitWidth: root.isVertical ? Tokens.sizes.bar.innerWidth : (iconColumn.implicitWidth + Tokens.padding.medium * 2)
+    implicitHeight: root.isVertical ? (iconColumn.implicitHeight + Tokens.padding.medium * 2) : Tokens.sizes.bar.innerWidth
 
-    ColumnLayout {
+    GridLayout {
         id: iconColumn
 
         anchors.left: parent.left
         anchors.right: parent.right
+        anchors.top: parent.top
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: Tokens.padding.medium
+        anchors.leftMargin: root.isVertical ? 0 : Tokens.padding.medium
+        anchors.rightMargin: root.isVertical ? 0 : Tokens.padding.medium
+        anchors.topMargin: root.isVertical ? Tokens.padding.medium : 0
+        anchors.bottomMargin: root.isVertical ? Tokens.padding.medium : 0
+        columns: root.isVertical ? 1 : 100
+        rows: root.isVertical ? 100 : 1
+        flow: root.isVertical ? GridLayout.TopToBottom : GridLayout.LeftToRight
 
-        spacing: Tokens.spacing.medium / 2
+        columnSpacing: Tokens.spacing.medium / 2
+        rowSpacing: Tokens.spacing.medium / 2
 
         // Lock keys status
         WrappedLoader {
@@ -73,7 +89,8 @@ StyledRect {
                 }
 
                 Item {
-                    Layout.topMargin: Hypr.capsLock && Hypr.numLock ? iconColumn.spacing : 0
+                    Layout.topMargin: root.isVertical && Hypr.capsLock && Hypr.numLock ? iconColumn.rowSpacing : 0
+                    Layout.leftMargin: !root.isVertical && Hypr.capsLock && Hypr.numLock ? iconColumn.columnSpacing : 0
 
                     implicitWidth: numlockIcon.implicitWidth
                     implicitHeight: Hypr.numLock ? numlockIcon.implicitHeight : 0
@@ -170,13 +187,18 @@ StyledRect {
 
         // Bluetooth section
         WrappedLoader {
-            Layout.preferredHeight: implicitHeight
+            Layout.preferredWidth: root.isVertical ? undefined : implicitWidth
+            Layout.preferredHeight: root.isVertical ? implicitHeight : undefined
 
             name: "bluetooth"
             active: Config.bar.status.showBluetooth
 
-            sourceComponent: ColumnLayout {
-                spacing: Tokens.spacing.medium / 2
+            sourceComponent: GridLayout {
+                columns: root.isVertical ? 1 : 100
+                rows: root.isVertical ? 100 : 1
+                flow: root.isVertical ? GridLayout.TopToBottom : GridLayout.LeftToRight
+                columnSpacing: Tokens.spacing.medium / 2
+                rowSpacing: Tokens.spacing.medium / 2
 
                 // Bluetooth icon
                 MaterialIcon {
@@ -227,6 +249,10 @@ StyledRect {
                         }
                     }
                 }
+            }
+
+            Behavior on Layout.preferredWidth {
+                Anim {}
             }
 
             Behavior on Layout.preferredHeight {

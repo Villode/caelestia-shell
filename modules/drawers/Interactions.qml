@@ -23,27 +23,65 @@ CustomMouseArea {
     property bool osdShortcutActive
     property bool utilitiesShortcutActive
 
+    readonly property real contentXOffset: bar.isLeft ? bar.implicitWidth : 0
+    readonly property real contentYOffset: bar.isTop ? bar.implicitHeight : borderThickness
+
     function withinPanelHeight(panel: Item, x: real, y: real): bool {
-        const panelY = root.borderThickness + panel.y;
+        const panelY = root.contentYOffset + panel.y;
         return y >= panelY - Config.border.rounding && y <= panelY + panel.height + Config.border.rounding;
     }
 
     function withinPanelWidth(panel: Item, x: real, y: real): bool {
-        const panelX = bar.implicitWidth + panel.x;
+        const panelX = root.contentXOffset + panel.x;
         return x >= panelX - Config.border.rounding && x <= panelX + panel.width + Config.border.rounding;
     }
 
+    function inBarArea(x: real, y: real): bool {
+        if (bar.isLeft)
+            return x < bar.clampedThickness;
+        if (bar.isRight)
+            return x > width - bar.clampedThickness;
+        return y < bar.clampedThickness;
+    }
+
     function inLeftPanel(panel: Item, x: real, y: real): bool {
-        return x < bar.implicitWidth + panel.x + panel.width && withinPanelHeight(panel, x, y);
+        return x < root.contentXOffset + panel.x + panel.width && withinPanelHeight(panel, x, y);
     }
 
     function inRightPanel(panel: Item, x: real, y: real): bool {
-        return x > Math.min(width - Config.border.minThickness, bar.implicitWidth + panel.x) && withinPanelHeight(panel, x, y);
+        const edge = bar.isRight ? width - bar.implicitWidth : width;
+        return x > Math.min(edge - Config.border.minThickness, root.contentXOffset + panel.x) && withinPanelHeight(panel, x, y);
+    }
+
+    function inOsdPanel(panel: Item, x: real, y: real): bool {
+        // OSD (and its closed hit strip) sits on the side opposite the taskbar when bar is L/R.
+        if (!withinPanelHeight(panel, x, y))
+            return false;
+        if (bar.isRight) {
+            const hit = Math.max(panel.width, Config.border.minThickness, borderThickness);
+            return x < root.contentXOffset + hit;
+        }
+        return inRightPanel(panel, x, y);
+    }
+
+    function inChromePanel(panel: Item, x: real, y: real): bool {
+        // Notifications / sidebar / utilities share the chrome edge.
+        if (bar.isRight)
+            return inLeftPanel(panel, x, y);
+        return inRightPanel(panel, x, y);
+    }
+
+    function chromeEdgeX(): real {
+        // Screen-space X of the free edge used for sidebar open gestures.
+        if (bar.isRight)
+            return root.contentXOffset + Config.border.minThickness;
+        return Math.min(width - Config.border.minThickness, root.contentXOffset + panels.sidebar.x);
     }
 
     function inTopPanel(panel: Item, x: real, y: real): bool {
         const panelHeight = panel.height * (1 - (panel.offsetScale ?? 0)); // qmllint disable missing-property
-        return y < Math.max(Config.border.minThickness, Config.border.thickness + panelHeight) && withinPanelWidth(panel, x, y);
+        const topEdge = bar.isTop ? bar.implicitHeight : Config.border.thickness;
+        return y < Math.max(Config.border.minThickness, topEdge + panelHeight) && withinPanelWidth(panel, x, y);
     }
 
     function inBottomPanel(panel: Item, x: real, y: real, isCorner = false): bool {
@@ -54,8 +92,9 @@ CustomMouseArea {
     function onWheel(event: WheelEvent): void {
         if (fullscreen)
             return;
-        if (event.x < bar.implicitWidth) {
-            bar.handleWheel(event.y, event.angleDelta);
+        if (inBarArea(event.x, event.y)) {
+            const pos = bar.isTop ? event.x : event.y;
+            bar.handleWheel(pos, event.angleDelta);
         }
     }
 
@@ -108,25 +147,37 @@ CustomMouseArea {
         const dragY = y - dragStart.y;
 
         if (fullscreen) {
-            root.panels.osd.hovered = inRightPanel(panels.osdWrapper, x, y);
+            root.panels.osd.hovered = inOsdPanel(panels.osdWrapper, x, y);
             return;
         }
 
         // Show bar in non-exclusive mode on hover
-        if (!visibilities.bar && Config.bar.showOnHover && x < bar.clampedWidth)
+        if (!visibilities.bar && Config.bar.showOnHover && inBarArea(x, y))
             bar.isHovered = true;
 
         // Show/hide bar on drag
-        if (pressed && dragStart.x < bar.clampedWidth) {
-            if (dragX > Config.bar.dragThreshold)
-                visibilities.bar = true;
-            else if (dragX < -Config.bar.dragThreshold)
-                visibilities.bar = false;
+        if (pressed && inBarArea(dragStart.x, dragStart.y)) {
+            if (bar.isLeft) {
+                if (dragX > Config.bar.dragThreshold)
+                    visibilities.bar = true;
+                else if (dragX < -Config.bar.dragThreshold)
+                    visibilities.bar = false;
+            } else if (bar.isRight) {
+                if (dragX < -Config.bar.dragThreshold)
+                    visibilities.bar = true;
+                else if (dragX > Config.bar.dragThreshold)
+                    visibilities.bar = false;
+            } else {
+                if (dragY > Config.bar.dragThreshold)
+                    visibilities.bar = true;
+                else if (dragY < -Config.bar.dragThreshold)
+                    visibilities.bar = false;
+            }
         }
 
         if (panels.sidebar.offsetScale === 1) {
             // Show osd on hover
-            const showOsd = inRightPanel(panels.osdWrapper, x, y);
+            const showOsd = inOsdPanel(panels.osdWrapper, x, y);
 
             // Always update visibility based on hover if not in shortcut mode
             if (!osdShortcutActive) {
@@ -138,25 +189,26 @@ CustomMouseArea {
                 root.panels.osd.hovered = true;
             }
 
-            const showSidebar = pressed && dragStart.x > Math.min(width - Config.border.minThickness, bar.implicitWidth + panels.sidebar.x);
+            const onLeftChrome = bar.isRight;
+            const showSidebar = pressed && (onLeftChrome ? dragStart.x < Math.max(Config.border.minThickness, root.contentXOffset + Config.border.minThickness + 8) : dragStart.x > Math.min(width - Config.border.minThickness, root.contentXOffset + panels.sidebar.x));
 
-            // Show sidebar on hover (top-right corner, bounded by notification panel height)
+            // Show sidebar on hover (top corner of chrome edge)
             if (Config.sidebar.showOnHover) {
                 const sidebarTriggerY = Math.max(Config.sidebar.minHoverThreshold, panels.notifications.y + panels.notifications.height + borderThickness);
-                const showSidebarHover = x > Math.min(width - Config.border.minThickness, bar.implicitWidth + panels.sidebar.x) && y <= sidebarTriggerY;
+                const showSidebarHover = onLeftChrome ? (x < Math.max(Config.border.minThickness, root.contentXOffset + Config.border.minThickness + 8) && y <= sidebarTriggerY) : (x > Math.min(width - Config.border.minThickness, root.contentXOffset + panels.sidebar.x) && y <= sidebarTriggerY);
                 if (showSidebarHover && !visibilities.sidebar)
                     visibilities.sidebar = true;
             }
 
-            // The session menu is now a centred modal. Its former right-edge
-            // swipe gesture must not follow the centred wrapper, otherwise a
-            // normal left drag across the screen opens the power controls.
-            if (showSidebar && dragX < -Config.sidebar.dragThreshold)
+            // Open sidebar: drag inward from the chrome edge.
+            if (showSidebar && (onLeftChrome ? dragX > Config.sidebar.dragThreshold : dragX < -Config.sidebar.dragThreshold))
                 visibilities.sidebar = true;
         } else {
-            const outOfSidebar = x < width - panels.sidebar.width * (1 - panels.sidebar.offsetScale);
+            const onLeftChrome = bar.isRight;
+            const sidebarExtent = panels.sidebar.width * (1 - panels.sidebar.offsetScale);
+            const outOfSidebar = onLeftChrome ? (x > root.contentXOffset + sidebarExtent) : (x < width - sidebarExtent);
             // Show osd on hover
-            const showOsd = outOfSidebar && inRightPanel(panels.osdWrapper, x, y);
+            const showOsd = outOfSidebar && inOsdPanel(panels.osdWrapper, x, y);
 
             // Always update visibility based on hover if not in shortcut mode
             if (!osdShortcutActive) {
@@ -171,18 +223,18 @@ CustomMouseArea {
             // Show/hide sidebar on hover
             if (Config.sidebar.showOnHover && !pressed) {
                 const sidebarTriggerY = Math.max(Config.sidebar.minHoverThreshold, panels.notifications.y + panels.notifications.height + borderThickness);
-                const showSidebarHover = x > Math.min(width - Config.border.minThickness, bar.implicitWidth + panels.sidebar.x) && y <= sidebarTriggerY;
+                const showSidebarHover = onLeftChrome ? (x < Math.max(Config.border.minThickness, root.contentXOffset + sidebarExtent) && y <= sidebarTriggerY) : (x > Math.min(width - Config.border.minThickness, root.contentXOffset + panels.sidebar.x) && y <= sidebarTriggerY);
                 if (showSidebarHover && !visibilities.sidebar) {
                     visibilities.sidebar = true;
                 } else {
-                    const inSidebarArea = inRightPanel(panels.sidebar, x, y) || inRightPanel(panels.sessionWrapper, x, y);
+                    const inSidebarArea = inChromePanel(panels.sidebar, x, y) || inChromePanel(panels.sessionWrapper, x, y);
                     if (!inSidebarArea)
                         visibilities.sidebar = false;
                 }
             }
 
-            // Hide sidebar on drag
-            if (pressed && inRightPanel(panels.sidebar, dragStart.x, 0) && dragX > Config.sidebar.dragThreshold)
+            // Hide sidebar on drag (outward from chrome edge)
+            if (pressed && inChromePanel(panels.sidebar, dragStart.x, 0) && (onLeftChrome ? dragX < -Config.sidebar.dragThreshold : dragX > Config.sidebar.dragThreshold))
                 visibilities.sidebar = false;
         }
 
@@ -197,8 +249,20 @@ CustomMouseArea {
                 visibilities.launcher = false;
         }
 
-        // Show dashboard on hover
-        const showDashboard = !visibilities.multitasking && Config.dashboard.showOnHover && inTopPanel(panels.dashboard, x, y);
+        // Show popouts on hover first so top-bar widget targets can win over dashboard.
+        if (inBarArea(x, y)) {
+            bar.checkPopout(bar.isTop ? x : y);
+        } else if ((!popouts.currentName.startsWith("traymenu") || ((popouts.current as StackView)?.depth ?? 0) <= 1) && !(bar.isLeft ? inLeftPanel(panels.popoutsWrapper, x, y) : (bar.isRight ? inRightPanel(panels.popoutsWrapper, x, y) : inTopPanel(panels.popoutsWrapper, x, y)))) {
+            popouts.hasCurrent = false;
+            bar.closeTray();
+        }
+
+        // Show dashboard on hover.
+        // Top bar shares the dashboard edge: only open when not over a bar popout target
+        // (clock / tray / status). Active-window hover popouts are skipped on top bars.
+        const overDashboard = inTopPanel(panels.dashboard, x, y);
+        const barPopoutBlocksDashboard = bar.isTop && popouts.hasCurrent;
+        const showDashboard = !visibilities.multitasking && Config.dashboard.showOnHover && overDashboard && !barPopoutBlocksDashboard;
 
         // Always update visibility based on hover if not in shortcut mode
         if (!dashboardShortcutActive) {
@@ -216,6 +280,12 @@ CustomMouseArea {
                 visibilities.dashboard = false;
         }
 
+        // Never stack top dashboard and bar popouts.
+        if (bar.isTop && visibilities.dashboard && popouts.hasCurrent) {
+            popouts.hasCurrent = false;
+            bar.closeTray();
+        }
+
         // Show utilities on hover
         const showUtilities = inBottomPanel(panels.utilities, x, y, true);
 
@@ -225,14 +295,6 @@ CustomMouseArea {
         } else if (showUtilities) {
             // If hovering over utilities area while in shortcut mode, transition to hover control
             utilitiesShortcutActive = false;
-        }
-
-        // Show popouts on hover
-        if (x < bar.implicitWidth) {
-            bar.checkPopout(y);
-        } else if ((!popouts.currentName.startsWith("traymenu") || ((popouts.current as StackView)?.depth ?? 0) <= 1) && !inLeftPanel(panels.popoutsWrapper, x, y)) {
-            popouts.hasCurrent = false;
-            bar.closeTray();
         }
     }
 
@@ -254,7 +316,7 @@ CustomMouseArea {
 
                 // Also hide dashboard and OSD if they're not being hovered
                 const inDashboardArea = root.inTopPanel(root.panels.dashboard, root.mouseX, root.mouseY);
-                const inOsdArea = root.inRightPanel(root.panels.osdWrapper, root.mouseX, root.mouseY);
+                const inOsdArea = root.inOsdPanel(root.panels.osdWrapper, root.mouseX, root.mouseY);
 
                 if (!inDashboardArea) {
                     root.visibilities.dashboard = false;
@@ -282,7 +344,7 @@ CustomMouseArea {
         function onOsdChanged() {
             if (root.visibilities.osd) {
                 // OSD became visible, immediately check if this should be shortcut mode
-                const inOsdArea = root.inRightPanel(root.panels.osdWrapper, root.mouseX, root.mouseY);
+                const inOsdArea = root.inOsdPanel(root.panels.osdWrapper, root.mouseX, root.mouseY);
                 if (!inOsdArea) {
                     root.osdShortcutActive = true;
                 }

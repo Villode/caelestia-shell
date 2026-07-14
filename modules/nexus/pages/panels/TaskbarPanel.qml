@@ -1,7 +1,9 @@
 pragma ComponentBehavior: Bound
 
+import QtQuick
 import QtQuick.Layouts
 import Caelestia.Config
+import qs.components.controls
 import qs.modules.nexus.common
 
 PageBase {
@@ -9,6 +11,24 @@ PageBase {
 
     title: qsTr("Taskbar")
     isSubPage: true
+
+    readonly property list<string> positionValues: ["left", "right", "top"]
+    readonly property list<MenuItem> positionItems: [
+        MenuItem {
+            text: qsTr("Left")
+        },
+        MenuItem {
+            text: qsTr("Right")
+        },
+        MenuItem {
+            text: qsTr("Top")
+        }
+    ]
+
+    function positionIndex(value: string): int {
+        const idx = positionValues.indexOf(String(value || "left").toLowerCase());
+        return idx >= 0 ? idx : 0;
+    }
 
     ColumnLayout {
         anchors.horizontalCenter: parent.horizontalCenter
@@ -22,8 +42,16 @@ PageBase {
             text: qsTr("Behaviour")
         }
 
-        ToggleRow {
+        SelectRow {
             first: true
+            label: qsTr("Position")
+            subtext: qsTr("Experimental: place the taskbar on the left, right, or top edge")
+            menuItems: root.positionItems
+            active: root.positionItems[root.positionIndex(Config.bar.position)]
+            onSelected: item => GlobalConfig.bar.position = root.positionValues[root.positionItems.indexOf(item)]
+        }
+
+        ToggleRow {
             text: qsTr("Persistent")
             subtext: qsTr("Keep the bar visible at all times")
             checked: Config.bar.persistent

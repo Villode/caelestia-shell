@@ -87,13 +87,13 @@ StyledWindow {
     Region {
         id: emptyRegion
 
-        x: panels.notifications.x + bar.implicitWidth
-        y: panels.notifications.y + root.borderThickness
+        x: panels.notifications.x + (bar.isLeft ? bar.implicitWidth : 0)
+        y: panels.notifications.y + (bar.isTop ? bar.implicitHeight : root.borderThickness)
         width: panels.notifications.width
         height: panels.notifications.height
 
         Region {
-            x: root.width - width
+            x: panels.osdWrapper.onLeft ? 0 : (root.width - width)
             y: panels.osdWrapper.y + root.borderThickness
             width: panels.osdWrapper.width * (1 - panels.osd.offsetScale) + root.borderThickness
             height: panels.osd.height
@@ -188,9 +188,9 @@ StyledWindow {
             anchors.margins: -50 // Make border thicker to smooth out bulge from closed drawers
             group: blobGroup
             radius: root.borderRounding
-            borderLeft: bar.implicitWidth - anchors.margins - root.sdfBorderOffset
-            borderRight: root.borderThickness - anchors.margins - root.sdfBorderOffset
-            borderTop: root.borderThickness - anchors.margins - root.sdfBorderOffset
+            borderLeft: (bar.isRight ? root.borderThickness : bar.isTop ? root.borderThickness : bar.implicitWidth) - anchors.margins - root.sdfBorderOffset
+            borderRight: (bar.isRight ? bar.implicitWidth : root.borderThickness) - anchors.margins - root.sdfBorderOffset
+            borderTop: (bar.isTop ? bar.implicitHeight : root.borderThickness) - anchors.margins - root.sdfBorderOffset
             borderBottom: root.borderThickness - anchors.margins - root.sdfBorderOffset
         }
 
@@ -234,8 +234,10 @@ StyledWindow {
 
             panel: panels.osdWrapper
             deformAmount: 0.25
-            x: panels.osdWrapper.x + panels.osd.x + bar.implicitWidth
+            x: panels.osdWrapper.x + panels.osd.x + (bar.isLeft ? bar.implicitWidth : 0)
+            y: panels.osdWrapper.y + panels.osd.y + (bar.isTop ? bar.implicitHeight : root.borderThickness)
             implicitWidth: panels.osd.width
+            implicitHeight: panels.osd.height
         }
 
         PanelBg {
@@ -256,15 +258,34 @@ StyledWindow {
         PanelBg {
             id: popoutBg
 
-            // Extra width to prevent vertical movement deformation partially detaching panel from bar
-            property real extraWidth: panels.popouts.isDetached ? 0 : 0.2
+            // Extra size along the bar attachment axis keeps deform from detaching the blob.
+            // Right-bar popouts slide like the dashboard (no wipe stretch).
+            property real extraAlong: (panels.popouts.isDetached || bar.isRight) ? 0 : 0.2
+            readonly property bool fromTop: bar.isTop
+            readonly property bool fromRight: bar.isRight
+            readonly property bool popVisible: panels.popouts.hasCurrent || panels.popouts.isDetached || panels.popoutsWrapper.midTransition || panels.popoutsWrapper.open > 0.01
 
             panel: panels.popoutsWrapper
-            deformAmount: panels.popouts.isDetached ? 0.05 : panels.popouts.hasCurrent ? 0.15 : 0.1
-            x: panels.popoutsWrapper.x + panels.popouts.x + bar.implicitWidth - panels.popouts.width * extraWidth
-            implicitWidth: panels.popouts.width * (1 + extraWidth)
+            visible: popVisible
+            deformAmount: panels.popouts.isDetached ? 0.05 : (panels.popouts.hasCurrent ? 0.15 : 0.1)
+            // Follow wrapper fade for right-edge slide (dashboard-style).
+            opacity: bar.isRight ? panels.popoutsWrapper.opacity : 1
+            x: {
+                const base = panels.popoutsWrapper.x + panels.popouts.x + (bar.isLeft ? bar.implicitWidth : 0);
+                if (fromTop || fromRight)
+                    return base;
+                return base - panels.popouts.width * extraAlong;
+            }
+            y: {
+                const base = panels.popoutsWrapper.y + panels.popouts.y + (bar.isTop ? bar.implicitHeight : root.borderThickness);
+                if (fromTop)
+                    return base - panels.popouts.height * extraAlong;
+                return base;
+            }
+            implicitWidth: popVisible ? (fromTop || fromRight ? panels.popouts.width : panels.popouts.width * (1 + extraAlong)) : 0
+            implicitHeight: popVisible ? (fromTop ? panels.popouts.height * (1 + extraAlong) : panels.popouts.height) : 0
 
-            Behavior on extraWidth {
+            Behavior on extraAlong {
                 Anim {}
             }
         }
@@ -322,9 +343,9 @@ StyledWindow {
                 matrix: utilsBg.deformMatrix
             }
             // Keep popout content aligned with blob; when multitasking scrim is
-            // active, skip deform so the solid popout shell stays crisp.
+            // active or the popout is fully closed, skip deform (avoids ghost blobs).
             popouts.transform: Matrix4x4 {
-                matrix: visibilities.multitasking ? Qt.matrix4x4() : popoutBg.deformMatrix
+                matrix: (visibilities.multitasking || !popoutBg.popVisible) ? Qt.matrix4x4() : popoutBg.deformMatrix
             }
         }
 
@@ -333,8 +354,11 @@ StyledWindow {
             id: bar
             z: 500
 
-            anchors.top: parent.top
-            anchors.bottom: parent.bottom
+            // Explicit geometry: conditional anchors do not clear when position changes at runtime.
+            x: bar.isRight ? parent.width - width : 0
+            y: 0
+            width: bar.isVertical ? bar.shownThickness : parent.width
+            height: bar.isVertical ? parent.height : bar.shownThickness
 
             screen: root.screen
             visibilities: visibilities
@@ -351,8 +375,8 @@ StyledWindow {
         property real deformAmount: 0.15
 
         group: blobGroup
-        x: panel.x + bar.implicitWidth
-        y: panel.y + root.borderThickness
+        x: panel.x + (bar.isLeft ? bar.implicitWidth : 0)
+        y: panel.y + (bar.isTop ? bar.implicitHeight : root.borderThickness)
         implicitWidth: panel.width
         implicitHeight: panel.height
         radius: Tokens.rounding.extraLarge

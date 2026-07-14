@@ -123,6 +123,8 @@ Singleton {
     property string pendingMouseConf: ""
     property string pendingMouseJson: ""
     property bool writingMouse: false
+    // One-shot restore after Shell start (Hypr conf may not be sourced yet).
+    property bool restoredAfterStart: false
 
     function refresh(): void {
         if (!listProc.running)
@@ -770,9 +772,40 @@ exit \${PIPESTATUS[0]}
             const strict = pads.filter(p => p.name.toLowerCase().includes("touchpad") || p.name.toLowerCase().includes("trackpad"));
             touchpads = strict.length ? strict : pads;
             mice = pointerMice;
+            // Device list is ready — re-apply persisted touchpad/mouse once after start.
+            if (!restoredAfterStart)
+                Qt.callLater(() => root.applyPersistedSettings(), 150);
         } catch (e) {
             statusMessage = qsTr("Could not read pointer device list.");
         }
+    }
+
+    // Re-apply saved touchpad enable + mouse options after Shell/Hypr restart.
+    // UI state is loaded from files; this pushes it into the live compositor.
+    function applyPersistedSettings(): void {
+        if (restoredAfterStart)
+            return;
+        // Wait until we at least attempted to load state files (devices may arrive first).
+        if (!touchpads.length && !mice.length)
+            return;
+        restoredAfterStart = true;
+        ensureSourceProc.running = true;
+        if (touchpads.length) {
+            const cmds = [];
+            for (const pad of touchpads) {
+                if (!pad?.name)
+                    continue;
+                cmds.push(`hyprctl keyword "device[${pad.name}]:enabled" ${touchpadEnabled ? 1 : 0}`);
+            }
+            if (cmds.length) {
+                restoreTouchpadProc.command = ["bash", "-lc", cmds.join(" && ")];
+                restoreTouchpadProc.running = true;
+            }
+            // Keep conf files in sync with current device names + desired state.
+            persist(touchpadEnabled);
+        }
+        if (mouseStateLoaded)
+            applyMouseLive();
     }
 
     function parseOptions(text: string): void {
@@ -867,11 +900,14 @@ exit \${PIPESTATUS[0]}
     }
 
     Component.onCompleted: {
-        refresh();
+        // Ensure Hyprland configs source our confs (especially Villode session).
+        ensureSourceProc.running = true;
         stateFile.path = touchpadStatePath;
         stateFile.reload();
         mouseStateFile.path = mouseStatePath;
         mouseStateFile.reload();
+        // Device list → applyPersistedSettings once touchpads/mice are known.
+        refresh();
     }
 
     Process {
@@ -1149,11 +1185,13 @@ mkdir -p "$(dirname "$hypr_tp")" "$(dirname "$vh_tp")" "$(dirname "$hypr_ms")" "
 for conf in "$cfg_home/hypr/hyprland.conf" "$cfg_home/villode-hyprland/hyprland.conf"; do
   [[ -f "$conf" ]] || continue
   if [[ "$conf" == *villode-hyprland* ]]; then
-    if ! grep -Fq 'villode-hyprland/touchpad.conf' "$conf"; then
+    if ! grep -Fq 'touchpad.conf' "$conf"; then
       printf '\\n# Touchpad enable/disable (Caelestia)\\nsource = %s\\n' "$cfg_home/villode-hyprland/touchpad.conf" >> "$conf"
     fi
-    if ! grep -Fq 'villode-hyprland/mouse.conf' "$conf"; then
-      printf '\\n# Mouse pointer & scroll (Caelestia)\\nsource = %s\\n' "$cfg_home/villode-hyprland/mouse.conf" >> "$conf"
+    if ! grep -Fq 'mouse.conf' "$conf" || ! grep -Fq 'villode-hyprland/mouse.conf' "$conf"; then
+      if ! grep -Fq 'villode-hyprland/mouse.conf' "$conf"; then
+        printf '\\n# Mouse pointer & scroll (Caelestia)\\nsource = %s\\n' "$cfg_home/villode-hyprland/mouse.conf" >> "$conf"
+      fi
     fi
   else
     if ! grep -Fq 'conf.d/villode-touchpad.conf' "$conf"; then
@@ -1164,6 +1202,7 @@ for conf in "$cfg_home/hypr/hyprland.conf" "$cfg_home/villode-hyprland/hyprland.
     fi
   fi
 done
+# Also patch session confs under XDG_CONFIG_HOME/villode-hyprland when present.
 `]
         stdout: StdioCollector {}
         stderr: StdioCollector {}
@@ -1185,11 +1224,21 @@ done
                 root.touchpadEnabled = false;
             else if (v === "1" || v === "true")
                 root.touchpadEnabled = true;
+            // If devices already enumerated, push state into Hypr now.
+            if (!root.restoredAfterStart && root.touchpads.length)
+                Qt.callLater(() => root.applyPersistedSettings(), 50);
         }
         onLoadFailed: err => {
             if (err === FileViewError.FileNotFound)
                 root.touchpadEnabled = true;
         }
+    }
+
+    // Silent re-apply of touchpad enabled (no busy UI flip / no status toast).
+    Process {
+        id: restoreTouchpadProc
+        stdout: StdioCollector {}
+        stderr: StdioCollector {}
     }
 
     FileView {

@@ -60,7 +60,18 @@ Item {
 
                     anchors.fill: parent
                     anchors.margins: Config.border.thickness
-                    anchors.leftMargin: Visibilities.bars.get(root.screen).exclusiveZone + Tokens.spacing.small * Config.background.visualiser.spacing
+                    anchors.leftMargin: {
+                        const bar = Visibilities.bars.get(root.screen);
+                        return (bar && bar.isLeft ? bar.exclusiveZone : Config.border.thickness) + Tokens.spacing.small * Config.background.visualiser.spacing;
+                    }
+                    anchors.rightMargin: {
+                        const bar = Visibilities.bars.get(root.screen);
+                        return (bar && bar.isRight ? bar.exclusiveZone : Config.border.thickness) + Tokens.spacing.small * Config.background.visualiser.spacing;
+                    }
+                    anchors.topMargin: {
+                        const bar = Visibilities.bars.get(root.screen);
+                        return (bar && bar.isTop ? bar.exclusiveZone : Config.border.thickness) + Tokens.spacing.small * Config.background.visualiser.spacing;
+                    }
 
                     values: Audio.cava.values
                     primaryColor: Qt.alpha(Colours.palette.m3primary, 0.7)
@@ -70,6 +81,14 @@ Item {
                     animationDuration: Tokens.anim.durations.normal
 
                     Behavior on anchors.leftMargin {
+                        Anim {}
+                    }
+
+                    Behavior on anchors.rightMargin {
+                        Anim {}
+                    }
+
+                    Behavior on anchors.topMargin {
                         Anim {}
                     }
                 }

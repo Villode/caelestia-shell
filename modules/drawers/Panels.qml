@@ -38,9 +38,14 @@ Item {
     readonly property alias toasts: toasts
     readonly property alias sidebar: sidebar
 
+    // Right chrome (OSD / notifs / sidebar / utilities) flips to the left when the bar is on the right.
+    readonly property bool chromeOnLeft: bar.isRight
+
     anchors.fill: parent
     anchors.margins: borderThickness
-    anchors.leftMargin: bar.implicitWidth
+    anchors.leftMargin: bar.isLeft ? bar.implicitWidth : borderThickness
+    anchors.rightMargin: bar.isRight ? bar.implicitWidth : borderThickness
+    anchors.topMargin: bar.isTop ? bar.implicitHeight : borderThickness
 
     // Multitasking: ONLY the card strip height — do not cover dock / bottom chrome.
     // Dimming is ContentWindow.modalScrim (visual only). Empty clicks on cards strip dismiss.
@@ -125,17 +130,20 @@ Item {
     }
 
     // —— Shell chrome (always above multitasking) ——
+    // Volume/brightness OSD: opposite side of the taskbar when the bar is left/right.
     Item {
         id: osdWrapper
         z: 200
 
-        anchors.verticalCenter: parent.verticalCenter
-        anchors.right: parent.right
-        anchors.rightMargin: sidebar.width * (1 - sidebar.offsetScale)
-        clip: sidebar.visible
+        readonly property bool onLeft: root.chromeOnLeft
+        // Keep a minimum hit strip so closed OSD can still be hovered open.
+        readonly property real hitWidth: Math.max(width, root.borderThickness)
 
-        implicitWidth: osd.implicitWidth * (1 - osd.offsetScale)
-        implicitHeight: osd.implicitHeight
+        anchors.verticalCenter: parent.verticalCenter
+        x: onLeft ? 0 : (parent.width - width - (sidebar.width * (1 - sidebar.offsetScale)))
+        width: Math.max(1, osd.implicitWidth * (1 - osd.offsetScale))
+        height: osd.implicitHeight
+        clip: sidebar.visible && !onLeft
 
         Osd.Wrapper {
             id: osd
@@ -143,9 +151,12 @@ Item {
             screen: root.screen
             visibilities: root.visibilities
             sidebarOrSessionVisible: sidebar.visible || session.visible
+            edgeLeft: osdWrapper.onLeft
 
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.right: parent.right
+            y: (parent.height - height) / 2
+            x: osdWrapper.onLeft ? (-implicitWidth - 5) * offsetScale : (parent.width - width + (implicitWidth + 5 + sidebarOffset) * offsetScale)
+            width: implicitWidth
+            height: implicitHeight
         }
     }
 
@@ -158,9 +169,11 @@ Item {
         osdPanel: osdWrapper
         sessionPanel: sessionWrapper
         utilitiesPanel: utilities
+        edgeLeft: root.chromeOnLeft
 
         anchors.top: parent.top
-        anchors.right: parent.right
+        x: root.chromeOnLeft ? 0 : (parent.width - width)
+        width: implicitWidth
     }
 
     BarPopouts.ClipWrapper {
@@ -178,9 +191,11 @@ Item {
         visibilities: root.visibilities
         sidebar: sidebar
         popouts: popoutsWrapper.content
+        edgeLeft: root.chromeOnLeft
 
         anchors.bottom: parent.bottom
-        anchors.right: parent.right
+        x: root.chromeOnLeft ? 0 : (parent.width - width)
+        width: implicitWidth
     }
 
     Toasts.Toasts {
@@ -188,8 +203,9 @@ Item {
         z: 230
 
         anchors.bottom: sidebar.visible ? parent.bottom : utilities.top
-        anchors.right: sidebar.left
         anchors.margins: Tokens.padding.medium
+        x: root.chromeOnLeft ? (sidebar.x + sidebar.width + Tokens.padding.medium) : (sidebar.x - width - Tokens.padding.medium)
+        width: implicitWidth
     }
 
     Sidebar.Wrapper {
@@ -197,10 +213,13 @@ Item {
         z: 200
 
         visibilities: root.visibilities
+        edgeLeft: root.chromeOnLeft
 
         anchors.top: notifications.bottom
         anchors.bottom: utilities.top
-        anchors.right: parent.right
         anchors.topMargin: -notifications.anchors.topMargin
+        // Slide in from the chrome edge.
+        x: edgeLeft ? ((-implicitWidth - 5) * offsetScale) : (parent.width - width + (implicitWidth + 5) * offsetScale)
+        width: implicitWidth
     }
 }

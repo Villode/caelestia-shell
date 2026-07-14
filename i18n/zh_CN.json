@@ -403,5 +403,10 @@
     "Select a shortcut below to preview it on the keyboard. Changes apply immediately.": "选择下方快捷键即可在键盘上预览，修改会立即生效。",
     "Applications": "应用",
     "Shell controls": "Shell 控制",
-    "Select a shortcut below to preview or change it. Changes apply immediately.": "选择下方快捷键即可在键盘上预览，修改会立即生效。"
+    "Select a shortcut below to preview or change it. Changes apply immediately.": "选择下方快捷键即可在键盘上预览，修改会立即生效。",
+    "Position": "位置",
+    "Experimental: place the taskbar on the left, right, or top edge": "实验功能：将任务栏放在左侧、右侧或顶部",
+    "Left": "左侧",
+    "Right": "右侧",
+    "Top": "顶部"
 }

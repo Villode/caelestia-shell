@@ -37,16 +37,28 @@ Searcher {
     }
 
     function syncVillodeDesktop(path: string): void {
-        if (path) {
-            GlobalConfig.background.wallpaperEnabled = true;
-            Quickshell.execDetached(["villode-desktop", "--set-static", path, "--fit", "cover"]);
-        }
+        if (!path)
+            return;
+        // Always force mode=static in villode-desktop so a previous video/html
+        // wallpaper cannot come back after Shell crash or session restart.
+        GlobalConfig.background.wallpaperEnabled = true;
+        Quickshell.execDetached(["villode-desktop", "--set-static", path, "--fit", "cover"]);
     }
 
     function setWallpaper(path: string): void {
         actualCurrent = path;
         Quickshell.execDetached(["caelestia", "wallpaper", "-f", path, ...smartArg]);
         syncVillodeDesktop(path);
+    }
+
+    // After Shell start: if Caelestia owns a static wallpaper, re-assert it on
+    // villode-desktop. Otherwise a leftover mode=video in its config.json wins.
+    function restoreStaticDesktopIfNeeded(): void {
+        if (!GlobalConfig.background.wallpaperEnabled)
+            return;
+        const path = actualCurrent || fallback;
+        if (path)
+            syncVillodeDesktop(path);
     }
 
     function preview(path: string): void {
@@ -109,6 +121,9 @@ Searcher {
                 root.pendingDesktopStaticSync = false;
                 randomSyncTimeout.stop();
                 root.syncVillodeDesktop(wall);
+            } else {
+                // Shell restart / crash recovery: keep villode-desktop mode in sync.
+                Qt.callLater(() => root.restoreStaticDesktopIfNeeded(), 300);
             }
             root.previewColourLock = false;
         }
@@ -116,6 +131,7 @@ Searcher {
             root.actualCurrent = root.fallback;
             root.previewColourLock = false;
             Quickshell.execDetached(["caelestia", "wallpaper", "-f", root.fallback, ...root.smartArg]);
+            Qt.callLater(() => root.restoreStaticDesktopIfNeeded(), 300);
         }
     }
 

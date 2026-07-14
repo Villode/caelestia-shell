@@ -11,6 +11,14 @@ import qs.services
 StyledClippingRect {
     id: root
 
+    readonly property string barPosition: {
+        const value = String(Config.bar.position || "left").toLowerCase();
+        if (value === "right" || value === "top")
+            return value;
+        return "left";
+    }
+    readonly property bool isVertical: barPosition !== "top"
+
     required property ShellScreen screen
     required property bool fullscreen
 
@@ -27,8 +35,8 @@ StyledClippingRect {
 
     property real blur: onSpecial ? 1 : 0
 
-    implicitWidth: Tokens.sizes.bar.innerWidth
-    implicitHeight: layout.implicitHeight + Tokens.padding.small
+    implicitWidth: root.isVertical ? Tokens.sizes.bar.innerWidth : (layout.implicitWidth + Tokens.padding.small)
+    implicitHeight: root.isVertical ? (layout.implicitHeight + Tokens.padding.small) : Tokens.sizes.bar.innerWidth
 
     color: Colours.tPalette.m3surfaceContainer
     radius: Tokens.rounding.full
@@ -60,11 +68,15 @@ StyledClippingRect {
             }
         }
 
-        ColumnLayout {
+        GridLayout {
             id: layout
 
             anchors.centerIn: parent
-            spacing: Math.floor(Tokens.spacing.extraSmall)
+            columns: root.isVertical ? 1 : 100
+            rows: root.isVertical ? 100 : 1
+            flow: root.isVertical ? GridLayout.TopToBottom : GridLayout.LeftToRight
+            columnSpacing: Math.floor(Tokens.spacing.extraSmall)
+            rowSpacing: Math.floor(Tokens.spacing.extraSmall)
 
             Repeater {
                 id: workspaces
@@ -81,7 +93,8 @@ StyledClippingRect {
 
         Loader {
             asynchronous: true
-            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.horizontalCenter: root.isVertical ? parent.horizontalCenter : undefined
+            anchors.verticalCenter: root.isVertical ? undefined : parent.verticalCenter
             active: Config.bar.workspaces.activeIndicator
 
             sourceComponent: ActiveIndicator {
