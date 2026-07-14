@@ -229,17 +229,38 @@ Singleton {
         return name[0].toUpperCase();
     }
 
-    function getTrayIcon(id: string, icon: string): string {
+    function getTrayIcon(id: string, icon): string {
         for (const sub of GlobalConfig.bar.tray.iconSubs)
             if (sub.id === id)
                 return sub.image ? Qt.resolvedUrl(sub.image) : Quickshell.iconPath(sub.icon);
 
-        if (icon.includes("?path=")) {
-            const [name, path] = icon.split("?path=");
-            icon = Qt.resolvedUrl(`${path}/${name.slice(name.lastIndexOf("/") + 1)}`);
+        // SystemTrayItem.icon may be a QUrl/object. Always force a plain JS
+        // string before any string methods; otherwise bindings throw and the
+        // tray item renders as a blank slot.
+        let iconStr = "";
+        try {
+            if (icon === undefined || icon === null) {
+                iconStr = "";
+            } else {
+                iconStr = `${icon}`;
+            }
+        } catch (e) {
+            iconStr = "";
         }
 
-        const iconName = icon.startsWith("image://icon/") ? icon.slice("image://icon/".length) : icon;
+        // QUrl stringification can look like: QUrl("file:///...")
+        if (iconStr.indexOf("QUrl(") === 0 && iconStr.lastIndexOf(")") === iconStr.length - 1)
+            iconStr = iconStr.slice(5, -1).replace(/^"|"$/g, "");
+
+        if (iconStr.indexOf("?path=") >= 0) {
+            const [name, path] = iconStr.split("?path=");
+            iconStr = `${Qt.resolvedUrl(`${path}/${name.slice(name.lastIndexOf("/") + 1)}`)}`;
+        }
+
+        // After Qt.resolvedUrl, result may again be a non-string.
+        iconStr = `${iconStr}`;
+
+        const iconName = iconStr.indexOf("image://icon/") === 0 ? iconStr.slice("image://icon/".length) : iconStr;
         const iconFiles = {
             "input-keyboard-symbolic": "/usr/share/icons/Adwaita/symbolic/devices/input-keyboard-symbolic.svg",
             "input-keyboard": "/usr/share/icons/Adwaita/scalable/devices/input-keyboard.svg",
@@ -248,14 +269,14 @@ Singleton {
         };
         if (iconFiles[iconName])
             return `file://${iconFiles[iconName]}`;
-        if (iconName.startsWith("fcitx-"))
+        if (iconName.indexOf("fcitx-") === 0)
             return `file:///usr/share/icons/hicolor/48x48/apps/org.fcitx.Fcitx5.${iconName}.png`;
 
         // Status notifier items may expose a freedesktop icon name instead of
         // a URL. Resolve those names through the current icon theme.
-        if (icon && !icon.includes("://") && !icon.startsWith("/") && !icon.startsWith("file:"))
-            return Quickshell.iconPath(icon);
-        return icon;
+        if (iconStr && iconStr.indexOf("://") < 0 && iconStr.indexOf("/") !== 0 && iconStr.indexOf("file:") !== 0)
+            return Quickshell.iconPath(iconStr);
+        return iconStr;
     }
 
     function getBatteryIcon(percentage: real, charging = false): string {

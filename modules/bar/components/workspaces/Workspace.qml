@@ -100,6 +100,8 @@ ColumnLayout {
                     }
                 }
 
+                // Monochrome Material glyphs only. ActiveIndicator Colouriser recolors
+                // this whole mask; full-color IconImages become solid black blocks.
                 MaterialIcon {
                     required property var modelData
 
