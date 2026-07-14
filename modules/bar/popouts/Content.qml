@@ -24,6 +24,11 @@ Item {
         anchors.margins: Tokens.padding.large
 
         Popout {
+            name: "calendar"
+            sourceComponent: Calendar {}
+        }
+
+        Popout {
             name: "activewindow"
             sourceComponent: ActiveWindow {
                 popouts: root.popouts
