@@ -78,8 +78,11 @@ Item {
         anchors.left: parent.left
         anchors.margins: Tokens.padding.large
 
+        // Build the utility cards once in the background. Destroying them when
+        // the drawer closes makes every open animation compete with recreating
+        // screenshot, recording and toggle controls, so the contents pop in.
         asynchronous: true
-        active: root.shouldBeActive || root.visible
+        active: true
 
         sourceComponent: Content {
             implicitWidth: root.implicitWidth - root.totalPadding
