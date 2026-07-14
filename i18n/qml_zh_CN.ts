@@ -3960,12 +3960,12 @@ Turning off displays does not end the session; sleep suspends the system. Use Ke
         <name>ShortcutsPage</name>
         <message>
             <location filename="../modules/nexus/pages/ShortcutsPage.qml" line="+12" />
-            <location line="+269" />
+            <location line="+274" />
             <source>Keyboard shortcuts</source>
             <translation>快捷键</translation>
         </message>
         <message>
-            <location line="-265" />
+            <location line="-270" />
             <source>Open terminal</source>
             <translation>打开终端</translation>
         </message>
@@ -4030,7 +4030,7 @@ Turning off displays does not end the session; sleep suspends the system. Use Ke
             <translation>切换窗口浮动</translation>
         </message>
         <message>
-            <location line="+83" />
+            <location line="+88" />
             <location line="+155" />
             <source>Shortcut cleared</source>
             <translation>已清除快捷键</translation>

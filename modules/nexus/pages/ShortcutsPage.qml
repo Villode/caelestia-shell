@@ -65,7 +65,12 @@ PageBase {
         readonly property string shortcut: ShortcutBindings.shortcut(action)
 
         Layout.fillWidth: true
+        Layout.topMargin: editor.first ? 0 : Tokens.spacing.small
         implicitHeight: content.implicitHeight + Tokens.padding.small * 2
+        topLeftRadius: Tokens.rounding.extraLarge
+        topRightRadius: Tokens.rounding.extraLarge
+        bottomLeftRadius: Tokens.rounding.extraLarge
+        bottomRightRadius: Tokens.rounding.extraLarge
         focus: recording
 
         function keyName(event): string {
