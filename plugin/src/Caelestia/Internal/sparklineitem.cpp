@@ -4,6 +4,7 @@
 #include <qpainter.h>
 #include <qpainterpath.h>
 #include <qpen.h>
+#include <qpoint.h>
 
 namespace caelestia::internal {
 
@@ -37,14 +38,23 @@ void SparklineItem::drawLine(QPainter* painter, CircularBuffer* buffer, const QC
     const qreal stepX = w / static_cast<qreal>(m_historyLength - 1);
     const qreal startX = w - (len - 1) * stepX - stepX * m_slideProgress + stepX;
 
-    // Build line path
-    QPainterPath linePath;
-    linePath.moveTo(startX, h - (buffer->at(0) / m_maxValue) * h);
-    for (int i = 1; i < len; ++i) {
+    // Build a smoothed path. Quadratic segments through neighbouring
+    // midpoints avoid the visibly angular, step-by-step movement of lineTo().
+    QVector<QPointF> points;
+    points.reserve(len);
+    for (int i = 0; i < len; ++i) {
         const qreal x = startX + i * stepX;
         const qreal y = h - (buffer->at(i) / m_maxValue) * h;
-        linePath.lineTo(x, y);
+        points.emplaceBack(x, y);
     }
+
+    QPainterPath linePath;
+    linePath.moveTo(points.constFirst());
+    for (int i = 1; i < len - 1; ++i) {
+        const QPointF midpoint = (points.at(i) + points.at(i + 1)) / 2.0;
+        linePath.quadTo(points.at(i), midpoint);
+    }
+    linePath.lineTo(points.constLast());
 
     // Stroke the line
     QPen pen(color, m_lineWidth);

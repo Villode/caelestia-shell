@@ -69,7 +69,16 @@ StyledRect {
                 Connections {
                     function onValuesChanged(): void {
                         sparkline.targetMax = Math.max(Native.NetworkUsage.downloadBuffer.maximum, Native.NetworkUsage.uploadBuffer.maximum, 1024);
-                        slideAnim.restart();
+
+                        // Sampling timers are not frame-synchronised. Carry any
+                        // unfinished fraction into the new sample so the graph
+                        // never jumps backwards when a tick arrives early.
+                        const carry = slideAnim.running && Native.NetworkUsage.downloadBuffer.count > 2 ? sparkline.slideProgress - 1 : 0;
+                        slideAnim.stop();
+                        sparkline.slideProgress = carry;
+                        slideAnim.from = carry;
+                        slideAnim.duration = Math.round((1 - carry) * GlobalConfig.dashboard.resourceUpdateInterval);
+                        slideAnim.start();
                     }
 
                     target: Native.NetworkUsage.downloadBuffer
@@ -80,7 +89,6 @@ StyledRect {
 
                     target: sparkline
                     property: "slideProgress"
-                    from: 0
                     to: 1
                     easing.type: Easing.Linear
                     duration: GlobalConfig.dashboard.resourceUpdateInterval
