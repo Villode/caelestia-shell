@@ -125,9 +125,13 @@ NetworkUsage::Counters NetworkUsage::readCounters() {
         return {};
     }
 
+    // procfs files report a size of zero, so QFile::atEnd() is already true
+    // before their first read. Read the virtual file in one operation instead.
+    const QList<QByteArray> lines = file.readAll().split('\n');
+
     Counters counters;
-    while (!file.atEnd()) {
-        const QByteArray line = file.readLine().simplified();
+    for (const QByteArray& rawLine : lines) {
+        const QByteArray line = rawLine.simplified();
         const qsizetype colon = line.indexOf(':');
         if (colon < 0 || line.first(colon).trimmed() == "lo") {
             continue;
