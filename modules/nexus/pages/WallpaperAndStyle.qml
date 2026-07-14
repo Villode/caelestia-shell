@@ -186,7 +186,7 @@ PageBase {
                     required property string modelData
                     required property int index
                     width: selector.segmentWidth
-                    height: parent.height
+                    height: selector.height - 8
 
                     RowLayout {
                         anchors.centerIn: parent
