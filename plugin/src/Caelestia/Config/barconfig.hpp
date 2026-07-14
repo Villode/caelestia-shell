@@ -15,8 +15,10 @@ class BarScrollActions : public ConfigObject {
     QML_ANONYMOUS
 
     CONFIG_PROPERTY(bool, workspaces, true)
-    CONFIG_PROPERTY(bool, volume, true)
-    CONFIG_PROPERTY(bool, brightness, true)
+    // Retained for config-file compatibility. Bar-wide wheel adjustment was
+    // removed because scrolling nearby panels could change these accidentally.
+    CONFIG_PROPERTY(bool, volume, false)
+    CONFIG_PROPERTY(bool, brightness, false)
 
 public:
     explicit BarScrollActions(QObject* parent = nullptr)

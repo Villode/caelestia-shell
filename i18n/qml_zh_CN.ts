@@ -4284,12 +4284,12 @@ Keyboard layout: %1</source>
         </message>
         <message>
             <location line="+6" />
-            <location line="+41" />
+            <location line="+42" />
             <source>Workspaces</source>
             <translation>工作区</translation>
         </message>
         <message>
-            <location line="-40" />
+            <location line="-41" />
             <source>Indicators, window icons</source>
             <translation>指示器、窗口图标</translation>
         </message>
@@ -4339,29 +4339,9 @@ Keyboard layout: %1</source>
             <translation>滚轮操作</translation>
         </message>
         <message>
-            <location line="+6" />
+            <location line="+7" />
             <source>Scroll over the workspace indicator to switch workspaces</source>
             <translation>在工作区指示器上滚动以切换工作区</translation>
-        </message>
-        <message>
-            <location line="+6" />
-            <source>Volume</source>
-            <translation>音量</translation>
-        </message>
-        <message>
-            <location line="+1" />
-            <source>Scroll on the top half of the bar to adjust volume</source>
-            <translation>在任务栏上半部分滚动以调节音量</translation>
-        </message>
-        <message>
-            <location line="+7" />
-            <source>Brightness</source>
-            <translation>亮度</translation>
-        </message>
-        <message>
-            <location line="+1" />
-            <source>Scroll on the bottom half of the bar to adjust brightness</source>
-            <translation>在任务栏下半部分滚动以调节亮度</translation>
         </message>
     </context>
     <context>

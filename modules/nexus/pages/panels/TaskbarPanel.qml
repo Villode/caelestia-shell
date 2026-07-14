@@ -97,25 +97,12 @@ PageBase {
 
         ToggleRow {
             first: true
+            last: true
             text: qsTr("Workspaces")
             subtext: qsTr("Scroll over the workspace indicator to switch workspaces")
             checked: Config.bar.scrollActions.workspaces
             onToggled: GlobalConfig.bar.scrollActions.workspaces = checked
         }
 
-        ToggleRow {
-            text: qsTr("Volume")
-            subtext: qsTr("Scroll on the top half of the bar to adjust volume")
-            checked: Config.bar.scrollActions.volume
-            onToggled: GlobalConfig.bar.scrollActions.volume = checked
-        }
-
-        ToggleRow {
-            last: true
-            text: qsTr("Brightness")
-            subtext: qsTr("Scroll on the bottom half of the bar to adjust brightness")
-            checked: Config.bar.scrollActions.brightness
-            onToggled: GlobalConfig.bar.scrollActions.brightness = checked
-        }
     }
 }
