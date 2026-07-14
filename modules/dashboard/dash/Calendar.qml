@@ -196,26 +196,49 @@ CustomMouseArea {
                     id: dayItem
 
                     required property var model
+                    readonly property var holidayInfo: ChinaHolidays.info(model.date)
 
                     implicitWidth: implicitHeight
-                    implicitHeight: text.implicitHeight + Tokens.padding.small
+                    implicitHeight: dayColumn.implicitHeight + Tokens.padding.extraSmall
 
-                    StyledText {
-                        id: text
+                    ToolTip.visible: dayItem.hovered && !!dayItem.holidayInfo
+                    ToolTip.delay: 350
+                    ToolTip.text: dayItem.holidayInfo ? dayItem.holidayInfo.name : ""
+
+                    Column {
+                        id: dayColumn
 
                         anchors.centerIn: parent
+                        spacing: -2
 
-                        horizontalAlignment: Text.AlignHCenter
-                        text: grid.locale.toString(dayItem.model.day)
-                        color: {
-                            const dayOfWeek = dayItem.model.date.getDay();
-                            if (dayOfWeek === 0 || dayOfWeek === 6)
-                                return Colours.palette.m3tertiary;
+                        StyledText {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            horizontalAlignment: Text.AlignHCenter
+                            text: grid.locale.toString(dayItem.model.day)
+                            color: {
+                                if (dayItem.holidayInfo?.kind === "holiday")
+                                    return Colours.palette.m3primary;
+                                if (dayItem.holidayInfo?.kind === "workday")
+                                    return Colours.palette.m3secondary;
 
-                            return Colours.palette.m3onSurfaceVariant;
+                                const dayOfWeek = dayItem.model.date.getDay();
+                                if (dayOfWeek === 0 || dayOfWeek === 6)
+                                    return Colours.palette.m3tertiary;
+
+                                return Colours.palette.m3onSurfaceVariant;
+                            }
+                            opacity: dayItem.model.today || dayItem.model.month === grid.month ? 1 : 0.4
+                            font: Tokens.font.body.small
                         }
-                        opacity: dayItem.model.today || dayItem.model.month === grid.month ? 1 : 0.4
-                        font: Tokens.font.body.small
+
+                        StyledText {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            horizontalAlignment: Text.AlignHCenter
+                            text: dayItem.holidayInfo?.label ?? " "
+                            color: dayItem.holidayInfo?.kind === "workday" ? Colours.palette.m3secondary : Colours.palette.m3primary
+                            opacity: (dayItem.model.today || dayItem.model.month === grid.month) && dayItem.holidayInfo ? 1 : 0
+                            font: Tokens.font.label.builders.small.scale(0.68).weight(Font.Medium).build()
+                        }
                     }
                 }
             }
