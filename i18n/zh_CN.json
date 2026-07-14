@@ -396,6 +396,10 @@
     ,"Not assigned": "未设置"
     ,"Click a shortcut to record a new key combination": "点击快捷键即可录制新的组合键"
     ,"Changes apply immediately. Backspace or Delete removes a shortcut.": "修改会立即生效；按退格键或删除键可移除快捷键。"
+    ,"Previewing %1": "正在预览：%1"
+    ,"Highlighted keys: %1": "已高亮按键：%1"
+    ,"No shortcut assigned": "未分配快捷键"
+    ,"Select a shortcut below to preview or change it. Changes apply immediately.": "选择下方快捷键即可预览或修改，修改会立即生效。"
     ,"Applications": "应用"
     ,"Shell controls": "Shell 控制"
 }

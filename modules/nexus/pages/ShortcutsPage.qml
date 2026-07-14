@@ -9,7 +9,69 @@ import qs.modules.nexus.common
 PageBase {
     id: root
 
+    property string selectedAction: "terminal"
+    readonly property string selectedShortcut: ShortcutBindings.shortcut(selectedAction)
+    readonly property var keyboardRows: [
+        ["Esc", "__gap", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12", "__gap", "Print", "Scroll", "Pause", "__gap", "__blank", "__blank", "__blank", "__blank"],
+        ["`", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "=", "Backspace", "__gap", "Insert", "Home", "PgUp", "__gap", "Num", "/", "*", "-"],
+        ["Tab", "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "[", "]", "\\", "__gap", "Delete", "End", "PgDn", "__gap", "7", "8", "9", "+"],
+        ["Caps", "A", "S", "D", "F", "G", "H", "J", "K", "L", ";", "'", "Return", "__gap", "__blank", "__blank", "__blank", "__gap", "4", "5", "6", "+"],
+        ["Shift", "Z", "X", "C", "V", "B", "N", "M", ",", ".", "/", "Shift", "__gap", "__blank", "↑", "__blank", "__gap", "1", "2", "3", "Enter"],
+        ["Ctrl", "Super", "Alt", "Space", "Alt", "Super", "Ctrl", "__gap", "←", "↓", "→", "__gap", "0", "__blank", ".", "Enter"]
+    ]
+    readonly property var highlightedKeys: {
+        const keys = {};
+        for (const part of selectedShortcut.split("+")) {
+            const key = normalizedKey(part.trim());
+            if (key)
+                keys[key] = true;
+        }
+        return keys;
+    }
+
     title: qsTr("Keyboard shortcuts")
+
+    function normalizedKey(key: string): string {
+        const aliases = {
+            "esc": "escape", "enter": "return", "caps": "capslock", "`": "grave",
+            "-": "minus", "=": "equal", "[": "bracketleft", "]": "bracketright", "\\": "backslash",
+            ";": "semicolon", "'": "apostrophe", ",": "comma", ".": "period", "/": "slash",
+            "←": "left", "→": "right", "↑": "up", "↓": "down", "pgup": "pageup", "pgdn": "pagedown",
+            "control": "ctrl", "meta": "super"
+        };
+        const lower = String(key).toLowerCase().split("_").join("");
+        return aliases[lower] ?? lower;
+    }
+
+    function keyUnits(key: string): real {
+        switch (key) {
+        case "__gap": return 0.5;
+        case "__blank": return 1;
+        case "Backspace": return 2;
+        case "Tab": return 1.5;
+        case "\\": return 1.5;
+        case "Caps": return 1.75;
+        case "Return": return 2.25;
+        case "Shift": return 2.4;
+        case "Ctrl":
+        case "Super":
+        case "Alt": return 1.45;
+        case "Space": return 5.5;
+        }
+        return 1;
+    }
+
+    function keyLabel(key: string): string {
+        switch (key) {
+        case "__gap":
+        case "__blank": return "";
+        case "Backspace": return "⌫";
+        case "Return": return "↵";
+        case "Enter": return "↵";
+        case "Shift": return "⇧";
+        }
+        return key;
+    }
 
     function actionLabel(action: string): string {
         switch (action) {
@@ -71,7 +133,13 @@ PageBase {
         topRightRadius: Tokens.rounding.extraLarge
         bottomLeftRadius: Tokens.rounding.extraLarge
         bottomRightRadius: Tokens.rounding.extraLarge
+        border.width: root.selectedAction === action ? 1 : 0
+        border.color: Colours.palette.m3primary
         focus: recording
+
+        TapHandler {
+            onTapped: root.selectedAction = editor.action
+        }
 
         function keyName(event): string {
             switch (event.key) {
@@ -200,6 +268,7 @@ PageBase {
                 activeColour: Colours.palette.m3primary
                 activeOnColour: Colours.palette.m3onPrimary
                 onClicked: {
+                    root.selectedAction = editor.action;
                     editor.message = qsTr("Press the new key combination; Backspace clears it");
                     editor.hasError = false;
                     editor.recording = true;
@@ -267,6 +336,7 @@ PageBase {
                 type: IconButton.Text
                 enabled: editor.shortcut.length > 0
                 onClicked: {
+                    root.selectedAction = editor.action;
                     ShortcutBindings.setShortcut(editor.action, "");
                     editor.message = qsTr("Shortcut cleared");
                     editor.hasError = false;
@@ -286,16 +356,14 @@ PageBase {
             text: qsTr("Keyboard shortcuts")
         }
 
-        ConnectedRect {
+        ColumnLayout {
             Layout.fillWidth: true
-            first: true
-            last: true
-            implicitHeight: tipRow.implicitHeight + Tokens.padding.large * 2
+            Layout.leftMargin: Tokens.padding.small
+            Layout.rightMargin: Tokens.padding.small
+            spacing: Tokens.spacing.medium
 
             RowLayout {
-                id: tipRow
-                anchors.fill: parent
-                anchors.margins: Tokens.padding.large
+                Layout.fillWidth: true
                 spacing: Tokens.spacing.medium
 
                 MaterialIcon {
@@ -311,19 +379,73 @@ PageBase {
 
                     StyledText {
                         Layout.fillWidth: true
-                        text: qsTr("Click a shortcut to record a new key combination")
+                        text: qsTr("Previewing %1").arg(root.actionLabel(root.selectedAction))
                         font: Tokens.font.body.medium
                         wrapMode: Text.Wrap
                     }
 
                     StyledText {
                         Layout.fillWidth: true
-                        text: qsTr("Changes apply immediately. Backspace or Delete removes a shortcut.")
+                        text: root.selectedShortcut ? qsTr("Highlighted keys: %1").arg(root.selectedShortcut.split("+").join(" + ")) : qsTr("No shortcut assigned")
                         color: Colours.palette.m3outline
                         font: Tokens.font.body.small
                         wrapMode: Text.Wrap
                     }
                 }
+            }
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: Tokens.spacing.extraSmall
+
+                Repeater {
+                    model: root.keyboardRows
+
+                    RowLayout {
+                        id: keyboardRow
+
+                        required property var modelData
+                        readonly property var keys: modelData
+
+                        Layout.fillWidth: true
+                        spacing: Tokens.spacing.extraSmall
+
+                        Repeater {
+                            model: keyboardRow.keys
+
+                            StyledRect {
+                                id: keyboardKey
+
+                                required property string modelData
+                                readonly property bool spacer: modelData === "__gap" || modelData === "__blank"
+                                readonly property bool active: !spacer && root.highlightedKeys[root.normalizedKey(modelData)] === true
+
+                                Layout.fillWidth: true
+                                Layout.preferredWidth: root.keyUnits(modelData) * 32
+                                implicitHeight: 32
+                                radius: Tokens.rounding.small
+                                color: spacer ? "transparent" : active ? Colours.palette.m3secondaryContainer : Colours.palette.m3surfaceContainerHigh
+                                border.width: spacer || active ? 0 : 1
+                                border.color: Colours.palette.m3outlineVariant
+
+                                StyledText {
+                                    anchors.centerIn: parent
+                                    text: root.keyLabel(keyboardKey.modelData)
+                                    color: keyboardKey.active ? Colours.palette.m3onSecondaryContainer : Colours.palette.m3onSurfaceVariant
+                                    font: Tokens.font.label.small
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            StyledText {
+                Layout.fillWidth: true
+                text: qsTr("Select a shortcut below to preview or change it. Changes apply immediately.")
+                color: Colours.palette.m3outline
+                font: Tokens.font.label.small
+                wrapMode: Text.Wrap
             }
         }
 

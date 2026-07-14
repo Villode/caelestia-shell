@@ -3959,13 +3959,13 @@ Turning off displays does not end the session; sleep suspends the system. Use Ke
     <context>
         <name>ShortcutsPage</name>
         <message>
-            <location filename="../modules/nexus/pages/ShortcutsPage.qml" line="+12" />
-            <location line="+274" />
+            <location filename="../modules/nexus/pages/ShortcutsPage.qml" line="+32" />
+            <location line="+324" />
             <source>Keyboard shortcuts</source>
             <translation>快捷键</translation>
         </message>
         <message>
-            <location line="-270" />
+            <location line="-278" />
             <source>Open terminal</source>
             <translation>打开终端</translation>
         </message>
@@ -4030,13 +4030,13 @@ Turning off displays does not end the session; sleep suspends the system. Use Ke
             <translation>切换窗口浮动</translation>
         </message>
         <message>
-            <location line="+88" />
-            <location line="+155" />
+            <location line="+94" />
+            <location line="+157" />
             <source>Shortcut cleared</source>
             <translation>已清除快捷键</translation>
         </message>
         <message>
-            <location line="-136" />
+            <location line="-138" />
             <source>Already used by %1</source>
             <translation>已被「%1」使用</translation>
         </message>
@@ -4046,7 +4046,7 @@ Turning off displays does not end the session; sleep suspends the system. Use Ke
             <translation>已立即应用</translation>
         </message>
         <message>
-            <location line="+85" />
+            <location line="+86" />
             <source>Waiting for keys…</source>
             <translation>正在等待按键…</translation>
         </message>
@@ -4056,17 +4056,7 @@ Turning off displays does not end the session; sleep suspends the system. Use Ke
             <translation>未设置</translation>
         </message>
         <message>
-            <location line="+90" />
-            <source>Click a shortcut to record a new key combination</source>
-            <translation>点击快捷键即可录制新的组合键</translation>
-        </message>
-        <message>
-            <location line="+7" />
-            <source>Changes apply immediately. Backspace or Delete removes a shortcut.</source>
-            <translation>修改会立即生效；按退格键或删除键可移除快捷键。</translation>
-        </message>
-        <message>
-            <location line="+9" />
+            <location line="+159" />
             <source>Applications</source>
             <translation>应用</translation>
         </message>
@@ -4076,12 +4066,32 @@ Turning off displays does not end the session; sleep suspends the system. Use Ke
             <translation>Shell 控制</translation>
         </message>
         <message>
-            <location line="-135" />
+            <location line="-188" />
             <source>Press the new key combination; Backspace clears it</source>
             <translation>请按新的组合键；按退格键可清除</translation>
         </message>
         <message>
-            <location line="+143" />
+            <location line="+110" />
+            <source>Previewing %1</source>
+            <translation>正在预览：%1</translation>
+        </message>
+        <message>
+            <location line="+7" />
+            <source>Highlighted keys: %1</source>
+            <translation>已高亮按键：%1</translation>
+        </message>
+        <message>
+            <location line="+0" />
+            <source>No shortcut assigned</source>
+            <translation>未分配快捷键</translation>
+        </message>
+        <message>
+            <location line="+56" />
+            <source>Select a shortcut below to preview or change it. Changes apply immediately.</source>
+            <translation>选择下方快捷键即可预览或修改，修改会立即生效。</translation>
+        </message>
+        <message>
+            <location line="+23" />
             <source>Window management</source>
             <translation>窗口管理</translation>
         </message>
