@@ -201,9 +201,13 @@ CustomMouseArea {
                     implicitWidth: implicitHeight
                     implicitHeight: dayColumn.implicitHeight + Tokens.padding.extraSmall
 
-                    ToolTip.visible: dayItem.hovered && !!dayItem.holidayInfo
+                    ToolTip.visible: holidayHover.hovered && !!dayItem.holidayInfo
                     ToolTip.delay: 350
                     ToolTip.text: dayItem.holidayInfo ? dayItem.holidayInfo.name : ""
+
+                    HoverHandler {
+                        id: holidayHover
+                    }
 
                     Column {
                         id: dayColumn
@@ -233,9 +237,17 @@ CustomMouseArea {
 
                         StyledText {
                             anchors.horizontalCenter: parent.horizontalCenter
+                            width: dayItem.width
                             horizontalAlignment: Text.AlignHCenter
+                            elide: Text.ElideRight
                             text: dayItem.holidayInfo?.label ?? " "
-                            color: dayItem.holidayInfo?.kind === "workday" ? Colours.palette.m3secondary : Colours.palette.m3primary
+                            color: {
+                                if (dayItem.holidayInfo?.kind === "workday")
+                                    return Colours.palette.m3secondary;
+                                if (dayItem.holidayInfo?.kind === "holiday")
+                                    return Colours.palette.m3primary;
+                                return Colours.palette.m3tertiary;
+                            }
                             opacity: (dayItem.model.today || dayItem.model.month === grid.month) && dayItem.holidayInfo ? 1 : 0
                             font: Tokens.font.label.builders.small.scale(0.68).weight(Font.Medium).build()
                         }

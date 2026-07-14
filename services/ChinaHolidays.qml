@@ -2,8 +2,16 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
+import Quickshell.Io
+import qs.utils
 
 Singleton {
+    id: root
+
+    readonly property string subscriptionUrl: "https://holiday.ailcc.com/api/holiday/ics"
+    property var subscribedEvents: ({})
+    property bool refreshing
+
     // Official annual schedules:
     // 2026: https://www.gov.cn/zhengce/zhengceku/202511/content_7047091.htm
     // 2025: https://www.gov.cn/zhengce/zhengceku/202411/content_6986383.htm
@@ -33,6 +41,86 @@ Singleton {
         }
     })
 
+    function eventInfo(summary: string): var {
+        const workday = /[（(]班[）)]/.test(summary);
+        const holiday = /[（(]休[）)]/.test(summary);
+        const name = summary.replace(/[（(][休班][）)]/g, "").trim();
+        return {
+            kind: workday ? "workday" : holiday ? "holiday" : "event",
+            label: workday ? "班" : holiday ? "休" : name,
+            name: summary
+        };
+    }
+
+    function mergeEvent(entries: var, dateKey: string, event: var): void {
+        const old = entries[dateKey];
+        if (!old) {
+            entries[dateKey] = event;
+            return;
+        }
+
+        const priority = {
+            event: 0,
+            holiday: 1,
+            workday: 2
+        };
+        const primary = priority[event.kind] > priority[old.kind] ? event : old;
+        const names = old.name === event.name ? old.name : `${old.name}、${event.name}`;
+        entries[dateKey] = {
+            kind: primary.kind,
+            label: primary.label,
+            name: names
+        };
+    }
+
+    function parseCalendar(text: string): bool {
+        if (!text.includes("BEGIN:VCALENDAR"))
+            return false;
+
+        // RFC 5545 permits a physical line to continue on the next indented line.
+        const unfolded = text.replace(/\r\n[ \t]/g, "").replace(/\r/g, "");
+        const entries = {};
+        const events = unfolded.split("BEGIN:VEVENT");
+        let count = 0;
+
+        for (let i = 1; i < events.length; i++) {
+            const block = events[i].split("END:VEVENT")[0];
+            const startMatch = block.match(/^DTSTART(?:;[^:]*)?:(\d{8})/m);
+            const endMatch = block.match(/^DTEND(?:;[^:]*)?:(\d{8})/m);
+            const summaryMatch = block.match(/^SUMMARY:(.*)$/m);
+            if (!startMatch || !summaryMatch)
+                continue;
+
+            const summary = summaryMatch[1].replace(/\\([,;\\])/g, "$1").trim();
+            const start = new Date(Date.UTC(Number(startMatch[1].slice(0, 4)), Number(startMatch[1].slice(4, 6)) - 1, Number(startMatch[1].slice(6, 8))));
+            const endValue = endMatch ? endMatch[1] : startMatch[1];
+            let end = new Date(Date.UTC(Number(endValue.slice(0, 4)), Number(endValue.slice(4, 6)) - 1, Number(endValue.slice(6, 8))));
+            if (end <= start)
+                end = new Date(start.getTime() + 86400000);
+
+            const parsed = eventInfo(summary);
+            for (let cursor = start.getTime(); cursor < end.getTime(); cursor += 86400000) {
+                const date = new Date(cursor);
+                const dateKey = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
+                mergeEvent(entries, dateKey, parsed);
+            }
+            count++;
+        }
+
+        if (count === 0)
+            return false;
+        subscribedEvents = entries;
+        return true;
+    }
+
+    function refresh(): void {
+        if (refreshing)
+            return;
+        refreshing = true;
+        download.command = ["curl", "-fsSL", "--max-time", "15", "-A", "villode-caelestia/1.0", subscriptionUrl];
+        download.running = true;
+    }
+
     function key(date: date): string {
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -42,6 +130,9 @@ Singleton {
 
     function info(date: date): var {
         const dateKey = key(date);
+        if (subscribedEvents[dateKey])
+            return subscribedEvents[dateKey];
+
         const schedule = schedules[String(date.getFullYear())];
         if (!schedule)
             return null;
@@ -64,5 +155,35 @@ Singleton {
             }
         }
         return null;
+    }
+
+    FileView {
+        id: cacheFile
+
+        path: `${Paths.cache}/china-holidays.ics`
+        printErrors: false
+        atomicWrites: true
+        onLoaded: root.parseCalendar(text())
+    }
+
+    Process {
+        id: download
+
+        stdout: StdioCollector {
+            id: downloadOutput
+        }
+        onExited: code => {
+            root.refreshing = false;
+            if (code === 0 && root.parseCalendar(downloadOutput.text))
+                cacheFile.setText(downloadOutput.text);
+        }
+    }
+
+    Timer {
+        interval: 21600000
+        repeat: true
+        running: true
+        triggeredOnStart: true
+        onTriggered: root.refresh()
     }
 }
