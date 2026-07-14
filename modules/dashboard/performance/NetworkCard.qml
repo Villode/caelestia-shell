@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import Caelestia.Config
 import Caelestia.Internal
+import Caelestia.Services as Native
 import qs.components
 import qs.components.misc
 import qs.services
@@ -15,8 +16,8 @@ StyledRect {
     implicitWidth: Tokens.sizes.dashboard.perfNetworkCardWidth
     implicitHeight: Tokens.sizes.dashboard.perfNetworkCardHeight
 
-    Ref {
-        service: NetworkUsage
+    Native.ServiceRef {
+        service: Native.NetworkUsage
     }
 
     ColumnLayout {
@@ -56,22 +57,22 @@ StyledRect {
                 property real smoothMax: targetMax
 
                 anchors.fill: parent
-                line1: NetworkUsage.uploadBuffer // qmllint disable missing-type
+                line1: Native.NetworkUsage.uploadBuffer // qmllint disable missing-type
                 line1Color: Colours.palette.m3secondary
                 line1FillAlpha: 0.15
-                line2: NetworkUsage.downloadBuffer // qmllint disable missing-type
+                line2: Native.NetworkUsage.downloadBuffer // qmllint disable missing-type
                 line2Color: Colours.palette.m3tertiary
                 line2FillAlpha: 0.2
                 maxValue: smoothMax
-                historyLength: NetworkUsage.historyLength
+                historyLength: Native.NetworkUsage.historyLength
 
                 Connections {
                     function onValuesChanged(): void {
-                        sparkline.targetMax = Math.max(NetworkUsage.downloadBuffer.maximum, NetworkUsage.uploadBuffer.maximum, 1024);
+                        sparkline.targetMax = Math.max(Native.NetworkUsage.downloadBuffer.maximum, Native.NetworkUsage.uploadBuffer.maximum, 1024);
                         slideAnim.restart();
                     }
 
-                    target: NetworkUsage.downloadBuffer
+                    target: Native.NetworkUsage.downloadBuffer
                 }
 
                 NumberAnimation {
@@ -96,7 +97,7 @@ StyledRect {
                 text: qsTr("Collecting data...")
                 font: Tokens.font.body.small
                 color: Colours.palette.m3outline
-                visible: NetworkUsage.downloadBuffer.count < 2
+                visible: Native.NetworkUsage.downloadBuffer.count < 2
             }
         }
 
@@ -123,7 +124,7 @@ StyledRect {
 
             StyledText {
                 text: {
-                    const fmt = NetworkUsage.formatBytes(NetworkUsage.downloadSpeed ?? 0);
+                    const fmt = Native.NetworkUsage.formatBytes(Native.NetworkUsage.downloadSpeed ?? 0);
                     return fmt ? `${fmt.value.toFixed(1)} ${fmt.unit}` : "0.0 B/s";
                 }
                 font: Tokens.font.body.builders.medium.weight(Font.Medium).build()
@@ -154,7 +155,7 @@ StyledRect {
 
             StyledText {
                 text: {
-                    const fmt = NetworkUsage.formatBytes(NetworkUsage.uploadSpeed ?? 0);
+                    const fmt = Native.NetworkUsage.formatBytes(Native.NetworkUsage.uploadSpeed ?? 0);
                     return fmt ? `${fmt.value.toFixed(1)} ${fmt.unit}` : "0.0 B/s";
                 }
                 font: Tokens.font.body.builders.medium.weight(Font.Medium).build()
@@ -185,8 +186,8 @@ StyledRect {
 
             StyledText {
                 text: {
-                    const down = NetworkUsage.formatBytesTotal(NetworkUsage.downloadTotal ?? 0);
-                    const up = NetworkUsage.formatBytesTotal(NetworkUsage.uploadTotal ?? 0);
+                    const down = Native.NetworkUsage.formatBytesTotal(Native.NetworkUsage.downloadTotal ?? 0);
+                    const up = Native.NetworkUsage.formatBytesTotal(Native.NetworkUsage.uploadTotal ?? 0);
                     return (down && up) ? `↓${down.value.toFixed(1)}${down.unit} ↑${up.value.toFixed(1)}${up.unit}` : "↓0.0B ↑0.0B";
                 }
                 font: Tokens.font.body.small
