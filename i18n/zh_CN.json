@@ -391,4 +391,11 @@
     ,"Apps and Shell": "应用与 Shell"
     ,"Window management": "窗口管理"
     ,"Restore defaults": "恢复默认值"
+    ,"Take a screenshot": "截图"
+    ,"Waiting for keys…": "正在等待按键…"
+    ,"Not assigned": "未设置"
+    ,"Click a shortcut to record a new key combination": "点击快捷键即可录制新的组合键"
+    ,"Changes apply immediately. Backspace or Delete removes a shortcut.": "修改会立即生效；按退格键或删除键可移除快捷键。"
+    ,"Applications": "应用"
+    ,"Shell controls": "Shell 控制"
 }

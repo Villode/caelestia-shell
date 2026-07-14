@@ -3960,11 +3960,12 @@ Turning off displays does not end the session; sleep suspends the system. Use Ke
         <name>ShortcutsPage</name>
         <message>
             <location filename="../modules/nexus/pages/ShortcutsPage.qml" line="+12" />
+            <location line="+269" />
             <source>Keyboard shortcuts</source>
             <translation>快捷键</translation>
         </message>
         <message>
-            <location line="+4" />
+            <location line="-265" />
             <source>Open terminal</source>
             <translation>打开终端</translation>
         </message>
@@ -3982,6 +3983,11 @@ Turning off displays does not end the session; sleep suspends the system. Use Ke
             <location line="+1" />
             <source>Show or hide desktop</source>
             <translation>显示或隐藏桌面</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>Take a screenshot</source>
+            <translation>截图</translation>
         </message>
         <message>
             <location line="+1" />
@@ -4024,13 +4030,13 @@ Turning off displays does not end the session; sleep suspends the system. Use Ke
             <translation>切换窗口浮动</translation>
         </message>
         <message>
-            <location line="+64" />
-            <location line="+78" />
+            <location line="+83" />
+            <location line="+155" />
             <source>Shortcut cleared</source>
             <translation>已清除快捷键</translation>
         </message>
         <message>
-            <location line="-59" />
+            <location line="-136" />
             <source>Already used by %1</source>
             <translation>已被「%1」使用</translation>
         </message>
@@ -4040,27 +4046,42 @@ Turning off displays does not end the session; sleep suspends the system. Use Ke
             <translation>已立即应用</translation>
         </message>
         <message>
-            <location line="+39" />
-            <source>Press shortcut</source>
-            <translation>请按快捷键</translation>
+            <location line="+85" />
+            <source>Waiting for keys…</source>
+            <translation>正在等待按键…</translation>
         </message>
         <message>
             <location line="+0" />
-            <source>Disabled</source>
-            <translation>已禁用</translation>
+            <source>Not assigned</source>
+            <translation>未设置</translation>
         </message>
         <message>
-            <location line="+3" />
+            <location line="+90" />
+            <source>Click a shortcut to record a new key combination</source>
+            <translation>点击快捷键即可录制新的组合键</translation>
+        </message>
+        <message>
+            <location line="+7" />
+            <source>Changes apply immediately. Backspace or Delete removes a shortcut.</source>
+            <translation>修改会立即生效；按退格键或删除键可移除快捷键。</translation>
+        </message>
+        <message>
+            <location line="+9" />
+            <source>Applications</source>
+            <translation>应用</translation>
+        </message>
+        <message>
+            <location line="+8" />
+            <source>Shell controls</source>
+            <translation>Shell 控制</translation>
+        </message>
+        <message>
+            <location line="-135" />
             <source>Press the new key combination; Backspace clears it</source>
             <translation>请按新的组合键；按退格键可清除</translation>
         </message>
         <message>
-            <location line="+28" />
-            <source>Apps and Shell</source>
-            <translation>应用与 Shell</translation>
-        </message>
-        <message>
-            <location line="+13" />
+            <location line="+143" />
             <source>Window management</source>
             <translation>窗口管理</translation>
         </message>

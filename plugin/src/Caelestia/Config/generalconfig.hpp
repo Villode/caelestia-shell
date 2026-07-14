@@ -94,6 +94,7 @@ class GeneralShortcuts : public ConfigObject {
     CONFIG_GLOBAL_PROPERTY(QString, fileManager, u"Super+E"_s)
     CONFIG_GLOBAL_PROPERTY(QString, launcher, u"Super+D"_s)
     CONFIG_GLOBAL_PROPERTY(QString, desktop, u"Super+Shift+D"_s)
+    CONFIG_GLOBAL_PROPERTY(QString, screenshot, u"Print"_s)
     CONFIG_GLOBAL_PROPERTY(QString, nexus, u"Super+Comma"_s)
     CONFIG_GLOBAL_PROPERTY(QString, multitasking, u"Super+Tab"_s)
     CONFIG_GLOBAL_PROPERTY(QString, dashboard, u"Super+A"_s)

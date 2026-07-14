@@ -17,6 +17,7 @@ PageBase {
         case "fileManager": return qsTr("Open file manager");
         case "launcher": return qsTr("Open app launcher");
         case "desktop": return qsTr("Show or hide desktop");
+        case "screenshot": return qsTr("Take a screenshot");
         case "nexus": return qsTr("Open settings");
         case "multitasking": return qsTr("Open multitasking overview");
         case "dashboard": return qsTr("Toggle dashboard");
@@ -27,6 +28,25 @@ PageBase {
         case "toggleFloating": return qsTr("Toggle floating window");
         }
         return action;
+    }
+
+    function actionIcon(action: string): string {
+        switch (action) {
+        case "terminal": return "terminal";
+        case "fileManager": return "folder";
+        case "launcher": return "apps";
+        case "desktop": return "desktop_windows";
+        case "screenshot": return "screenshot";
+        case "nexus": return "settings";
+        case "multitasking": return "view_carousel";
+        case "dashboard": return "dashboard";
+        case "sidebar": return "dock_to_right";
+        case "session": return "power_settings_new";
+        case "closeWindow": return "close";
+        case "fullscreen": return "fullscreen";
+        case "toggleFloating": return "select_window";
+        }
+        return "keyboard";
     }
 
     function resetAll(): void {
@@ -45,7 +65,7 @@ PageBase {
         readonly property string shortcut: ShortcutBindings.shortcut(action)
 
         Layout.fillWidth: true
-        implicitHeight: content.implicitHeight + Tokens.padding.medium * 2
+        implicitHeight: content.implicitHeight + Tokens.padding.small * 2
         focus: recording
 
         function keyName(event): string {
@@ -127,6 +147,21 @@ PageBase {
             anchors.bottomMargin: Tokens.padding.medium
             spacing: Tokens.spacing.medium
 
+            StyledRect {
+                implicitWidth: 42
+                implicitHeight: 42
+                radius: Tokens.rounding.full
+                color: editor.recording ? Colours.palette.m3primaryContainer : Colours.tPalette.m3surfaceContainerHigh
+
+                MaterialIcon {
+                    anchors.centerIn: parent
+                    text: root.actionIcon(editor.action)
+                    color: editor.recording ? Colours.palette.m3onPrimaryContainer : Colours.palette.m3onSurfaceVariant
+                    fontStyle: Tokens.font.icon.medium
+                    fill: editor.recording ? 1 : 0
+                }
+            }
+
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 0
@@ -148,15 +183,77 @@ PageBase {
                 }
             }
 
-            IconTextButton {
-                icon: editor.recording ? "keyboard" : "edit"
-                text: editor.recording ? qsTr("Press shortcut") : (editor.shortcut || qsTr("Disabled"))
-                type: IconTextButton.Tonal
+            ButtonBase {
+                id: shortcutButton
+
+                implicitWidth: Math.max(132, shortcutContent.implicitWidth + Tokens.padding.medium * 2)
+                implicitHeight: 42
+                checked: editor.recording
+                type: ButtonBase.Tonal
+                inactiveColour: Colours.palette.m3secondaryContainer
+                inactiveOnColour: Colours.palette.m3onSecondaryContainer
+                activeColour: Colours.palette.m3primary
+                activeOnColour: Colours.palette.m3onPrimary
                 onClicked: {
                     editor.message = qsTr("Press the new key combination; Backspace clears it");
                     editor.hasError = false;
                     editor.recording = true;
                     editor.forceActiveFocus();
+                }
+
+                RowLayout {
+                    id: shortcutContent
+
+                    anchors.centerIn: parent
+                    spacing: Tokens.spacing.extraSmall
+
+                    MaterialIcon {
+                        visible: editor.recording
+                        text: "keyboard"
+                        color: shortcutButton.onColour
+                        fontStyle: Tokens.font.icon.small
+                    }
+
+                    StyledText {
+                        visible: editor.recording || !editor.shortcut
+                        text: editor.recording ? qsTr("Waiting for keys…") : qsTr("Not assigned")
+                        color: shortcutButton.onColour
+                        font: Tokens.font.label.medium
+                    }
+
+                    Repeater {
+                        model: editor.recording ? [] : editor.shortcut.split("+").filter(key => key.length > 0)
+
+                        RowLayout {
+                            required property string modelData
+                            required property int index
+                            spacing: Tokens.spacing.extraSmall
+
+                            StyledRect {
+                                implicitWidth: keyLabel.implicitWidth + Tokens.padding.small * 2
+                                implicitHeight: 26
+                                radius: Tokens.rounding.small
+                                color: Qt.alpha(shortcutButton.onColour, 0.1)
+                                border.width: 1
+                                border.color: Qt.alpha(shortcutButton.onColour, 0.24)
+
+                                StyledText {
+                                    id: keyLabel
+                                    anchors.centerIn: parent
+                                    text: parent.parent.modelData
+                                    color: shortcutButton.onColour
+                                    font: Tokens.font.label.medium
+                                }
+                            }
+
+                            StyledText {
+                                visible: index < editor.shortcut.split("+").length - 1
+                                text: "+"
+                                color: shortcutButton.onColour
+                                font: Tokens.font.label.small
+                            }
+                        }
+                    }
                 }
             }
 
@@ -181,14 +278,61 @@ PageBase {
 
         SectionHeader {
             first: true
-            text: qsTr("Apps and Shell")
+            text: qsTr("Keyboard shortcuts")
         }
+
+        ConnectedRect {
+            Layout.fillWidth: true
+            first: true
+            last: true
+            implicitHeight: tipRow.implicitHeight + Tokens.padding.large * 2
+
+            RowLayout {
+                id: tipRow
+                anchors.fill: parent
+                anchors.margins: Tokens.padding.large
+                spacing: Tokens.spacing.medium
+
+                MaterialIcon {
+                    text: "keyboard_alt"
+                    color: Colours.palette.m3primary
+                    fontStyle: Tokens.font.icon.large
+                    fill: 1
+                }
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 0
+
+                    StyledText {
+                        Layout.fillWidth: true
+                        text: qsTr("Click a shortcut to record a new key combination")
+                        font: Tokens.font.body.medium
+                        wrapMode: Text.Wrap
+                    }
+
+                    StyledText {
+                        Layout.fillWidth: true
+                        text: qsTr("Changes apply immediately. Backspace or Delete removes a shortcut.")
+                        color: Colours.palette.m3outline
+                        font: Tokens.font.body.small
+                        wrapMode: Text.Wrap
+                    }
+                }
+            }
+        }
+
+        SectionHeader { text: qsTr("Applications") }
 
         ShortcutEditor { action: "terminal"; label: root.actionLabel(action); first: true }
         ShortcutEditor { action: "fileManager"; label: root.actionLabel(action) }
         ShortcutEditor { action: "launcher"; label: root.actionLabel(action) }
         ShortcutEditor { action: "desktop"; label: root.actionLabel(action) }
-        ShortcutEditor { action: "nexus"; label: root.actionLabel(action) }
+        ShortcutEditor { action: "screenshot"; label: root.actionLabel(action); last: true }
+
+        SectionHeader { text: qsTr("Shell controls") }
+
+        ShortcutEditor { action: "nexus"; label: root.actionLabel(action); first: true }
         ShortcutEditor { action: "multitasking"; label: root.actionLabel(action) }
         ShortcutEditor { action: "dashboard"; label: root.actionLabel(action) }
         ShortcutEditor { action: "sidebar"; label: root.actionLabel(action) }

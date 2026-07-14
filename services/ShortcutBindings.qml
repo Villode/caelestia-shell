@@ -12,6 +12,7 @@ Singleton {
         fileManager: "Super+E",
         launcher: "Super+D",
         desktop: "Super+Shift+D",
+        screenshot: "Print",
         nexus: "Super+Comma",
         multitasking: "Super+Tab",
         dashboard: "Super+A",
@@ -23,7 +24,7 @@ Singleton {
     })
 
     readonly property list<string> actionIds: [
-        "terminal", "fileManager", "launcher", "desktop", "nexus", "multitasking",
+        "terminal", "fileManager", "launcher", "desktop", "screenshot", "nexus", "multitasking",
         "dashboard", "sidebar", "session", "closeWindow", "fullscreen", "toggleFloating"
     ]
 
@@ -36,6 +37,7 @@ Singleton {
         case "fileManager": return config.fileManager;
         case "launcher": return config.launcher;
         case "desktop": return config.desktop;
+        case "screenshot": return config.screenshot;
         case "nexus": return config.nexus;
         case "multitasking": return config.multitasking;
         case "dashboard": return config.dashboard;
@@ -55,6 +57,7 @@ Singleton {
         case "fileManager": config.fileManager = shortcut; break;
         case "launcher": config.launcher = shortcut; break;
         case "desktop": config.desktop = shortcut; break;
+        case "screenshot": config.screenshot = shortcut; break;
         case "nexus": config.nexus = shortcut; break;
         case "multitasking": config.multitasking = shortcut; break;
         case "dashboard": config.dashboard = shortcut; break;
@@ -90,6 +93,7 @@ Singleton {
         case "fileManager": return `exec, ${apps.explorer.join(" ")}`;
         case "launcher": return "exec, villode-launcher";
         case "desktop": return "exec, villode-desktop --toggle";
+        case "screenshot": return "global, caelestia:screenshot";
         case "nexus": return "global, caelestia:nexus";
         case "multitasking": return "global, caelestia:multitasking";
         case "dashboard": return "global, caelestia:dashboard";
@@ -143,6 +147,7 @@ Singleton {
         function onFileManagerChanged(): void { root.apply(); }
         function onLauncherChanged(): void { root.apply(); }
         function onDesktopChanged(): void { root.apply(); }
+        function onScreenshotChanged(): void { root.apply(); }
         function onNexusChanged(): void { root.apply(); }
         function onMultitaskingChanged(): void { root.apply(); }
         function onDashboardChanged(): void { root.apply(); }
