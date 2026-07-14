@@ -16,9 +16,9 @@ PageBase {
         ["Esc", "__gap", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12", "__gap", "Print", "Scroll", "Pause", "__gap", "__blank", "__blank", "__blank", "__blank"],
         ["`", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "=", "Backspace", "__gap", "Insert", "Home", "PgUp", "__gap", "Num", "/", "*", "-"],
         ["Tab", "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "[", "]", "\\", "__gap", "Delete", "End", "PgDn", "__gap", "7", "8", "9", "+"],
-        ["Caps", "A", "S", "D", "F", "G", "H", "J", "K", "L", ";", "'", "Return", "__gap", "__blank", "__blank", "__blank", "__gap", "4", "5", "6", "+"],
+        ["Caps", "A", "S", "D", "F", "G", "H", "J", "K", "L", ";", "'", "Return", "__gap", "__blank", "__blank", "__blank", "__gap", "4", "5", "6", "__blank"],
         ["Shift", "Z", "X", "C", "V", "B", "N", "M", ",", ".", "/", "Shift", "__gap", "__blank", "↑", "__blank", "__gap", "1", "2", "3", "Enter"],
-        ["Ctrl", "Super", "Alt", "Space", "Alt", "Super", "Ctrl", "__gap", "←", "↓", "→", "__gap", "0", "__blank", ".", "Enter"]
+        ["Ctrl", "Super", "Alt", "Space", "Alt", "Super", "Ctrl", "__gap", "←", "↓", "→", "__gap", "0", "__blank", ".", "__blank"]
     ]
     function refreshPreview(): void {
         selectedShortcut = ShortcutBindings.shortcut(selectedAction);
@@ -462,14 +462,14 @@ PageBase {
                                 Layout.preferredWidth: root.keyUnits(modelData) * 32
                                 implicitHeight: 32
                                 radius: Tokens.rounding.small
-                                color: spacer ? "transparent" : active ? Colours.palette.m3secondaryContainer : Colours.palette.m3surfaceContainerHigh
-                                border.width: spacer || active ? 0 : 1
-                                border.color: Colours.palette.m3outlineVariant
+                                color: spacer ? "transparent" : active ? Colours.palette.m3tertiary : Colours.palette.m3surfaceContainerHigh
+                                border.width: spacer ? 0 : active ? 2 : 1
+                                border.color: active ? Colours.palette.m3onTertiary : Colours.palette.m3outlineVariant
 
                                 StyledText {
                                     anchors.centerIn: parent
                                     text: root.keyLabel(keyboardKey.modelData)
-                                    color: keyboardKey.active ? Colours.palette.m3onSecondaryContainer : Colours.palette.m3onSurfaceVariant
+                                    color: keyboardKey.active ? Colours.palette.m3onTertiary : Colours.palette.m3onSurfaceVariant
                                     font: Tokens.font.label.small
                                 }
                             }
