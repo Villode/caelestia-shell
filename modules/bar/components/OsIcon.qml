@@ -17,10 +17,13 @@ Item {
         cursorShape: Qt.PointingHandCursor
         onClicked: {
             const visibilities = Visibilities.getForActive();
+            const opening = !visibilities.multitasking;
             // Close other center modals if open
             visibilities.session = false;
             visibilities.launcher = false;
-            visibilities.multitasking = !visibilities.multitasking;
+            if (opening)
+                visibilities.dashboard = false;
+            visibilities.multitasking = opening;
         }
     }
 

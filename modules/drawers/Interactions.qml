@@ -215,7 +215,7 @@ CustomMouseArea {
         }
 
         // Show dashboard on hover
-        const showDashboard = Config.dashboard.showOnHover && inTopPanel(panels.dashboard, x, y);
+        const showDashboard = !visibilities.multitasking && Config.dashboard.showOnHover && inTopPanel(panels.dashboard, x, y);
 
         // Always update visibility based on hover if not in shortcut mode
         if (!dashboardShortcutActive) {
@@ -226,7 +226,7 @@ CustomMouseArea {
         }
 
         // Show/hide dashboard on drag (for touchscreen devices)
-        if (pressed && inTopPanel(panels.dashboard, dragStart.x, dragStart.y) && withinPanelWidth(panels.dashboard, x, y)) {
+        if (!visibilities.multitasking && pressed && inTopPanel(panels.dashboard, dragStart.x, dragStart.y) && withinPanelWidth(panels.dashboard, x, y)) {
             if (dragY > Config.dashboard.dragThreshold)
                 visibilities.dashboard = true;
             else if (dragY < -Config.dashboard.dragThreshold)
@@ -255,6 +255,13 @@ CustomMouseArea {
 
     // Monitor individual visibility changes
     Connections {
+        function onMultitaskingChanged() {
+            if (root.visibilities.multitasking) {
+                root.dashboardShortcutActive = false;
+                root.visibilities.dashboard = false;
+            }
+        }
+
         function onLauncherChanged() {
             // If launcher is hidden, clear shortcut flags for dashboard and OSD
             if (!root.visibilities.launcher) {

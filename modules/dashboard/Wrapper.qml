@@ -28,10 +28,12 @@ Item {
     }
 
     readonly property real nonAnimHeight: (content.item as Content)?.nonAnimHeight ?? 0
-    readonly property bool shouldBeActive: visibilities.dashboard && Config.dashboard.enabled
+    readonly property bool shouldBeActive: visibilities.dashboard && !visibilities.multitasking && Config.dashboard.enabled
     property real offsetScale: shouldBeActive ? 0 : 1
 
-    visible: offsetScale < 1
+    // Never draw the dashboard over the multitasking scrim. Closing it
+    // immediately also prevents a translucent frame during the two animations.
+    visible: !visibilities.multitasking && offsetScale < 1
     anchors.topMargin: (-implicitHeight - 5) * offsetScale
     implicitHeight: content.implicitHeight
     implicitWidth: content.implicitWidth || 854 // Hard coded fallback for first open
