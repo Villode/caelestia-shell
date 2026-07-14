@@ -50,26 +50,8 @@ Item {
     readonly property real nonAnimWidth: view.implicitWidth + viewWrapper.anchors.margins * 2
     readonly property real nonAnimHeight: tabs.implicitHeight + tabs.anchors.topMargin + view.implicitHeight + viewWrapper.anchors.margins * 2
 
-    // Opaque shell — dashboard relied on translucent blob glass which looks empty over multitasking scrim
-    readonly property color shellBg: {
-        const c = Colours.palette.m3surface;
-        return Qt.rgba(c.r, c.g, c.b, 1);
-    }
-
     implicitWidth: nonAnimWidth
     implicitHeight: nonAnimHeight
-
-    Rectangle {
-        anchors.fill: parent
-        radius: Tokens.rounding.extraLarge
-        color: root.shellBg
-        border.width: 1
-        border.color: {
-            const c = Colours.palette.m3outlineVariant;
-            return Qt.rgba(c.r, c.g, c.b, 0.4);
-        }
-        z: -1
-    }
 
     Tabs {
         id: tabs
