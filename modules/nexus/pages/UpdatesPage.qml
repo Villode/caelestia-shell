@@ -21,7 +21,7 @@ PageBase {
     property string checkedAtIso: ""
     readonly property int updateCount: components.filter(item => item.status === "有更新" || item.status === "需要修复" || item.status === "未安装").length
 
-    title: "Villode 更新"
+    title: qsTr("Villode updates")
 
     property Process checkProcess: Process {
         id: checkProcess
@@ -38,7 +38,7 @@ PageBase {
         onExited: code => { // qmllint disable signal-handler-parameters
             root.checking = false;
             if (code !== 0 && !root.errorText)
-                root.errorText = "检查更新失败，请确认网络连接。";
+                root.errorText = qsTr("Could not check for updates. Check your network connection.");
         }
     }
 
@@ -62,12 +62,12 @@ PageBase {
             for (const c of (data.components || [])) {
                 rows.push({
                     id: c.id || "",
-                    name: c.name || c.id || "组件",
+                    name: c.name || c.id || qsTr("Component"),
                     installed: c.installed || "—",
                     latest: c.latest || "—",
                     installedFull: c.installedFull || "",
                     latestFull: c.latestFull || "",
-                    status: c.status || "未知",
+                    status: c.status || qsTr("Unknown"),
                     installedAt: c.installedAt || "",
                     releasedAt: c.releasedAt || "",
                     changes: Array.isArray(c.changes) ? c.changes : []
@@ -122,6 +122,18 @@ PageBase {
         return status === "有更新" || status === "需要修复" || status === "未安装";
     }
 
+    function statusLabel(status: string): string {
+        if (status === "有更新")
+            return qsTr("Update available");
+        if (status === "需要修复")
+            return qsTr("Repair required");
+        if (status === "未安装")
+            return qsTr("Not installed");
+        if (status === "已是最新")
+            return qsTr("Up to date");
+        return status;
+    }
+
     function statusColour(status: string): color {
         if (status === "有更新")
             return Colours.palette.m3primary;
@@ -135,14 +147,14 @@ PageBase {
     function actionLabel(): string {
         const n = root.updateCount;
         if (n <= 0)
-            return "更新";
+            return qsTr("Update");
         const hasInstall = root.components.some(item => item.status === "未安装");
         const hasUpdate = root.components.some(item => item.status === "有更新" || item.status === "需要修复");
         if (hasInstall && hasUpdate)
-            return `安装/更新 (${n})`;
+            return qsTr("Install / update (%1)").arg(n);
         if (hasInstall)
-            return `安装 (${n})`;
-        return `更新 (${n})`;
+            return qsTr("Install (%1)").arg(n);
+        return qsTr("Update (%1)").arg(n);
     }
 
     function componentIcon(id: string): string {
@@ -212,19 +224,19 @@ PageBase {
                     StyledText {
                         Layout.fillWidth: true
                         text: root.checking
-                            ? "正在检查更新…"
+                            ? qsTr("Checking for updates...")
                             : root.errorText
-                              ? "检查失败"
+                              ? qsTr("Update check failed")
                               : root.updateCount > 0
-                                ? `有 ${root.updateCount} 个组件可安装或更新`
-                                : "全部为最新版本"
+                                ? qsTr("%1 components can be installed or updated").arg(root.updateCount)
+                                : qsTr("Everything is up to date")
                         font: Tokens.font.body.large
                         elide: Text.ElideRight
                     }
 
                     StyledText {
                         Layout.fillWidth: true
-                        text: root.errorText || (root.lastChecked ? `上次检查 ${root.lastChecked}` : "来自 Villode 发布通道")
+                        text: root.errorText || (root.lastChecked ? qsTr("Last checked %1").arg(root.lastChecked) : qsTr("Villode release channel"))
                         color: root.errorText ? Colours.palette.m3error : Colours.palette.m3outline
                         font: Tokens.font.label.small
                         elide: Text.ElideRight
@@ -233,7 +245,7 @@ PageBase {
 
                 IconTextButton {
                     icon: "refresh"
-                    text: root.checking ? "检查中" : "检查"
+                    text: root.checking ? qsTr("Checking") : qsTr("Check")
                     type: IconTextButton.Tonal
                     enabled: !root.checking
                     onClicked: root.checkUpdates()
@@ -250,7 +262,7 @@ PageBase {
         }
 
         SectionHeader {
-            text: "组件"
+            text: qsTr("Components")
         }
 
         // ── 组件列表：折叠行 + 展开详情 ──
@@ -317,10 +329,10 @@ PageBase {
                                     text: {
                                         if (card.modelData.status === "未安装")
                                             return card.modelData.latest && card.modelData.latest !== "—"
-                                                ? `可安装 ${card.modelData.latest}`
-                                                : "尚未安装";
+                                                ? qsTr("Available %1").arg(card.modelData.latest)
+                                                : qsTr("Not installed");
                                         if (card.modelData.installed === card.modelData.latest)
-                                            return `版本 ${card.modelData.installed}`;
+                                            return qsTr("Version %1").arg(card.modelData.installed);
                                         return `${card.modelData.installed} → ${card.modelData.latest}`;
                                     }
                                     color: Colours.palette.m3outline
@@ -330,7 +342,7 @@ PageBase {
                             }
 
                             StyledText {
-                                text: card.modelData.status
+                                text: root.statusLabel(card.modelData.status)
                                 color: root.statusColour(card.modelData.status)
                                 font: Tokens.font.label.medium
                             }
@@ -360,7 +372,7 @@ PageBase {
                                 spacing: Tokens.spacing.small
 
                                 StyledText {
-                                    text: "上次更新"
+                                    text: qsTr("Last updated")
                                     color: Colours.palette.m3outline
                                     font: Tokens.font.label.small
                                 }
@@ -378,7 +390,7 @@ PageBase {
                                 spacing: Tokens.spacing.small
 
                                 StyledText {
-                                    text: "最新发布"
+                                    text: qsTr("Latest release")
                                     color: Colours.palette.m3outline
                                     font: Tokens.font.label.small
                                 }
@@ -404,8 +416,8 @@ PageBase {
 
                         StyledText {
                             text: card.modelData.status === "未安装"
-                                ? "组件说明"
-                                : root.hasUpdate(card.modelData.status) ? "本次更新内容" : "最近变更"
+                                ? qsTr("Component information")
+                                : root.hasUpdate(card.modelData.status) ? qsTr("Changes in this update") : qsTr("Recent changes")
                             color: Colours.palette.m3outline
                             font: Tokens.font.label.small
                         }
@@ -437,7 +449,7 @@ PageBase {
 
                         StyledText {
                             visible: !card.modelData.changes || card.modelData.changes.length === 0
-                            text: "暂无变更说明"
+                            text: qsTr("No change notes")
                             color: Colours.palette.m3outline
                             font: Tokens.font.label.small
                         }
@@ -450,7 +462,7 @@ PageBase {
             visible: root.checkedOnce && root.components.length === 0 && !root.checking
             Layout.alignment: Qt.AlignHCenter
             Layout.topMargin: Tokens.spacing.large
-            text: root.errorText || "没有检测到已安装的 Villode 组件。"
+            text: root.errorText || qsTr("No installed Villode components were detected.")
             color: Colours.palette.m3onSurfaceVariant
             font: Tokens.font.body.medium
         }
@@ -459,7 +471,7 @@ PageBase {
             Layout.alignment: Qt.AlignHCenter
             Layout.topMargin: Tokens.spacing.large
             Layout.maximumWidth: root.cappedWidth * 0.9
-            text: "可安装尚未安装的组件，或更新已有组件。仅使用发布清单锁定版本，不会清除用户配置。点击组件可展开详情。"
+            text: qsTr("Install missing components or update installed ones. Only versions locked by the release manifest are used, and user configuration is preserved. Select a component for details.")
             color: Colours.palette.m3outline
             font: Tokens.font.label.small
             horizontalAlignment: Text.AlignHCenter

@@ -45,7 +45,7 @@ PageBase {
     readonly property bool hasChanges: root.ipLoaded && (root.ipMethod !== root.origMethod || (root.ipMethod === "manual" && (addressField.text.trim() !== root.origAddress || gatewayField.text.trim() !== root.origGateway)) || ((root.ipMethod === "manual" || root.ipMethod === "auto-dns") && dnsField.text.trim() !== root.origDns))
     readonly property string maskedPassword: root.wifiPassword ? "•".repeat(Math.min(root.wifiPassword.length, 24)) : ""
 
-    title: root.ssid || qsTr("无线网络")
+    title: root.ssid || qsTr("Wireless")
     isSubPage: true
 
     // Live status only (IP/MAC rows). Never reloads the form — that was
@@ -130,7 +130,7 @@ PageBase {
         if (!root.wifiPassword)
             return;
         Quickshell.clipboardText = root.wifiPassword;
-        root.passwordCopiedHint = qsTr("已复制");
+        root.passwordCopiedHint = qsTr("Copied");
         copyHintTimer.restart();
     }
 
@@ -190,7 +190,7 @@ PageBase {
         // —— 分享：二维码 + 密码 ——
         SectionHeader {
             first: true
-            text: qsTr("分享网络")
+            text: qsTr("Share network")
         }
 
         ConnectedRect {
@@ -239,7 +239,7 @@ PageBase {
 
                         StyledText {
                             Layout.alignment: Qt.AlignHCenter
-                            text: root.qrStatus === "loading" ? qsTr("生成中…") : root.qrStatus === "error" ? qsTr("无法生成二维码") : qsTr("暂无二维码")
+                            text: root.qrStatus === "loading" ? qsTr("Generating...") : root.qrStatus === "error" ? qsTr("Could not generate QR code") : qsTr("No QR code")
                             color: Colours.palette.m3outline
                             font: Tokens.font.label.small
                         }
@@ -249,7 +249,7 @@ PageBase {
                 StyledText {
                     Layout.fillWidth: true
                     horizontalAlignment: Text.AlignHCenter
-                    text: qsTr("用手机相机扫描即可加入此网络")
+                    text: qsTr("Scan with your phone camera to join this network")
                     color: Colours.palette.m3outline
                     font: Tokens.font.label.small
                 }
@@ -270,7 +270,7 @@ PageBase {
                         spacing: 0
 
                         StyledText {
-                            text: qsTr("密码")
+                            text: qsTr("Password")
                             color: Colours.palette.m3outline
                             font: Tokens.font.label.small
                         }
@@ -279,9 +279,9 @@ PageBase {
                             Layout.fillWidth: true
                             text: {
                                 if (!root.secretsLoaded)
-                                    return qsTr("读取中…");
+                                    return qsTr("Reading...");
                                 if (!root.wifiPassword)
-                                    return qsTr("无密码（开放网络）或无法读取");
+                                    return qsTr("No password (open network) or unavailable");
                                 return root.showPassword ? root.wifiPassword : root.maskedPassword;
                             }
                             font: Tokens.font.body.small
@@ -319,45 +319,45 @@ PageBase {
 
         // —— 连接信息 ——
         SectionHeader {
-            text: qsTr("连接信息")
+            text: qsTr("Connection information")
         }
 
         InfoRow {
             first: true
             icon: "link"
-            label: qsTr("状态")
-            value: root.isActive ? qsTr("已连接") : (Nmcli.hasSavedProfile(root.ssid) ? qsTr("已保存") : qsTr("未连接"))
+            label: qsTr("Status")
+            value: root.isActive ? qsTr("Connected") : (Nmcli.hasSavedProfile(root.ssid) ? qsTr("Saved") : qsTr("Disconnected"))
         }
 
         InfoRow {
             icon: "wifi"
-            label: qsTr("网络名称")
+            label: qsTr("Network name")
             value: root.ssid || qsTr("—")
         }
 
         InfoRow {
             icon: "security"
-            label: qsTr("安全性")
+            label: qsTr("Security")
             value: root.accessPoint?.security || qsTr("—")
         }
 
         InfoRow {
             icon: "network_wifi"
-            label: qsTr("信号强度")
+            label: qsTr("Signal strength")
             visible: root.accessPoint !== null
             value: root.accessPoint ? `${root.accessPoint.strength}%` : qsTr("—")
         }
 
         InfoRow {
             icon: "lan"
-            label: qsTr("IP 地址")
+            label: qsTr("IP address")
             visible: root.isActive
             value: root.details?.ipAddress || qsTr("—")
         }
 
         InfoRow {
             icon: "router"
-            label: qsTr("网关")
+            label: qsTr("Gateway")
             visible: root.isActive
             value: root.details?.gateway || qsTr("—")
         }
@@ -372,20 +372,20 @@ PageBase {
         InfoRow {
             last: true
             icon: "memory"
-            label: qsTr("MAC 地址")
+            label: qsTr("MAC address")
             visible: root.isActive
             value: root.details?.macAddress || qsTr("—")
         }
 
         // —— 偏好 ——
         SectionHeader {
-            text: qsTr("偏好设置")
+            text: qsTr("Preferences")
         }
 
         ToggleRow {
             first: true
-            text: qsTr("自动连接")
-            subtext: qsTr("在范围内时自动加入此网络")
+            text: qsTr("Connect automatically")
+            subtext: qsTr("Automatically join this network when in range")
             checked: root.autoconnect
             onToggled: {
                 root.autoconnect = checked;
@@ -395,8 +395,8 @@ PageBase {
 
         ToggleRow {
             last: true
-            text: qsTr("按流量计费")
-            subtext: qsTr("系统将减少此网络上的后台数据")
+            text: qsTr("Metered connection")
+            subtext: qsTr("The system will reduce background data on this network")
             checked: root.metered === "yes" || root.metered === "true"
             onToggled: {
                 root.metered = checked ? "yes" : "no";
@@ -424,7 +424,7 @@ PageBase {
                 IpMethodOption {
                     methodId: "auto"
                     iconName: "lan"
-                    label: qsTr("自动 (DHCP)")
+                    label: qsTr("Automatic (DHCP)")
                     first: true
                     last: false
                 }
@@ -432,7 +432,7 @@ PageBase {
                 IpMethodOption {
                     methodId: "auto-dns"
                     iconName: "dns"
-                    label: qsTr("自动，仅自定义 DNS")
+                    label: qsTr("Automatic, custom DNS only")
                     first: false
                     last: false
                 }
@@ -440,7 +440,7 @@ PageBase {
                 IpMethodOption {
                     methodId: "manual"
                     iconName: "edit"
-                    label: qsTr("手动")
+                    label: qsTr("Manual")
                     first: false
                     last: true
                 }
@@ -457,11 +457,11 @@ PageBase {
                 id: addressField
                 Layout.fillWidth: true
                 visible: root.ipMethod === "manual"
-                label: qsTr("地址 (CIDR)")
+                label: qsTr("Address (CIDR)")
                 placeholder: qsTr("192.168.1.50/24")
                 leadingIcon: "router"
-                supportingText: qsTr("IP 与前缀，例如 192.168.1.50/24")
-                errorText: qsTr("请输入有效的 CIDR 地址")
+                supportingText: qsTr("IP and prefix, for example 192.168.1.50/24")
+                errorText: qsTr("Enter a valid CIDR address")
                 inputMethodHints: Qt.ImhNoPredictiveText
                 onTextChanged: if (root.ipLoaded && text !== root.origAddress)
                     root.formDirty = true
@@ -471,7 +471,7 @@ PageBase {
                 id: gatewayField
                 Layout.fillWidth: true
                 visible: root.ipMethod === "manual"
-                label: qsTr("网关")
+                label: qsTr("Gateway")
                 placeholder: qsTr("192.168.1.1")
                 leadingIcon: "exit_to_app"
                 inputMethodHints: Qt.ImhNoPredictiveText
@@ -482,11 +482,11 @@ PageBase {
             M3TextField {
                 id: dnsField
                 Layout.fillWidth: true
-                label: qsTr("DNS 服务器")
+                label: qsTr("DNS servers")
                 placeholder: qsTr("1.1.1.1, 8.8.8.8")
                 leadingIcon: "dns"
-                supportingText: qsTr("多个地址用逗号分隔")
-                errorText: qsTr("请输入有效的 DNS 地址")
+                supportingText: qsTr("Separate multiple addresses with commas")
+                errorText: qsTr("Enter valid DNS addresses")
                 inputMethodHints: Qt.ImhNoPredictiveText
                 onTextChanged: if (root.ipLoaded && text !== root.origDns)
                     root.formDirty = true
@@ -540,7 +540,7 @@ PageBase {
             Component {
                 id: applyTextComp
                 StyledText {
-                    text: qsTr("应用 IP 设置")
+                    text: qsTr("Apply IP settings")
                     color: Colours.palette.m3onPrimaryContainer
                     font: Tokens.font.body.small
                 }
@@ -549,7 +549,7 @@ PageBase {
 
         // —— 操作（Mac 风格列表行）——
         SectionHeader {
-            text: qsTr("操作")
+            text: qsTr("Actions")
         }
 
         ConnectedRect {
@@ -590,7 +590,7 @@ PageBase {
                 StyledText {
                     Layout.fillWidth: true
                     horizontalAlignment: Text.AlignHCenter
-                    text: root.isActive ? qsTr("断开连接") : qsTr("连接")
+                    text: root.isActive ? qsTr("Disconnect") : qsTr("Connect")
                     color: Colours.palette.m3primary
                     font: Tokens.font.body.small
                     opacity: root.busyAction ? 0.5 : 1
@@ -626,7 +626,7 @@ PageBase {
                 StyledText {
                     Layout.fillWidth: true
                     horizontalAlignment: Text.AlignHCenter
-                    text: qsTr("忘记此网络")
+                    text: qsTr("Forget this network")
                     color: Colours.palette.m3error
                     font: Tokens.font.body.small
                     opacity: (root.busyAction || !root.connectionName) ? 0.4 : 1

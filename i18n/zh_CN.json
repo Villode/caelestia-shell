@@ -1,0 +1,370 @@
+{
+    "No running applications": "没有正在运行的应用",
+    "Application": "应用",
+    "Filter:": "筛选：",
+    "Select folder": "选择文件夹",
+    "Select": "选择",
+    "Cancel": "取消",
+    "Select file": "选择文件",
+    "Caps Lock on": "大写锁定 开",
+    "Caps Lock off": "大写锁定 关",
+    "Num Lock on": "数字锁定 开",
+    "Num Lock off": "数字锁定 关",
+    "Layout %1": "布局 %1",
+    "Keep awake": "保持唤醒",
+    "Preventing sleep": "正在阻止睡眠",
+    "Normal power management": "正常电源管理",
+    "Enabled since %1": "自 %1 起启用",
+    "Page under construction": "页面正在建设中",
+    "This page will be available in a future update.": "此页面会在后续更新中开放。",
+    "Quick toggles": "快捷开关",
+    "Screen recording": "屏幕录制",
+    "Paused": "已暂停",
+    "Running...": "运行中...",
+    "Ready": "就绪",
+    "Record full screen": "录制全屏",
+    "Full screen": "全屏",
+    "Record region": "录制区域",
+    "Region": "区域",
+    "Record full screen with audio": "录制全屏和声音",
+    "Record region with audio": "录制区域和声音",
+    "Recorded %1": "已录制 %1",
+    "Screenshot": "屏幕截图",
+    "Capture the whole screen or a selected region": "截取整个屏幕或选定区域",
+    "Full-screen screenshot": "全屏截图",
+    "Region screenshot": "区域截图",
+    "Freeze the screen and select a region": "冻结画面并选择区域",
+    "Frozen selection": "冻结选区",
+    "Network": "网络",
+    "Wireless": "无线网络",
+    "No networks found": "未找到网络",
+    "Wireless is disabled": "无线网络已关闭",
+    "Open": "开放",
+    "%1 · Connected": "%1 · 已连接",
+    "%1 · Saved": "%1 · 已保存",
+    "Security: %1": "安全性：%1",
+    "Switching...": "正在切换…",
+    "Authentication required": "需要身份验证",
+    "Error": "错误",
+    "Connected": "已连接",
+    "Disconnected": "未连接",
+    "%1 · Disconnected": "%1 · 未连接",
+    "No VPN configurations": "暂无 VPN 配置",
+    "Import OpenVPN or WireGuard profiles using nmcli or your system. Providers such as Warp and Tailscale can also be enabled in quick utilities.": "可通过 nmcli 或系统导入 OpenVPN / WireGuard 配置文件。也支持在快捷工具中启用 Warp、Tailscale 等提供商。",
+    "Rescan wireless networks": "重新扫描无线网络",
+    "Copied": "已复制",
+    "Share network": "分享网络",
+    "Generating...": "生成中…",
+    "Could not generate QR code": "无法生成二维码",
+    "No QR code": "暂无二维码",
+    "Scan with your phone camera to join this network": "用手机相机扫描即可加入此网络",
+    "Password": "密码",
+    "Reading...": "读取中…",
+    "No password (open network) or unavailable": "无密码（开放网络）或无法读取",
+    "Connection information": "连接信息",
+    "Status": "状态",
+    "Saved": "已保存",
+    "Network name": "网络名称",
+    "Security": "安全性",
+    "Signal strength": "信号强度",
+    "IP address": "IP 地址",
+    "Gateway": "网关",
+    "MAC address": "MAC 地址",
+    "Preferences": "偏好设置",
+    "Connect automatically": "自动连接",
+    "Automatically join this network when in range": "在范围内时自动加入此网络",
+    "Metered connection": "按流量计费",
+    "The system will reduce background data on this network": "系统将减少此网络上的后台数据",
+    "Automatic (DHCP)": "自动 (DHCP)",
+    "Automatic, custom DNS only": "自动，仅自定义 DNS",
+    "Manual": "手动",
+    "Address (CIDR)": "地址 (CIDR)",
+    "IP and prefix, for example 192.168.1.50/24": "IP 与前缀，例如 192.168.1.50/24",
+    "Enter a valid CIDR address": "请输入有效的 CIDR 地址",
+    "DNS servers": "DNS 服务器",
+    "Separate multiple addresses with commas": "多个地址用逗号分隔",
+    "Enter valid DNS addresses": "请输入有效的 DNS 地址",
+    "Apply IP settings": "应用 IP 设置",
+    "Actions": "操作",
+    "Disconnect": "断开连接",
+    "Connect": "连接",
+    "Forget this network": "忘记此网络",
+    "Choose wallpaper": "选择壁纸",
+    "Choose wallpaper folder": "选择壁纸文件夹",
+    "Folder": "文件夹",
+    "Local wallpapers": "本地壁纸",
+    "No local wallpapers found": "没有找到本地壁纸",
+    "Lock screen & power": "锁屏与电源",
+    "Sleep": "睡眠",
+    "Suspend then hibernate": "睡眠后休眠",
+    "Behaviour": "行为",
+    "Lock before sleep": "睡眠前锁定屏幕",
+    "Lock before the system sleeps or hibernates": "系统进入睡眠/休眠前先锁屏，唤醒时需要解锁",
+    "Keep awake while media is playing": "播放媒体时保持唤醒",
+    "Do not lock or turn off displays while audio or video is playing": "有音频/视频播放时，不触发自动锁屏与关闭屏幕",
+    "Idle timeouts": "空闲超时",
+    "Actions run in order after inactivity. Times are measured from when idle begins; disabling an item disables that action.": "无人操作一段时间后依次执行。时间从空闲开始累计；关闭某项即禁用该动作。",
+    "Automatic lock": "自动锁屏",
+    "Disabled": "已关闭",
+    "Lock delay": "锁屏等待",
+    "Turn off displays": "关闭屏幕",
+    "Display-off delay": "关屏等待",
+    "Automatic sleep": "自动睡眠",
+    "Sleep delay": "睡眠等待",
+    "Sleep method": "睡眠方式",
+    "Sleep suspends to memory; hibernate writes to disk; suspend then hibernate does both in sequence": "睡眠：挂起内存；休眠：写入磁盘；睡眠后休眠：先睡再转休眠",
+    "Lock screen": "锁屏",
+    "Fingerprint unlock": "指纹解锁",
+    "Allow fingerprint unlock when a fingerprint is configured": "锁屏时允许使用指纹（需系统已配置指纹）",
+    "Maximum fingerprint attempts": "指纹最大尝试次数",
+    "Information": "说明",
+    "These settings are handled by the Shell idle monitor and take effect immediately.\nTurning off displays does not end the session; sleep suspends the system. Use Keep awake in Control Centre to temporarily inhibit automatic sleep.": "这些设置由 Shell 的空闲监控处理，写入配置后立即生效。\n「关闭屏幕」仅关闭显示输出，不会退出会话；「睡眠」会挂起系统。可在控制中心临时开启「防止休眠」以抑制自动睡眠。",
+    "Display": "显示",
+    "Displays": "显示器",
+    "Select a display to change its settings": "选择要更改其设置的显示器",
+    "Off": "关",
+    "Mirror": "镜像",
+    "No displays detected": "未检测到显示器",
+    "No display": "无显示器",
+    "Identify": "标识",
+    "Detect": "检测",
+    "Displays detected again.": "已重新检测显示器。",
+    "Multiple displays": "多显示器",
+    "PC screen only": "仅电脑屏幕",
+    "Turn off other displays": "关闭其他显示器",
+    "Duplicate": "复制",
+    "Mirror the primary display": "镜像主屏画面",
+    "Extend": "扩展",
+    "Join displays into a larger desktop": "拼成更大桌面",
+    "Second screen only": "仅第二屏幕",
+    "Turn off the PC screen": "关闭电脑屏幕",
+    "Only one display is detected. Connect a second display to change projection mode.": "当前只检测到一台显示器。接入第二台后可切换投影模式。",
+    "Current: PC screen only": "当前：仅电脑屏幕",
+    "Current: Second screen only": "当前：仅第二屏幕",
+    "Current: Duplicate": "当前：复制（镜像）",
+    "Current: Extend": "当前：扩展（并排）",
+    "Current: Single display": "当前：单屏",
+    "Waiting for detection": "等待检测",
+    "Disabled · Re-enable from multiple display modes": "已关闭 · 可在多显示器模式中重新启用",
+    "Scale & layout": "缩放与布局",
+    "Display scale": "显示缩放",
+    "Resolution & refresh rate": "分辨率与刷新率",
+    "No available modes": "无可用模式",
+    "UI scale": "界面缩放",
+    "Mouse & touchpad": "鼠标和触摸板",
+    "Mouse": "鼠标",
+    "Scroll speed": "滚动速度",
+    "Pointer speed": "指针速度",
+    "Default": "默认",
+    "Natural scrolling": "自然滚动",
+    "Move content in the same direction as your fingers or wheel": "内容随手指/滚轮方向移动（类似触控板）",
+    "Hold middle button to scroll": "中键按住滚动",
+    "Hold the middle button and move the mouse to scroll": "按住中键并移动鼠标即可滚动（需 scroll_method=on_button_down）",
+    "Click middle button to lock scrolling": "中键单击锁定滚动",
+    "Click the middle button to enter scrolling mode, then click again to exit": "单击中键进入滚动模式，再点一次退出（无需一直按住）",
+    "Disable pointer acceleration": "禁用指针加速",
+    "Use a flat acceleration profile for precise movement": "使用匀速（flat）加速度曲线，更适合精密操作",
+    "Side-button mapping": "侧键映射",
+    "Waiting for a button...": "正在等待按键…",
+    "Add mouse button mapping": "添加鼠标按键映射",
+    "Recording: existing side-button actions are paused. Press the button to map.": "录制中：已暂停现有侧键功能，请按下要映射的按键（忽略左/右/中键）。",
+    "1. Choose an action  2. Record a button  3. Press the side button. Existing mappings are paused while recording.": "① 选择动作  ② 录制按键  ③ 按下侧键。录制期间不会触发已有映射。",
+    "Cancel recording": "取消录制",
+    "Record button": "录制按键",
+    "Clear all": "清除全部",
+    "Map standard side buttons (mouse:275+) or media keys using Record button. Some wireless receivers may not expose compatible side buttons.": "通过「录制按键」绑定标准侧键（mouse:275+）或媒体键。需鼠标在系统中上报为侧键；部分无线接收器（如部分小米型号）不兼容。",
+    "Touchpad": "触摸板",
+    "Enable touchpad": "启用触摸板",
+    "No touchpad detected": "未检测到触摸板",
+    "No touchpad device was found. External mice are unaffected.": "未找到触摸板设备。外接鼠标不受触摸板开关影响。",
+    "Scroll speed, pointer speed, middle-button scrolling and side-button mappings are controlled by Hyprland and saved immediately.\nMiddle-button scrolling: hold the middle button and move the mouse. Side buttons: only standard buttons such as mouse:275/276 are supported.": "滚动速度、指针速度、中键滚动与侧键映射由 Hyprland 控制，立即生效并会保存。\n中键滚动：按住中键移动鼠标。侧键：仅支持系统识别为 mouse:275/276 等标准侧键的鼠标。",
+    "Choose video wallpaper": "选择视频壁纸",
+    "Video files": "视频文件",
+    "Choose web file": "选择网页文件",
+    "HTML files": "HTML 文件",
+    "Wallpaper & style": "壁纸和样式",
+    "Choose a video file.": "请选择视频文件。",
+    "Enter an HTML file path or URL.": "请输入 HTML 文件路径或网址。",
+    "Applying...": "正在应用…",
+    "Could not read Villode Desktop configuration.": "无法读取 Villode Desktop 配置。",
+    "Dynamic wallpaper applied.": "动态壁纸已应用。",
+    "Could not apply the source. Check its path and dependencies.": "应用失败，请检查来源和依赖。",
+    "Dynamic wallpaper stopped; static wallpaper remains active.": "已停止动态壁纸，继续使用静态壁纸。",
+    "Could not stop dynamic wallpaper.": "停止动态壁纸失败。",
+    "Dynamic desktop": "动态桌面",
+    "Add motion to the desktop with video or web content": "用视频或网页为桌面增加动态效果",
+    "Video": "视频",
+    "Web": "网页",
+    "HTML file or URL": "HTML 文件或网址",
+    "Supports MP4, WebM, MKV, MOV, M4V and AVI; local 1080p video is recommended.": "支持 MP4、WebM、MKV、MOV、M4V、AVI，建议使用本地 1080p 视频。",
+    "You can also enter an http(s) URL directly.": "也可以直接输入 http(s) 地址。",
+    "Picture fit": "画面适配",
+    "Fill screen": "铺满屏幕",
+    "Fit entire picture": "完整显示",
+    "Stretch to fill": "拉伸填满",
+    "Video plays muted and loops": "视频将静音循环播放",
+    "Web content runs in a separate view": "网页将在独立视图中运行",
+    "Stop": "停止",
+    "Applying": "正在应用",
+    "Apply": "应用",
+    "Appearance": "外观",
+    "Theme mode": "主题模式",
+    "Dark": "深色",
+    "Light": "亮色",
+    "Automatic": "自动",
+    "Theme colour": "主题色",
+    "Ocean": "海蓝",
+    "Teal": "青绿",
+    "Violet": "紫罗兰",
+    "Forest": "森林",
+    "Rose": "玫瑰",
+    "Transparency": "透明度"
+    ,"Failed": "失败"
+    ,"Unavailable": "无法"
+    ,"Detected mice: %1": "已检测鼠标：%1"
+    ,"Recently recorded: %1": "最近录制：%1"
+    ,"Device: %1": "设备：%1"
+    ,"%1 minutes": "%1 分钟"
+    ,"%1 hours %2 minutes": "%1 小时 %2 分钟"
+    ,"%1 hours": "%1 小时"
+    ,"Lock after %1 of inactivity": "空闲 %1 后锁定"
+    ,"Turn off displays after %1 of inactivity": "空闲 %1 后关闭显示器"
+    ,"%1 after %2 of inactivity": "空闲 %2 后%1"
+    ,"Fall back to password after %1 failed attempts": "失败 %1 次后回退到密码"
+    ,"(disabled)": "（已关闭）"
+    ,"(mirrored)": "（镜像）"
+    ,"Display %1 · %2%3": "显示器 %1 · %2%3"
+    ," · Selected %1 @ %2,%3": " · 选中 %1 @ %2,%3"
+    ,"Mirrored from %1 · %2 × %3": "镜像自 %1 · %2 × %3"
+    ,"%1 × %2 · %3 Hz · Scale %4": "%1 × %2 · %3 Hz · 缩放 %4"
+    ,"Logical %1 × %2": "逻辑 %1 × %2"
+    ,"Villode updates": "Villode 更新"
+    ,"Could not check for updates. Check your network connection.": "检查更新失败，请确认网络连接。"
+    ,"Component": "组件"
+    ,"Unknown": "未知"
+    ,"Update": "更新"
+    ,"Install / update (%1)": "安装/更新 (%1)"
+    ,"Install (%1)": "安装 (%1)"
+    ,"Update (%1)": "更新 (%1)"
+    ,"Checking for updates...": "正在检查更新…"
+    ,"Update check failed": "检查失败"
+    ,"%1 components can be installed or updated": "有 %1 个组件可安装或更新"
+    ,"Everything is up to date": "全部为最新版本"
+    ,"Last checked %1": "上次检查 %1"
+    ,"Villode release channel": "来自 Villode 发布通道"
+    ,"Checking": "检查中"
+    ,"Check": "检查"
+    ,"Components": "组件"
+    ,"Available %1": "可安装 %1"
+    ,"Not installed": "尚未安装"
+    ,"Version %1": "版本 %1"
+    ,"Last updated": "上次更新"
+    ,"Latest release": "最新发布"
+    ,"Component information": "组件说明"
+    ,"Changes in this update": "本次更新内容"
+    ,"Recent changes": "最近变更"
+    ,"No change notes": "暂无变更说明"
+    ,"No installed Villode components were detected.": "没有检测到已安装的 Villode 组件。"
+    ,"Install missing components or update installed ones. Only versions locked by the release manifest are used, and user configuration is preserved. Select a component for details.": "可安装尚未安装的组件，或更新已有组件。仅使用发布清单锁定版本，不会清除用户配置。点击组件可展开详情。"
+    ,"Up to date": "已是最新"
+    ,"Update available": "有更新"
+    ,"Repair required": "需要修复"
+    ,"System default (pass through to applications)": "系统默认（透传给应用）"
+    ,"Browser back": "浏览器后退"
+    ,"Browser forward": "浏览器前进"
+    ,"Previous workspace": "上一个工作区"
+    ,"Next workspace": "下一个工作区"
+    ,"Focus left": "焦点向左"
+    ,"Focus right": "焦点向右"
+    ,"Volume +": "音量 +"
+    ,"Volume −": "音量 −"
+    ,"Play / pause": "播放 / 暂停"
+    ,"Close current window": "关闭当前窗口"
+    ,"Floating window": "浮动窗口"
+    ,"Test notification": "测试通知（验证按键）"
+    ,"No touchpad detected.": "未检测到触摸板。"
+    ,"System default": "系统默认"
+    ,"Side button": "侧键"
+    ,"Forward side button": "前进侧键"
+    ,"Extra button 3": "扩展键 3"
+    ,"Extra button 4": "扩展键 4"
+    ,"Extra button 5": "扩展键 5"
+    ,"Mouse button · %1": "鼠标按键 · %1"
+    ,"Media/function key · %1": "媒体/功能键 · %1"
+    ,"Press a mouse side button...": "请按下鼠标侧键…"
+    ,"Recording: existing mappings are paused. Press a side button.": "录制中：已暂停现有映射，请按下侧键。"
+    ,"Cleared all side-button and accidental keyboard mappings.": "已清除全部侧键 / 误绑键盘映射。"
+    ,"Recording cancelled": "已取消录制"
+    ,"Button recording cancelled; mappings restored.": "已取消按键录制，映射已恢复。"
+    ,"Recorded: %1": "已录制：%1"
+    ,"Bound %1 → %2": "已绑定 %1 → %2"
+    ,"Could not bind button: %1": "无法绑定该按键：%1"
+    ,"Mouse settings saved.": "鼠标设置已保存。"
+    ,"Could not read pointer device list.": "无法读取指针设备列表。"
+    ,"Touchpad enabled.": "触摸板已启用。"
+    ,"Touchpad disabled.": "触摸板已禁用。"
+    ,"Could not toggle touchpad.": "切换触摸板失败。"
+    ,"Side-button mappings updated.": "侧键映射已更新。"
+    ,"Could not read mouse devices. Add the user to the input group and log in again.": "无法读取鼠标设备。请将用户加入 input 组后重新登录。"
+    ,"Recording timed out; try again": "录制超时，请重试"
+    ,"Recording timed out; previous mappings restored.": "录制超时，已恢复原有映射。"
+    ,"Could not create configuration directory.": "无法创建配置目录。"
+    ,"Identifying %1 displays...": "正在标识 %1 台显示器…"
+    ,"Identifying display...": "正在标识显示器…"
+    ,"At least two displays are required to change projection mode.": "需要至少两台显示器才能切换投影模式。"
+    ,"Could not determine the primary display.": "无法确定主显示器。"
+    ,"Duplicate these displays": "复制这些显示器"
+    ,"Extend these displays": "扩展这些显示器"
+    ,"Second screen only requires a physical external display. The second output is virtual, so the laptop display cannot be disabled.": "仅第二屏幕需要真实外接显示器。当前第二块是虚拟屏，不能关闭笔记本主屏。"
+    ,"Unknown projection mode.": "未知投影模式。"
+    ,"Switched to “%1”.": "已切换为「%1」。"
+    ,"Adjusted to valid scale %1 (about %2%).": "已自动调整为合法缩放 %1（约 %2%）。"
+    ,"Could not parse display list.": "无法解析显示器列表。"
+    ,"Could not read display information.": "无法读取显示器信息。"
+    ,"Display settings applied.": "显示设置已应用。"
+    ,"Display settings applied and saved.": "显示设置已应用并保存。"
+    ,"Could not apply display settings.": "应用显示设置失败。"
+    ,"Settings applied, but writing the Hyprland source failed.": "设置已应用，但写入 Hyprland source 失败。"
+    ,"Settings applied, but saving configuration failed.": "设置已应用，但保存配置失败。"
+    ,"Display numbers are now shown on screen.": "已在屏幕上显示显示器编号。"
+    ,"Could not identify displays.": "标识显示器失败。"
+    ,"Side button test succeeded": "侧键测试成功"
+    ,"Recorded button": "已录制按键"
+    ,"Adjusted to valid scale": "已自动调整"
+    ," Display settings applied.": " 显示设置已应用。"
+    ,"Could not create display configuration directory.": "无法创建显示配置目录。"
+    ,"Shell": "Shell"
+    ,"Quickshell": "Quickshell"
+    ,"Qt": "Qt"
+    ,"...": "..."
+    ,"%1 device%2 available": "有 %1 个可用设备%2"
+    ," (%1 connected)": "（已连接 %1 个）"
+    ,"\"%1\" selected": "已选择“%1”"
+    ,"GPU": "GPU"
+    ,"CPU": "CPU"
+    ,"Floating: %1": "浮动：%1"
+    ,"Xwayland: %1": "Xwayland：%1"
+    ,"Pinned: %1": "置顶：%1"
+    ,"Fullscreen state: %1": "全屏状态：%1"
+    ,"Fullscreen state: unknown": "全屏状态：未知"
+    ,"—": "—"
+    ,"IPv4": "IPv4"
+    ,"192.168.1.50/24": "192.168.1.50/24"
+    ,"192.168.1.1": "192.168.1.1"
+    ,"1.1.1.1, 8.8.8.8": "1.1.1.1, 8.8.8.8"
+    ,"+%1": "+%1"
+    ,"VPN": "VPN"
+    ,"Wallpaper, fonts, colours": "壁纸、字体、颜色"
+    ,"Wi-Fi, ethernet": "无线网络、有线网络"
+    ,"Bluetooth, pairing": "蓝牙、配对"
+    ,"App volumes, sound devices": "应用音量、声音设备"
+    ,"Manage plugins": "管理插件"
+    ,"Dashboard, taskbar, launcher, sidebar": "仪表盘、任务栏、启动器、侧边栏"
+    ,"Default apps, favourites, hidden apps": "默认应用、收藏、隐藏应用"
+    ,"Poll intervals, lyrics backend": "轮询间隔、歌词后端"
+    ,"Language & region": "语言和地区"
+    ,"UI language, weather location, display units": "界面语言、天气位置、显示单位"
+    ,"System information, credits": "系统信息、致谢"
+    ,"%1 on monitor %2 at %3, %4": "%1 位于显示器 %2 的 %3, %4"
+    ,"DNS": "DNS"
+}

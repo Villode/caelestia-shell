@@ -15,7 +15,7 @@ PageBase {
 
     signal networkSelected(ap: Nmcli.AccessPoint)
 
-    title: qsTr("网络")
+    title: qsTr("Network")
 
     ColumnLayout {
         anchors.horizontalCenter: parent.horizontalCenter
@@ -71,7 +71,7 @@ PageBase {
         ToggleRow {
             Layout.topMargin: Nmcli.hasAvailableEthernet ? Tokens.spacing.large : 0
             first: true
-            text: qsTr("无线网络")
+            text: qsTr("Wireless")
             font: Tokens.font.body.medium
             horizontalPadding: Tokens.padding.largeIncreased
             checked: Nmcli.wifiEnabled
@@ -83,7 +83,7 @@ PageBase {
 
             showList: Nmcli.wifiEnabled
             placeholderIcon: Nmcli.wifiEnabled ? "wifi_find" : "signal_wifi_off"
-            placeholderText: Nmcli.wifiEnabled ? qsTr("未找到网络") : qsTr("无线网络已关闭")
+            placeholderText: Nmcli.wifiEnabled ? qsTr("No networks found") : qsTr("Wireless is disabled")
             extraHeight: Nmcli.scanning ? Tokens.rounding.extraSmall : 0
             list.anchors.top: scanningIndicator.bottom
 
@@ -177,12 +177,12 @@ PageBase {
                         StyledText {
                             Layout.fillWidth: true
                             text: {
-                                const sec = network.modelData.security || qsTr("开放");
+                                const sec = network.modelData.security || qsTr("Open");
                                 if (network.modelData.active)
-                                    return qsTr("%1 · 已连接").arg(sec);
+                                    return qsTr("%1 · Connected").arg(sec);
                                 if (Nmcli.hasSavedProfile(network.modelData.ssid))
-                                    return qsTr("%1 · 已保存").arg(sec);
-                                return qsTr("安全性：%1").arg(sec);
+                                    return qsTr("%1 · Saved").arg(sec);
+                                return qsTr("Security: %1").arg(sec);
                             }
                             color: Colours.palette.m3outline
                             font: Tokens.font.label.small
@@ -284,12 +284,12 @@ PageBase {
                         Layout.fillWidth: true
                         text: {
                             if (VPN.connecting)
-                                return qsTr("正在切换…");
+                                return qsTr("Switching...");
                             if (VPN.status.state === "needs-auth")
-                                return qsTr("需要身份验证");
+                                return qsTr("Authentication required");
                             if (VPN.status.state === "error")
-                                return qsTr("错误");
-                            return VPN.connected ? qsTr("已连接") : qsTr("未连接");
+                                return qsTr("Error");
+                            return VPN.connected ? qsTr("Connected") : qsTr("Disconnected");
                         }
                         color: VPN.connected ? Colours.palette.m3primary : Colours.palette.m3outline
                         font: Tokens.font.label.small
@@ -353,7 +353,7 @@ PageBase {
                             Layout.fillWidth: true
                             text: {
                                 const kind = modelData.type === "wireguard" ? "WireGuard" : "VPN";
-                                return modelData.active ? qsTr("%1 · 已连接").arg(kind) : qsTr("%1 · 未连接").arg(kind);
+                                return modelData.active ? qsTr("%1 · Connected").arg(kind) : qsTr("%1 · Disconnected").arg(kind);
                             }
                             color: modelData.active ? Colours.palette.m3primary : Colours.palette.m3outline
                             font: Tokens.font.label.small
@@ -390,13 +390,13 @@ PageBase {
 
                 StyledText {
                     Layout.fillWidth: true
-                    text: qsTr("暂无 VPN 配置")
+                    text: qsTr("No VPN configurations")
                     font: Tokens.font.body.small
                 }
 
                 StyledText {
                     Layout.fillWidth: true
-                    text: qsTr("可通过 nmcli 或系统导入 OpenVPN / WireGuard 配置文件。也支持在快捷工具中启用 Warp、Tailscale 等提供商。")
+                    text: qsTr("Import OpenVPN or WireGuard profiles using nmcli or your system. Providers such as Warp and Tailscale can also be enabled in quick utilities.")
                     color: Colours.palette.m3outline
                     font: Tokens.font.label.small
                     wrapMode: Text.WordWrap
@@ -436,7 +436,7 @@ PageBase {
 
                 StyledText {
                     Layout.fillWidth: true
-                    text: qsTr("重新扫描无线网络")
+                    text: qsTr("Rescan wireless networks")
                     font: Tokens.font.body.small
                     elide: Text.ElideRight
                 }

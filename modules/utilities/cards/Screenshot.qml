@@ -60,14 +60,14 @@ StyledRect {
 
             StyledText {
                 Layout.fillWidth: true
-                text: qsTr("屏幕截图")
+                text: qsTr("Screenshot")
                 font: Tokens.font.body.medium
                 elide: Text.ElideRight
             }
 
             StyledText {
                 Layout.fillWidth: true
-                text: qsTr("截取整个屏幕或选定区域")
+                text: qsTr("Capture the whole screen or a selected region")
                 color: Colours.palette.m3onSurfaceVariant
                 font: Tokens.font.body.small
                 elide: Text.ElideRight
@@ -81,20 +81,20 @@ StyledRect {
             menuItems: [
                 MenuItem {
                     icon: "fullscreen"
-                    text: qsTr("全屏截图")
-                    activeText: qsTr("全屏")
+                    text: qsTr("Full-screen screenshot")
+                    activeText: qsTr("Full screen")
                     onClicked: root.takeScreenshot([])
                 },
                 MenuItem {
                     icon: "screenshot_region"
-                    text: qsTr("区域截图")
-                    activeText: qsTr("区域")
+                    text: qsTr("Region screenshot")
+                    activeText: qsTr("Region")
                     onClicked: root.takeScreenshot(["-r"])
                 },
                 MenuItem {
                     icon: "select"
-                    text: qsTr("冻结画面并选择区域")
-                    activeText: qsTr("冻结选区")
+                    text: qsTr("Freeze the screen and select a region")
+                    activeText: qsTr("Frozen selection")
                     onClicked: root.takeScreenshot(["-r", "-f"])
                 }
             ]

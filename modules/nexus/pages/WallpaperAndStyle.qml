@@ -31,8 +31,8 @@ PageBase {
 
     readonly property FileDialog videoFileDialog: FileDialog {
         id: videoFileDialog
-        title: "选择视频壁纸"
-        filterLabel: "视频文件"
+        title: qsTr("Choose video wallpaper")
+        filterLabel: qsTr("Video files")
         filters: ["mp4", "webm", "mkv", "mov", "m4v", "avi"]
         onAccepted: path => {
             root.videoSource = path;
@@ -43,8 +43,8 @@ PageBase {
 
     readonly property FileDialog htmlFileDialog: FileDialog {
         id: htmlFileDialog
-        title: "选择网页文件"
-        filterLabel: "HTML 文件"
+        title: qsTr("Choose web file")
+        filterLabel: qsTr("HTML files")
         filters: ["html", "htm"]
         onAccepted: path => {
             root.htmlSource = path;
@@ -63,7 +63,7 @@ PageBase {
         target: Colours
     }
 
-    title: "壁纸和样式"
+    title: qsTr("Wallpaper & style")
 
     function syncDesktopSource(): void {
         desktopSource.text = root.desktopMode === "video" ? root.videoSource : root.htmlSource;
@@ -77,11 +77,11 @@ PageBase {
     function applyDesktop(): void {
         const source = desktopSource.text.trim();
         if (!source) {
-            desktopMessage = desktopMode === "video" ? "请选择视频文件。" : "请输入 HTML 文件路径或网址。";
+            desktopMessage = desktopMode === "video" ? qsTr("Choose a video file.") : qsTr("Enter an HTML file path or URL.");
             return;
         }
         desktopBusy = true;
-        desktopMessage = "正在应用…";
+        desktopMessage = qsTr("Applying...");
         desktopApply.command = desktopMode === "video"
             ? ["villode-desktop", "--set-video", source, "--fit", desktopFit]
             : ["villode-desktop", "--set-html", source];
@@ -102,7 +102,7 @@ PageBase {
                         root.desktopMode = data.mode;
                     root.syncDesktopSource();
                 } catch (error) {
-                    root.desktopMessage = "无法读取 Villode Desktop 配置。";
+                    root.desktopMessage = qsTr("Could not read Villode Desktop configuration.");
                 }
             }
         }
@@ -120,14 +120,14 @@ PageBase {
             root.desktopBusy = false;
             if (code === 0) {
                 GlobalConfig.background.wallpaperEnabled = false;
-                root.desktopMessage = "动态壁纸已应用。";
+                root.desktopMessage = qsTr("Dynamic wallpaper applied.");
                 if (root.desktopMode === "video")
                     root.videoSource = desktopSource.text.trim();
                 else
                     root.htmlSource = desktopSource.text.trim();
                 root.refreshDesktop();
-            } else if (!root.desktopMessage || root.desktopMessage === "正在应用…") {
-                root.desktopMessage = "应用失败，请检查来源和依赖。";
+            } else if (!root.desktopMessage || root.desktopMessage === qsTr("Applying...")) {
+                root.desktopMessage = qsTr("Could not apply the source. Check its path and dependencies.");
             }
         }
     }
@@ -137,7 +137,7 @@ PageBase {
         command: ["villode-desktop", "--quit"]
         onExited: code => { // qmllint disable signal-handler-parameters
             root.desktopBusy = false;
-            root.desktopMessage = code === 0 ? "已停止动态壁纸，继续使用静态壁纸。" : "停止动态壁纸失败。";
+            root.desktopMessage = code === 0 ? qsTr("Dynamic wallpaper stopped; static wallpaper remains active.") : qsTr("Could not stop dynamic wallpaper.");
             if (code === 0) {
                 GlobalConfig.background.wallpaperEnabled = true;
                 root.refreshDesktop();
@@ -284,12 +284,12 @@ PageBase {
                             spacing: 0
 
                             StyledText {
-                                text: "动态桌面"
+                                text: qsTr("Dynamic desktop")
                                 font: Tokens.font.title.large
                             }
 
                             StyledText {
-                                text: "用视频或网页为桌面增加动态效果"
+                                text: qsTr("Add motion to the desktop with video or web content")
                                 color: Colours.palette.m3outline
                                 font: Tokens.font.label.small
                             }
@@ -301,7 +301,7 @@ PageBase {
 
                             IconTextButton {
                                 icon: "movie"
-                                text: "视频"
+                                text: qsTr("Video")
                                 isToggle: false
                                 checked: root.desktopMode === "video"
                                 type: IconTextButton.Tonal
@@ -314,7 +314,7 @@ PageBase {
 
                             IconTextButton {
                                 icon: "language"
-                                text: "网页"
+                                text: qsTr("Web")
                                 isToggle: false
                                 checked: root.desktopMode === "html"
                                 type: IconTextButton.Tonal
@@ -334,11 +334,11 @@ PageBase {
                         M3TextField {
                             id: desktopSource
                             Layout.fillWidth: true
-                            label: root.desktopMode === "video" ? "视频文件" : "HTML 文件或网址"
+                            label: root.desktopMode === "video" ? qsTr("Video files") : qsTr("HTML file or URL")
                             placeholder: root.desktopMode === "video" ? "/home/user/Videos/wallpaper.mp4" : "https://example.com"
                             text: root.desktopMode === "video" ? root.videoSource : root.htmlSource
                             leadingIcon: root.desktopMode === "video" ? "movie" : "language"
-                            supportingText: root.desktopMode === "video" ? "支持 MP4、WebM、MKV、MOV、M4V、AVI，建议使用本地 1080p 视频。" : "也可以直接输入 http(s) 地址。"
+                            supportingText: root.desktopMode === "video" ? qsTr("Supports MP4, WebM, MKV, MOV, M4V and AVI; local 1080p video is recommended.") : qsTr("You can also enter an http(s) URL directly.")
                             onTextChanged: {
                                 if (root.desktopMode === "video")
                                     root.videoSource = text;
@@ -369,7 +369,7 @@ PageBase {
                         spacing: Tokens.spacing.small
 
                         StyledText {
-                            text: "画面适配"
+                            text: qsTr("Picture fit")
                             font: Tokens.font.body.medium
                             color: Colours.palette.m3onSurfaceVariant
                         }
@@ -379,7 +379,7 @@ PageBase {
                             spacing: 0
 
                             IconTextButton {
-                                text: "铺满屏幕"
+                                text: qsTr("Fill screen")
                                 isToggle: false
                                 checked: root.desktopFit === "cover"
                                 type: IconTextButton.Tonal
@@ -387,7 +387,7 @@ PageBase {
                             }
 
                             IconTextButton {
-                                text: "完整显示"
+                                text: qsTr("Fit entire picture")
                                 isToggle: false
                                 checked: root.desktopFit === "contain"
                                 type: IconTextButton.Tonal
@@ -395,7 +395,7 @@ PageBase {
                             }
 
                             IconTextButton {
-                                text: "拉伸填满"
+                                text: qsTr("Stretch to fill")
                                 isToggle: false
                                 checked: root.desktopFit === "stretch"
                                 type: IconTextButton.Tonal
@@ -408,7 +408,7 @@ PageBase {
                         Layout.fillWidth: true
                         visible: text.length > 0
                         text: root.desktopMessage
-                        color: root.desktopMessage.includes("失败") || root.desktopMessage.includes("无法") ? Colours.palette.m3error : Colours.palette.m3outline
+                        color: root.desktopMessage.includes(qsTr("Failed")) || root.desktopMessage.includes(qsTr("Unavailable")) ? Colours.palette.m3error : Colours.palette.m3outline
                         font: Tokens.font.label.small
                         wrapMode: Text.WordWrap
                     }
@@ -420,7 +420,7 @@ PageBase {
 
                         StyledText {
                             Layout.fillWidth: true
-                            text: root.desktopMode === "video" ? "视频将静音循环播放" : "网页将在独立视图中运行"
+                            text: root.desktopMode === "video" ? qsTr("Video plays muted and loops") : qsTr("Web content runs in a separate view")
                             color: Colours.palette.m3outline
                             font: Tokens.font.label.small
                             elide: Text.ElideRight
@@ -428,7 +428,7 @@ PageBase {
 
                         IconTextButton {
                             icon: "stop_circle"
-                            text: "停止"
+                            text: qsTr("Stop")
                             type: IconTextButton.Tonal
                             disabled: root.desktopBusy
                             onClicked: {
@@ -439,7 +439,7 @@ PageBase {
 
                         IconTextButton {
                             icon: "check"
-                            text: root.desktopBusy ? "正在应用" : "应用"
+                            text: root.desktopBusy ? qsTr("Applying") : qsTr("Application")
                             type: IconTextButton.Filled
                             disabled: root.desktopBusy
                             onClicked: root.applyDesktop()
@@ -469,7 +469,7 @@ PageBase {
                             spacing: 0
 
                             StyledText {
-                                text: "外观"
+                                text: qsTr("Appearance")
                                 font: Tokens.font.title.large
                             }
 
@@ -482,7 +482,7 @@ PageBase {
 
                         StyledText {
                             Layout.fillWidth: true
-                            text: "主题模式"
+                            text: qsTr("Theme mode")
                             font: Tokens.font.body.medium
                         }
 
@@ -491,7 +491,7 @@ PageBase {
 
                             IconTextButton {
                                 icon: "dark_mode"
-                                text: "深色"
+                                text: qsTr("Dark")
                                 isToggle: false
                                 checked: !Colours.autoMode && !Colours.light
                                 type: IconTextButton.Tonal
@@ -504,7 +504,7 @@ PageBase {
 
                             IconTextButton {
                                 icon: "light_mode"
-                                text: "亮色"
+                                text: qsTr("Light")
                                 isToggle: false
                                 checked: !Colours.autoMode && Colours.light
                                 type: IconTextButton.Tonal
@@ -517,7 +517,7 @@ PageBase {
 
                             IconTextButton {
                                 icon: "brightness_auto"
-                                text: "自动"
+                                text: qsTr("Automatic")
                                 isToggle: false
                                 checked: Colours.autoMode
                                 type: IconTextButton.Tonal
@@ -535,7 +535,7 @@ PageBase {
 
                         StyledText {
                             Layout.fillWidth: true
-                            text: "主题色"
+                            text: qsTr("Theme colour")
                             font: Tokens.font.body.medium
                         }
 
@@ -545,31 +545,31 @@ PageBase {
                             PresetButton {
                                 presetName: "blue"
                                 presetColour: "#366385"
-                                text: "海蓝"
+                                text: qsTr("Ocean")
                             }
 
                             PresetButton {
                                 presetName: "teal"
                                 presetColour: "#1c6a66"
-                                text: "青绿"
+                                text: qsTr("Teal")
                             }
 
                             PresetButton {
                                 presetName: "violet"
                                 presetColour: "#7657a8"
-                                text: "紫罗兰"
+                                text: qsTr("Violet")
                             }
 
                             PresetButton {
                                 presetName: "green"
                                 presetColour: "#437653"
-                                text: "森林"
+                                text: qsTr("Forest")
                             }
 
                             PresetButton {
                                 presetName: "rose"
                                 presetColour: "#9a526f"
-                                text: "玫瑰"
+                                text: qsTr("Rose")
                             }
                         }
                     }
@@ -582,7 +582,7 @@ PageBase {
                             Layout.fillWidth: true
                             StyledText {
                                 Layout.fillWidth: true
-                                text: "透明度"
+                                text: qsTr("Transparency")
                                 font: Tokens.font.body.medium
                             }
 

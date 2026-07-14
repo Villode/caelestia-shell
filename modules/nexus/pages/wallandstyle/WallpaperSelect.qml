@@ -16,13 +16,13 @@ import qs.modules.nexus.common
 PageBase {
     id: root
 
-    title: "选择壁纸"
+    title: qsTr("Choose wallpaper")
     isSubPage: true
 
     readonly property list<string> localWallpaperDialogCwd: wallpaperDialogCwd(Paths.wallsdir)
     readonly property FileDialog wallpaperDirDialog: FileDialog {
-        title: "选择壁纸文件夹"
-        filterLabel: "文件夹"
+        title: qsTr("Choose wallpaper folder")
+        filterLabel: qsTr("Folder")
         cwd: root.localWallpaperDialogCwd
         acceptDirectories: true
         onAccepted: path => GlobalConfig.paths.wallpaperDir = path
@@ -49,7 +49,7 @@ PageBase {
 
             StyledText {
                 Layout.fillWidth: true
-                text: "本地壁纸"
+                text: qsTr("Local wallpapers")
                 font: Tokens.font.title.small
             }
 
@@ -160,7 +160,7 @@ PageBase {
 
                     StyledText {
                         Layout.alignment: Qt.AlignHCenter
-                        text: "没有找到本地壁纸"
+                        text: qsTr("No local wallpapers found")
                         color: Colours.palette.m3outline
                         font: Tokens.font.title.small
                     }

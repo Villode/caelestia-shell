@@ -53,7 +53,7 @@ StyledRect {
         spacing: Tokens.spacing.medium
 
         StyledText {
-            text: qsTr("快捷开关")
+            text: qsTr("Quick toggles")
             font: Tokens.font.body.medium
         }
 

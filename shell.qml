@@ -5,10 +5,14 @@ import "modules/drawers"
 import "modules/background"
 import "modules/areapicker"
 import "modules/lock"
+import "services"
+import QtQuick
 import Quickshell
 
 ShellRoot {
     settings.watchFiles: false
+
+    Component.onCompleted: UiLanguage.apply()
 
     GSFLoader {}
 

@@ -126,7 +126,7 @@ Item {
 
         StyledText {
             Layout.alignment: Qt.AlignHCenter
-            text: qsTr("没有正在运行的应用")
+            text: qsTr("No running applications")
             color: Colours.palette.m3outline
             font: Tokens.font.body.medium
         }
@@ -181,7 +181,7 @@ Item {
         height: cardHeight + 36
 
         readonly property string appClass: client?.lastIpcObject?.class ?? ""
-        readonly property string appTitle: client?.title ?? client?.lastIpcObject?.title ?? qsTr("应用")
+        readonly property string appTitle: client?.title ?? client?.lastIpcObject?.title ?? qsTr("Application")
 
         StyledRect {
             id: frame

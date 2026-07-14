@@ -11,7 +11,7 @@ import qs.modules.nexus.common
 PageBase {
     id: root
 
-    title: "鼠标和触摸板"
+    title: qsTr("Mouse & touchpad")
 
     // Slider maps
     readonly property real scrollSlider: Math.min(1, Math.max(0, (PointerDevices.scrollFactor - 0.25) / 2.75))
@@ -32,13 +32,13 @@ PageBase {
         // —— 鼠标 ——
         SectionHeader {
             first: true
-            text: "鼠标"
+            text: qsTr("Mouse")
         }
 
         SliderRow {
             first: true
             icon: "mouse"
-            label: "滚动速度"
+            label: qsTr("Scroll speed")
             valueLabel: `${PointerDevices.scrollFactor.toFixed(2)}×`
             value: root.scrollSlider
             enabled: !PointerDevices.busy
@@ -51,11 +51,11 @@ PageBase {
 
         SliderRow {
             icon: "swipe"
-            label: "指针速度"
+            label: qsTr("Pointer speed")
             valueLabel: {
                 const s = PointerDevices.sensitivity;
                 if (Math.abs(s) < 0.01)
-                    return "默认";
+                    return qsTr("Default");
                 return (s > 0 ? "+" : "") + s.toFixed(2);
             }
             value: root.sensSlider
@@ -67,24 +67,24 @@ PageBase {
         }
 
         ToggleRow {
-            text: "自然滚动"
-            subtext: "内容随手指/滚轮方向移动（类似触控板）"
+            text: qsTr("Natural scrolling")
+            subtext: qsTr("Move content in the same direction as your fingers or wheel")
             checked: PointerDevices.naturalScroll
             enabled: !PointerDevices.busy
             onToggled: PointerDevices.setNaturalScroll(checked)
         }
 
         ToggleRow {
-            text: "中键按住滚动"
-            subtext: "按住中键并移动鼠标即可滚动（需 scroll_method=on_button_down）"
+            text: qsTr("Hold middle button to scroll")
+            subtext: qsTr("Hold the middle button and move the mouse to scroll")
             checked: PointerDevices.middleScroll
             enabled: !PointerDevices.busy
             onToggled: PointerDevices.setMiddleScroll(checked)
         }
 
         ToggleRow {
-            text: "中键单击锁定滚动"
-            subtext: "单击中键进入滚动模式，再点一次退出（无需一直按住）"
+            text: qsTr("Click middle button to lock scrolling")
+            subtext: qsTr("Click the middle button to enter scrolling mode, then click again to exit")
             checked: PointerDevices.middleScrollLock
             enabled: !PointerDevices.busy && PointerDevices.middleScroll
             onToggled: PointerDevices.setMiddleScrollLock(checked)
@@ -92,8 +92,8 @@ PageBase {
 
         ToggleRow {
             last: true
-            text: "禁用指针加速"
-            subtext: "使用匀速（flat）加速度曲线，更适合精密操作"
+            text: qsTr("Disable pointer acceleration")
+            subtext: qsTr("Use a flat acceleration profile for precise movement")
             checked: PointerDevices.flatAccel
             enabled: !PointerDevices.busy
             onToggled: PointerDevices.setFlatAccel(checked)
@@ -114,7 +114,7 @@ PageBase {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.leftMargin: Tokens.padding.largeIncreased
                 anchors.rightMargin: Tokens.padding.largeIncreased
-                text: `已检测鼠标：${PointerDevices.mice.map(m => m.name).join("、")}`
+                text: qsTr("Detected mice: %1").arg(PointerDevices.mice.map(m => m.name).join(", "))
                 color: Colours.palette.m3outline
                 font: Tokens.font.label.small
                 wrapMode: Text.WordWrap
@@ -123,7 +123,7 @@ PageBase {
 
         // —— 侧键映射（按键录制）——
         SectionHeader {
-            text: "侧键映射"
+            text: qsTr("Side-button mapping")
         }
 
         ConnectedRect {
@@ -143,14 +143,14 @@ PageBase {
 
                 StyledText {
                     Layout.fillWidth: true
-                    text: PointerDevices.capturing ? "正在等待按键…" : "添加鼠标按键映射"
+                    text: PointerDevices.capturing ? qsTr("Waiting for a button...") : qsTr("Add mouse button mapping")
                     font: Tokens.font.body.small
                     color: PointerDevices.capturing ? Colours.palette.m3onPrimaryContainer : Colours.palette.m3onSurface
                 }
 
                 StyledText {
                     Layout.fillWidth: true
-                    text: PointerDevices.capturing ? (PointerDevices.captureStatus || "录制中：已暂停现有侧键功能，请按下要映射的按键（忽略左/右/中键）。") : "① 选择动作  ② 录制按键  ③ 按下侧键。录制期间不会触发已有映射。"
+                    text: PointerDevices.capturing ? (PointerDevices.captureStatus || qsTr("Recording: existing side-button actions are paused. Press the button to map.")) : qsTr("1. Choose an action  2. Record a button  3. Press the side button. Existing mappings are paused while recording.")
                     color: PointerDevices.capturing ? Colours.palette.m3onPrimaryContainer : Colours.palette.m3outline
                     font: Tokens.font.label.small
                     wrapMode: Text.WordWrap
@@ -197,11 +197,11 @@ PageBase {
                     spacing: Tokens.spacing.small
 
                     // One stable button (toggle label) so the click that starts
-                    // capture cannot land on a newly-shown "取消" in the same slot.
+                    // capture cannot land on a newly-shown qsTr("Cancel") in the same slot.
                     IconTextButton {
                         Layout.fillWidth: true
                         icon: PointerDevices.capturing ? "stop" : "fiber_manual_record"
-                        text: PointerDevices.capturing ? "取消录制" : "录制按键"
+                        text: PointerDevices.capturing ? qsTr("Cancel recording") : qsTr("Record button")
                         type: PointerDevices.capturing ? IconTextButton.Tonal : IconTextButton.Filled
                         // ButtonBase uses `disabled`, not only Item.enabled.
                         disabled: !root.recordArmed
@@ -222,7 +222,7 @@ PageBase {
                         Layout.fillWidth: true
                         visible: !PointerDevices.capturing
                         icon: "delete"
-                        text: "清除全部"
+                        text: qsTr("Clear all")
                         type: IconTextButton.Tonal
                         disabled: !root.recordArmed
                         onClicked: PointerDevices.clearAllButtonMaps()
@@ -238,7 +238,7 @@ PageBase {
                 StyledText {
                     Layout.fillWidth: true
                     visible: !!PointerDevices.lastCapturedKey
-                    text: `最近录制：${PointerDevices.keyDisplayName(PointerDevices.lastCapturedKey)}`
+                    text: qsTr("Recently recorded: %1").arg(PointerDevices.keyDisplayName(PointerDevices.lastCapturedKey))
                     color: Colours.palette.m3primary
                     font: Tokens.font.label.medium
                     wrapMode: Text.WordWrap
@@ -354,7 +354,7 @@ PageBase {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.leftMargin: Tokens.padding.largeIncreased
                 anchors.rightMargin: Tokens.padding.largeIncreased
-                text: "通过「录制按键」绑定标准侧键（mouse:275+）或媒体键。需鼠标在系统中上报为侧键；部分无线接收器（如部分小米型号）不兼容。"
+                text: qsTr("Map standard side buttons (mouse:275+) or media keys using Record button. Some wireless receivers may not expose compatible side buttons.")
                 color: Colours.palette.m3outline
                 font: Tokens.font.label.small
                 wrapMode: Text.WordWrap
@@ -363,14 +363,14 @@ PageBase {
 
         // —— 触摸板 ——
         SectionHeader {
-            text: "触摸板"
+            text: qsTr("Touchpad")
         }
 
         ToggleRow {
             first: true
             last: true
-            text: "启用触摸板"
-            subtext: PointerDevices.touchpads.length ? `设备：${PointerDevices.touchpads.map(p => p.name).join("、")}` : "未检测到触摸板"
+            text: qsTr("Enable touchpad")
+            subtext: PointerDevices.touchpads.length ? qsTr("Device: %1").arg(PointerDevices.touchpads.map(p => p.name).join(", ")) : qsTr("No touchpad detected")
             checked: PointerDevices.touchpadEnabled
             enabled: PointerDevices.touchpads.length > 0 && !PointerDevices.busy
             onToggled: PointerDevices.setTouchpadEnabled(checked)
@@ -396,7 +396,7 @@ PageBase {
                 StyledText {
                     Layout.fillWidth: true
                     visible: PointerDevices.touchpads.length === 0
-                    text: "未找到触摸板设备。外接鼠标不受触摸板开关影响。"
+                    text: qsTr("No touchpad device was found. External mice are unaffected.")
                     color: Colours.palette.m3outline
                     font: Tokens.font.label.small
                     wrapMode: Text.WordWrap
@@ -414,7 +414,7 @@ PageBase {
         }
 
         SectionHeader {
-            text: "说明"
+            text: qsTr("Information")
         }
 
         ConnectedRect {
@@ -433,7 +433,7 @@ PageBase {
 
                 StyledText {
                     Layout.fillWidth: true
-                    text: "滚动速度、指针速度、中键滚动与侧键映射由 Hyprland 控制，立即生效并会保存。\n中键滚动：按住中键移动鼠标。侧键：仅支持系统识别为 mouse:275/276 等标准侧键的鼠标。"
+                    text: qsTr("Scroll speed, pointer speed, middle-button scrolling and side-button mappings are controlled by Hyprland and saved immediately.\nMiddle-button scrolling: hold the middle button and move the mouse. Side buttons: only standard buttons such as mouse:275/276 are supported.")
                     color: Colours.palette.m3outline
                     font: Tokens.font.label.small
                     wrapMode: Text.WordWrap

@@ -24,7 +24,7 @@ RowLayout {
 
         iconName: Config.session.icons.logout
         command: Config.session.commands.logout
-        caption: qsTr("注销")
+        caption: qsTr("Log out")
         navLeft: null
         navRight: shutdown
 
@@ -45,7 +45,7 @@ RowLayout {
 
         iconName: Config.session.icons.shutdown
         command: Config.session.commands.shutdown
-        caption: qsTr("关机")
+        caption: qsTr("Shut down")
         navLeft: logout
         navRight: hibernate
     }
@@ -68,7 +68,7 @@ RowLayout {
 
         iconName: Config.session.icons.hibernate
         command: Config.session.commands.hibernate
-        caption: qsTr("休眠")
+        caption: qsTr("Hibernate")
         navLeft: shutdown
         navRight: reboot
     }
@@ -78,7 +78,7 @@ RowLayout {
 
         iconName: Config.session.icons.reboot
         command: Config.session.commands.reboot
-        caption: qsTr("重启")
+        caption: qsTr("Reboot")
         navLeft: hibernate
         navRight: null
     }

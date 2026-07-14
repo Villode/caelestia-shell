@@ -24,7 +24,7 @@ StyledRect {
 
         StyledText {
             visible: !root.dialog.acceptDirectories
-            text: qsTr("筛选：")
+            text: qsTr("Filter:")
         }
 
         StyledRect {
@@ -67,7 +67,7 @@ StyledRect {
                 anchors.centerIn: parent
                 anchors.margins: Tokens.padding.medium
 
-                text: root.dialog.acceptDirectories ? qsTr("选择文件夹") : qsTr("选择")
+                text: root.dialog.acceptDirectories ? qsTr("Select folder") : qsTr("Select")
                 color: root.dialog.selectionValid ? Colours.palette.m3onSurface : Colours.palette.m3outline
             }
         }
@@ -91,7 +91,7 @@ StyledRect {
                 anchors.centerIn: parent
                 anchors.margins: Tokens.padding.medium
 
-                text: qsTr("取消")
+                text: qsTr("Cancel")
             }
         }
     }

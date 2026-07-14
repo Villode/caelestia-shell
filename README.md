@@ -207,6 +207,13 @@ All configuration options should be put in `~/.config/caelestia/shell.json`. Thi
 default, you must create it manually. Options that you omit from the config file will use their default
 values.
 
+### Interface language
+
+Villode builds can switch the interface language immediately from **Settings → Language and region**.
+The choice is stored as `services.uiLanguage` in `shell.json`; supported values are `system`, `zh_CN`
+and `en_US`. Translations live in `i18n/qml_<locale>.ts` and are compiled to `.qm` catalogs with
+`scripts/update-translations.py`.
+
 ### Per-monitor configuration
 
 You can configure options per-monitor in `~/.config/caelestia/monitors/<screen-name>/shell.json`. Options

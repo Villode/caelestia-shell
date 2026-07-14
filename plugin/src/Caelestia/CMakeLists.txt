@@ -6,6 +6,7 @@ qml_module(caelestia-core
         appdb.cpp
         requests.cpp
         toaster.cpp
+        translationmanager.cpp
         imageanalyser.cpp
     LIBRARIES
         Qt::Gui

@@ -141,7 +141,7 @@ if $build_native; then
     done
 fi
 
-for path in assets components modules services utils bin/caelestia-villode \
+for path in assets components i18n modules services utils bin/caelestia-villode \
     bin/qs-villode shell.qml LICENSE UPSTREAM_VERSION; do
     [[ -e "$repo_dir/$path" ]] || { echo "源码不完整，缺少：$path" >&2; exit 66; }
 done
@@ -157,7 +157,7 @@ if [[ -e "$config_dir" ]]; then
 fi
 
 mkdir -p "$config_dir"
-for directory in assets components modules services utils; do
+for directory in assets components i18n modules services utils; do
     cp -a "$repo_dir/$directory" "$config_dir/"
 done
 install -m644 "$repo_dir/shell.qml" "$config_dir/shell.qml"

@@ -206,19 +206,19 @@ PageBase {
                 EthIpMethodOption {
                     methodId: "auto"
                     iconName: "lan"
-                    label: qsTr("自动 (DHCP)")
+                    label: qsTr("Automatic (DHCP)")
                 }
 
                 EthIpMethodOption {
                     methodId: "auto-dns"
                     iconName: "dns"
-                    label: qsTr("自动，仅自定义 DNS")
+                    label: qsTr("Automatic, custom DNS only")
                 }
 
                 EthIpMethodOption {
                     methodId: "manual"
                     iconName: "edit"
-                    label: qsTr("手动")
+                    label: qsTr("Manual")
                 }
             }
         }

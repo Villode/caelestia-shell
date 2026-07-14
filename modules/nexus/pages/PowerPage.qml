@@ -13,7 +13,7 @@ import qs.modules.nexus.common
 PageBase {
     id: root
 
-    title: "锁屏与电源"
+    title: qsTr("Lock screen & power")
 
     // Draft values (minutes). Rebuilt from GlobalConfig on load / after save.
     property bool lockEnabled: true
@@ -26,13 +26,13 @@ PageBase {
 
     readonly property list<MenuItem> sleepActionItems: [
         MenuItem {
-            text: "睡眠"
+            text: qsTr("Sleep")
         },
         MenuItem {
-            text: "睡眠后休眠"
+            text: qsTr("Suspend then hibernate")
         },
         MenuItem {
-            text: "休眠"
+            text: qsTr("Hibernate")
         }
     ]
     readonly property list<string> sleepActionValues: ["suspend", "suspendThenHibernate", "hibernate"]
@@ -137,10 +137,10 @@ PageBase {
 
     function formatMinutes(m: int): string {
         if (m < 60)
-            return `${m} 分钟`;
+            return qsTr("%1 minutes").arg(m);
         const h = Math.floor(m / 60);
         const r = m % 60;
-        return r ? `${h} 小时 ${r} 分钟` : `${h} 小时`;
+        return r ? qsTr("%1 hours %2 minutes").arg(h).arg(r) : qsTr("%1 hours").arg(h);
     }
 
     Component.onCompleted: loadFromConfig()
@@ -154,28 +154,28 @@ PageBase {
         // —— 行为 ——
         SectionHeader {
             first: true
-            text: "行为"
+            text: qsTr("Behaviour")
         }
 
         ToggleRow {
             first: true
-            text: "睡眠前锁定屏幕"
-            subtext: "系统进入睡眠/休眠前先锁屏，唤醒时需要解锁"
+            text: qsTr("Lock before sleep")
+            subtext: qsTr("Lock before the system sleeps or hibernates")
             checked: GlobalConfig.general.idle.lockBeforeSleep
             onToggled: GlobalConfig.general.idle.lockBeforeSleep = checked
         }
 
         ToggleRow {
             last: true
-            text: "播放媒体时保持唤醒"
-            subtext: "有音频/视频播放时，不触发自动锁屏与关闭屏幕"
+            text: qsTr("Keep awake while media is playing")
+            subtext: qsTr("Do not lock or turn off displays while audio or video is playing")
             checked: GlobalConfig.general.idle.inhibitWhenAudio
             onToggled: GlobalConfig.general.idle.inhibitWhenAudio = checked
         }
 
         // —— 空闲超时 ——
         SectionHeader {
-            text: "空闲超时"
+            text: qsTr("Idle timeouts")
         }
 
         StyledText {
@@ -183,7 +183,7 @@ PageBase {
             Layout.leftMargin: Tokens.padding.largeIncreased
             Layout.rightMargin: Tokens.padding.largeIncreased
             Layout.bottomMargin: Tokens.spacing.extraSmall
-            text: "无人操作一段时间后依次执行。时间从空闲开始累计；关闭某项即禁用该动作。"
+            text: qsTr("Actions run in order after inactivity. Times are measured from when idle begins; disabling an item disables that action.")
             color: Colours.palette.m3outline
             font: Tokens.font.label.small
             wrapMode: Text.WordWrap
@@ -191,8 +191,8 @@ PageBase {
 
         ToggleRow {
             first: true
-            text: "自动锁屏"
-            subtext: root.lockEnabled ? `空闲 ${root.formatMinutes(root.lockMinutes)} 后锁定` : "已关闭"
+            text: qsTr("Automatic lock")
+            subtext: root.lockEnabled ? qsTr("Lock after %1 of inactivity").arg(root.formatMinutes(root.lockMinutes)) : qsTr("Disabled")
             checked: root.lockEnabled
             onToggled: {
                 root.lockEnabled = checked;
@@ -202,7 +202,7 @@ PageBase {
 
         StepperRow {
             visible: root.lockEnabled
-            label: "锁屏等待"
+            label: qsTr("Lock delay")
             subtext: root.formatMinutes(root.lockMinutes)
             value: root.lockMinutes
             from: 1
@@ -215,8 +215,8 @@ PageBase {
         }
 
         ToggleRow {
-            text: "关闭屏幕"
-            subtext: root.screenOffEnabled ? `空闲 ${root.formatMinutes(root.screenOffMinutes)} 后关闭显示器` : "已关闭"
+            text: qsTr("Turn off displays")
+            subtext: root.screenOffEnabled ? qsTr("Turn off displays after %1 of inactivity").arg(root.formatMinutes(root.screenOffMinutes)) : qsTr("Disabled")
             checked: root.screenOffEnabled
             onToggled: {
                 root.screenOffEnabled = checked;
@@ -226,7 +226,7 @@ PageBase {
 
         StepperRow {
             visible: root.screenOffEnabled
-            label: "关屏等待"
+            label: qsTr("Display-off delay")
             subtext: root.formatMinutes(root.screenOffMinutes)
             value: root.screenOffMinutes
             from: 1
@@ -241,8 +241,8 @@ PageBase {
         ToggleRow {
             // Always present; when sleep extras are hidden this is the group bottom.
             last: !root.sleepEnabled
-            text: "自动睡眠"
-            subtext: root.sleepEnabled ? `空闲 ${root.formatMinutes(root.sleepMinutes)} 后${root.sleepActionItems[root.sleepActionIndex()].text}` : "已关闭"
+            text: qsTr("Automatic sleep")
+            subtext: root.sleepEnabled ? qsTr("%1 after %2 of inactivity").arg(root.sleepActionItems[root.sleepActionIndex()].text).arg(root.formatMinutes(root.sleepMinutes)) : qsTr("Disabled")
             checked: root.sleepEnabled
             onToggled: {
                 root.sleepEnabled = checked;
@@ -252,7 +252,7 @@ PageBase {
 
         StepperRow {
             visible: root.sleepEnabled
-            label: "睡眠等待"
+            label: qsTr("Sleep delay")
             subtext: root.formatMinutes(root.sleepMinutes)
             value: root.sleepMinutes
             from: 1
@@ -268,8 +268,8 @@ PageBase {
             // Bottom of the idle group when sleep is enabled.
             last: true
             visible: root.sleepEnabled
-            label: "睡眠方式"
-            subtext: "睡眠：挂起内存；休眠：写入磁盘；睡眠后休眠：先睡再转休眠"
+            label: qsTr("Sleep method")
+            subtext: qsTr("Sleep suspends to memory; hibernate writes to disk; suspend then hibernate does both in sequence")
             menuItems: root.sleepActionItems
             active: root.sleepActionItems[root.sleepActionIndex()]
             onSelected: item => {
@@ -283,21 +283,21 @@ PageBase {
 
         // —— 锁屏选项 ——
         SectionHeader {
-            text: "锁屏"
+            text: qsTr("Lock screen")
         }
 
         ToggleRow {
             first: true
-            text: "指纹解锁"
-            subtext: "锁屏时允许使用指纹（需系统已配置指纹）"
+            text: qsTr("Fingerprint unlock")
+            subtext: qsTr("Allow fingerprint unlock when a fingerprint is configured")
             checked: GlobalConfig.lock.enableFprint
             onToggled: GlobalConfig.lock.enableFprint = checked
         }
 
         StepperRow {
             last: true
-            label: "指纹最大尝试次数"
-            subtext: `失败 ${GlobalConfig.lock.maxFprintTries} 次后回退到密码`
+            label: qsTr("Maximum fingerprint attempts")
+            subtext: qsTr("Fall back to password after %1 failed attempts").arg(GlobalConfig.lock.maxFprintTries)
             value: GlobalConfig.lock.maxFprintTries
             from: 1
             to: 10
@@ -307,7 +307,7 @@ PageBase {
 
         // —— 说明 ——
         SectionHeader {
-            text: "说明"
+            text: qsTr("Information")
         }
 
         ConnectedRect {
@@ -323,7 +323,7 @@ PageBase {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.leftMargin: Tokens.padding.largeIncreased
                 anchors.rightMargin: Tokens.padding.largeIncreased
-                text: "这些设置由 Shell 的空闲监控处理，写入配置后立即生效。\n「关闭屏幕」仅关闭显示输出，不会退出会话；「睡眠」会挂起系统。可在控制中心临时开启「防止休眠」以抑制自动睡眠。"
+                text: qsTr("These settings are handled by the Shell idle monitor and take effect immediately.\nTurning off displays does not end the session; sleep suspends the system. Use Keep awake in Control Centre to temporarily inhibit automatic sleep.")
                 color: Colours.palette.m3outline
                 font: Tokens.font.label.small
                 wrapMode: Text.WordWrap

@@ -53,59 +53,59 @@ Singleton {
     readonly property var sideActions: [
         {
             id: "default",
-            label: "系统默认（透传给应用）"
+            label: qsTr("System default (pass through to applications)")
         },
         {
             id: "browser_back",
-            label: "浏览器后退"
+            label: qsTr("Browser back")
         },
         {
             id: "browser_forward",
-            label: "浏览器前进"
+            label: qsTr("Browser forward")
         },
         {
             id: "workspace_prev",
-            label: "上一个工作区"
+            label: qsTr("Previous workspace")
         },
         {
             id: "workspace_next",
-            label: "下一个工作区"
+            label: qsTr("Next workspace")
         },
         {
             id: "movefocus_l",
-            label: "焦点向左"
+            label: qsTr("Focus left")
         },
         {
             id: "movefocus_r",
-            label: "焦点向右"
+            label: qsTr("Focus right")
         },
         {
             id: "volume_up",
-            label: "音量 +"
+            label: qsTr("Volume +")
         },
         {
             id: "volume_down",
-            label: "音量 −"
+            label: qsTr("Volume −")
         },
         {
             id: "media_play",
-            label: "播放 / 暂停"
+            label: qsTr("Play / pause")
         },
         {
             id: "killactive",
-            label: "关闭当前窗口"
+            label: qsTr("Close current window")
         },
         {
             id: "fullscreen",
-            label: "全屏"
+            label: qsTr("Full screen")
         },
         {
             id: "togglefloating",
-            label: "浮动窗口"
+            label: qsTr("Floating window")
         },
         {
             id: "notify_test",
-            label: "测试通知（验证按键）"
+            label: qsTr("Test notification")
         }
     ]
 
@@ -140,7 +140,7 @@ Singleton {
         if (busy)
             return;
         if (!touchpads.length) {
-            statusMessage = "未检测到触摸板。";
+            statusMessage = qsTr("No touchpad detected.");
             return;
         }
 
@@ -210,7 +210,7 @@ Singleton {
             if (a.id === actionId)
                 return a.label;
         }
-        return actionId || "系统默认";
+        return actionId || qsTr("System default");
     }
 
     function normalizeBindKey(key: string): string {
@@ -226,16 +226,16 @@ Singleton {
         if (k.startsWith("mouse:")) {
             const n = parseInt(k.slice(6), 10);
             const names = {
-                275: "侧键",
-                276: "前进侧键",
-                277: "扩展键 3",
-                278: "扩展键 4",
-                279: "扩展键 5"
+                275: qsTr("Side button"),
+                276: qsTr("Forward side button"),
+                277: qsTr("Extra button 3"),
+                278: qsTr("Extra button 4"),
+                279: qsTr("Extra button 5")
             };
-            return names[n] ? `${names[n]} · ${k}` : `鼠标按键 · ${k}`;
+            return names[n] ? `${names[n]} · ${k}` : qsTr("Mouse button · %1").arg(k);
         }
         if (k.startsWith("XF86"))
-            return `媒体/功能键 · ${k}`;
+            return qsTr("Media/function key · %1").arg(k);
         return k;
     }
 
@@ -268,7 +268,7 @@ Singleton {
         case "togglefloating":
             return "togglefloating,";
         case "notify_test":
-            return "exec, hyprctl notify 1 2000 0 \"侧键测试成功\"";
+            return `exec, hyprctl notify 1 2000 0 "${qsTr("Side button test succeeded")}"`;
         default:
             return "";
         }
@@ -310,7 +310,7 @@ Singleton {
 key="$1"
 file="\${XDG_RUNTIME_DIR:-/tmp}/villode-mouse-capture.key"
 printf '%s\\n' "$key" > "$file"
-hyprctl notify 1 2000 0 "已录制按键: $key" >/dev/null 2>&1 || true
+hyprctl notify 1 2000 0 "${qsTr("Recorded button")}: $key" >/dev/null 2>&1 || true
 `;
         captureScriptFile.path = captureHitScript;
         captureScriptFile.setText(script);
@@ -352,7 +352,7 @@ hyprctl notify 1 2000 0 "已录制按键: $key" >/dev/null 2>&1 || true
 
         pendingCaptureAction = defaultAction || "notify_test";
         lastCapturedKey = "";
-        captureStatus = "请按下鼠标侧键…";
+        captureStatus = qsTr("Press a mouse side button...");
         capturing = true;
         // Userspace listen is primary; skip installing Hypr temp binds that also
         // write capture.key (they raced with the poll and "finished" instantly).
@@ -369,7 +369,7 @@ hyprctl notify 1 2000 0 "已录制按键: $key" >/dev/null 2>&1 || true
         capturePollTimer.stop();
         pollArmTimer.restart();
         captureTimeoutTimer.restart();
-        statusMessage = "录制中：已暂停现有映射，请按下侧键。";
+        statusMessage = qsTr("Recording: existing mappings are paused. Press a side button.");
     }
 
     function suspendMapsForCapture(): void {
@@ -436,7 +436,7 @@ exit \${PIPESTATUS[0]}
         // broken empty-key / keycode-only binds from earlier bugs).
         purgeAllSideBinds();
         scheduleMousePersist();
-        statusMessage = "已清除全部侧键 / 误绑键盘映射。";
+        statusMessage = qsTr("Cleared all side-button and accidental keyboard mappings.");
     }
 
     function purgeAllSideBinds(): void {
@@ -487,7 +487,7 @@ exit \${PIPESTATUS[0]}
             return;
         capturing = false;
         activeCaptureSession = 0;
-        captureStatus = "已取消录制";
+        captureStatus = qsTr("Recording cancelled");
         capturePollTimer.stop();
         captureTimeoutTimer.stop();
         pollArmTimer.stop();
@@ -500,7 +500,7 @@ exit \${PIPESTATUS[0]}
         clearCaptureFileProc.running = true;
         resumeMapsAfterCapture();
         applySideBindsLive();
-        statusMessage = "已取消按键录制，映射已恢复。";
+        statusMessage = qsTr("Button recording cancelled; mappings restored.");
     }
 
     function finishButtonCapture(key: string): void {
@@ -515,21 +515,21 @@ exit \${PIPESTATUS[0]}
         if (inputListenProc.running)
             inputListenProc.running = false;
         lastCapturedKey = key;
-        captureStatus = `已录制：${keyDisplayName(key)}`;
+        captureStatus = qsTr("Recorded: %1").arg(keyDisplayName(key));
         // Remove key file so the next "录制" cannot instantly re-finish on stale content.
         clearCaptureFileProc.command = ["bash", "-lc", `rm -f '${captureFilePath}' 2>/dev/null; :`];
         clearCaptureFileProc.running = true;
         resumeMapsAfterCapture();
         // Restore maps then upsert this key with pending action.
         upsertButtonMap(key, pendingCaptureAction);
-        statusMessage = `已绑定 ${keyDisplayName(key)} → ${actionLabel(pendingCaptureAction)}`;
+        statusMessage = qsTr("Bound %1 → %2").arg(keyDisplayName(key)).arg(actionLabel(pendingCaptureAction));
     }
 
     function upsertButtonMap(key: string, actionId: string): void {
         const action = actionId || "default";
         key = normalizeBindKey(key);
         if (!isValidBindKey(key)) {
-            statusMessage = `无法绑定该按键：${key}`;
+            statusMessage = qsTr("Could not bind button: %1").arg(key);
             captureStatus = statusMessage;
             applySideBindsLive();
             return;
@@ -738,7 +738,7 @@ exit \${PIPESTATUS[0]}
             villodeMouseFile.setText(pendingMouseConf);
             mouseStateFile.setText(pendingMouseJson);
             ensureSourceProc.running = true;
-            statusMessage = "鼠标设置已保存。";
+            statusMessage = qsTr("Mouse settings saved.");
             writingMouse = false;
             return;
         }
@@ -771,7 +771,7 @@ exit \${PIPESTATUS[0]}
             touchpads = strict.length ? strict : pads;
             mice = pointerMice;
         } catch (e) {
-            statusMessage = "无法读取指针设备列表。";
+            statusMessage = qsTr("Could not read pointer device list.");
         }
     }
 
@@ -934,10 +934,10 @@ printf '%s\\n' "$sf" "$se" "$ns" "$sb" "$sl" "$ap"
         onExited: code => { // qmllint disable signal-handler-parameters
             root.busy = false;
             if (code === 0) {
-                root.statusMessage = root.touchpadEnabled ? "触摸板已启用。" : "触摸板已禁用。";
+                root.statusMessage = root.touchpadEnabled ? qsTr("Touchpad enabled.") : qsTr("Touchpad disabled.");
                 root.persist(root.touchpadEnabled);
             } else {
-                root.statusMessage = "切换触摸板失败。";
+                root.statusMessage = qsTr("Could not toggle touchpad.");
                 root.touchpadEnabled = !root.touchpadEnabled;
             }
         }
@@ -965,7 +965,7 @@ printf '%s\\n' "$sf" "$se" "$ns" "$sb" "$sl" "$ap"
         }
         onExited: code => { // qmllint disable signal-handler-parameters
             if (code === 0 && !root.capturing)
-                root.statusMessage = root.statusMessage || "侧键映射已更新。";
+                root.statusMessage = root.statusMessage || qsTr("Side-button mappings updated.");
         }
     }
 
@@ -999,7 +999,7 @@ printf '%s\\n' "$sf" "$se" "$ns" "$sb" "$sl" "$ap"
         stderr: StdioCollector {
             onStreamFinished: {
                 if (text.trim().includes("NO_DEVICES") && root.capturing)
-                    root.captureStatus = "无法读取鼠标设备。请将用户加入 input 组后重新登录。";
+                    root.captureStatus = qsTr("Could not read mouse devices. Add the user to the input group and log in again.");
             }
         }
         onExited: code => { // qmllint disable signal-handler-parameters
@@ -1064,14 +1064,14 @@ printf '%s\\n' "$sf" "$se" "$ns" "$sb" "$sl" "$ap"
             if (root.capturing) {
                 root.capturing = false;
                 root.activeCaptureSession = 0;
-                root.captureStatus = "录制超时，请重试";
+                root.captureStatus = qsTr("Recording timed out; try again");
                 root.capturePollTimer.stop();
                 root.pollArmTimer.stop();
                 if (inputListenProc.running)
                     inputListenProc.running = false;
                 root.resumeMapsAfterCapture();
                 root.applySideBindsLive();
-                root.statusMessage = "录制超时，已恢复原有映射。";
+                root.statusMessage = qsTr("Recording timed out; previous mappings restored.");
             }
         }
     }
@@ -1127,7 +1127,7 @@ printf '%s\\n' "$sf" "$se" "$ns" "$sb" "$sl" "$ap"
             if (code === 0)
                 root.writeFiles();
             else if (!root.statusMessage)
-                root.statusMessage = "无法创建配置目录。";
+                root.statusMessage = qsTr("Could not create configuration directory.");
         }
     }
 

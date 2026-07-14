@@ -246,7 +246,7 @@ Singleton {
         });
         identifyProc.command = ["bash", "-lc", parts.join("; ")];
         identifyProc.running = true;
-        statusMessage = monitors.length > 1 ? `正在标识 ${monitors.length} 台显示器…` : "正在标识显示器…";
+        statusMessage = monitors.length > 1 ? qsTr("Identifying %1 displays...").arg(monitors.length) : qsTr("Identifying display...");
     }
 
     // --- Projection modes (Win11: PC only / Duplicate / Extend / Second only) ---
@@ -384,23 +384,23 @@ Singleton {
         if (busy)
             return;
         if (monitors.length < 2) {
-            statusMessage = "需要至少两台显示器才能切换投影模式。";
+            statusMessage = qsTr("At least two displays are required to change projection mode.");
             return;
         }
 
         const primary = primaryMonitor();
         const secondaries = secondaryMonitors();
         if (!primary || !secondaries.length) {
-            statusMessage = "无法确定主显示器。";
+            statusMessage = qsTr("Could not determine the primary display.");
             return;
         }
 
         const rules = [];
         const labels = {
-            internal: "仅电脑屏幕",
-            duplicate: "复制这些显示器",
-            extend: "扩展这些显示器",
-            external: "仅第二屏幕"
+            internal: qsTr("PC screen only"),
+            duplicate: qsTr("Duplicate these displays"),
+            extend: qsTr("Extend these displays"),
+            external: qsTr("Second screen only")
         };
 
         if (mode === "internal") {
@@ -424,7 +424,7 @@ Singleton {
             // That leaves the user with a black/unreachable session.
             const realSeconds = realSecondaryMonitors();
             if (!realSeconds.length) {
-                statusMessage = "仅第二屏幕需要真实外接显示器。当前第二块是虚拟屏，不能关闭笔记本主屏。";
+                statusMessage = qsTr("Second screen only requires a physical external display. The second output is virtual, so the laptop display cannot be disabled.");
                 return;
             }
             rules.push({
@@ -493,11 +493,11 @@ Singleton {
                 x += Math.round(w);
             }
         } else {
-            statusMessage = "未知投影模式。";
+            statusMessage = qsTr("Unknown projection mode.");
             return;
         }
 
-        applyMonitorRules(rules, `已切换为「${labels[mode] || mode}」。`);
+        applyMonitorRules(rules, qsTr("Switched to “%1”.").arg(labels[mode] || mode));
     }
 
     function currentModeString(monitor: var): string {
@@ -549,7 +549,7 @@ Singleton {
         const snapped = Math.abs(cleanScale - desired) > 1e-3;
 
         busy = true;
-        statusMessage = snapped ? `已自动调整为合法缩放 ${formatScale(cleanScale)}（约 ${Math.round(cleanScale * 100)}%）。` : "";
+        statusMessage = snapped ? qsTr("Adjusted to valid scale %1 (about %2%).").arg(formatScale(cleanScale)).arg(Math.round(cleanScale * 100)) : "";
         pendingPersist = {
             name: mon.name,
             mode: normMode,
@@ -661,7 +661,7 @@ Singleton {
         try {
             const data = JSON.parse(text);
             if (!Array.isArray(data)) {
-                statusMessage = "无法解析显示器列表。";
+                statusMessage = qsTr("Could not parse display list.");
                 return;
             }
 
@@ -699,7 +699,7 @@ Singleton {
                 selectedName = focused?.name || next.find(m => !m.disabled)?.name || next[0]?.name || "";
             }
         } catch (error) {
-            statusMessage = "无法读取显示器信息。";
+            statusMessage = qsTr("Could not read display information.");
         }
     }
 
@@ -751,14 +751,14 @@ Singleton {
             root.busy = false;
             if (code === 0) {
                 if (!root.statusMessage)
-                    root.statusMessage = "显示设置已应用。";
-                else if (root.statusMessage.startsWith("已自动调整"))
-                    root.statusMessage = root.statusMessage + " 显示设置已应用。";
+                    root.statusMessage = qsTr("Display settings applied.");
+                else if (root.statusMessage.startsWith(qsTr("Adjusted to valid scale")))
+                    root.statusMessage = root.statusMessage + qsTr(" Display settings applied.");
                 // Projection messages already complete — still persist.
                 root.persistMonitors();
                 root.refresh();
             } else if (!root.statusMessage) {
-                root.statusMessage = "应用显示设置失败。";
+                root.statusMessage = qsTr("Could not apply display settings.");
             }
         }
     }
@@ -771,7 +771,7 @@ Singleton {
             if (code === 0)
                 root.writeMonitorFiles();
             else if (!root.statusMessage)
-                root.statusMessage = "无法创建显示配置目录。";
+                root.statusMessage = qsTr("Could not create display configuration directory.");
         }
     }
 
@@ -798,10 +798,10 @@ fi
         }
         onExited: code => { // qmllint disable signal-handler-parameters
             if (code === 0) {
-                if (!root.statusMessage || root.statusMessage === "显示设置已应用。")
-                    root.statusMessage = "显示设置已应用并保存。";
+                if (!root.statusMessage || root.statusMessage === qsTr("Display settings applied."))
+                    root.statusMessage = qsTr("Display settings applied and saved.");
             } else if (!root.statusMessage) {
-                root.statusMessage = "设置已应用，但写入 Hyprland source 失败。";
+                root.statusMessage = qsTr("Settings applied, but writing the Hyprland source failed.");
             }
         }
     }
@@ -812,12 +812,12 @@ fi
         atomicWrites: true
         onSaved: {
             root.pendingWrites = Math.max(0, root.pendingWrites - 1);
-            if (root.pendingWrites === 0 && (!root.statusMessage || root.statusMessage === "显示设置已应用。"))
-                root.statusMessage = "显示设置已应用并保存。";
+            if (root.pendingWrites === 0 && (!root.statusMessage || root.statusMessage === qsTr("Display settings applied.")))
+                root.statusMessage = qsTr("Display settings applied and saved.");
         }
         onSaveFailed: {
             root.pendingWrites = Math.max(0, root.pendingWrites - 1);
-            root.statusMessage = "设置已应用，但保存配置失败。";
+            root.statusMessage = qsTr("Settings applied, but saving configuration failed.");
         }
     }
 
@@ -827,12 +827,12 @@ fi
         atomicWrites: true
         onSaved: {
             root.pendingWrites = Math.max(0, root.pendingWrites - 1);
-            if (root.pendingWrites === 0 && (!root.statusMessage || root.statusMessage === "显示设置已应用。"))
-                root.statusMessage = "显示设置已应用并保存。";
+            if (root.pendingWrites === 0 && (!root.statusMessage || root.statusMessage === qsTr("Display settings applied.")))
+                root.statusMessage = qsTr("Display settings applied and saved.");
         }
         onSaveFailed: {
             root.pendingWrites = Math.max(0, root.pendingWrites - 1);
-            root.statusMessage = "设置已应用，但保存配置失败。";
+            root.statusMessage = qsTr("Settings applied, but saving configuration failed.");
         }
     }
 
@@ -842,9 +842,9 @@ fi
         stderr: StdioCollector {}
         onExited: code => { // qmllint disable signal-handler-parameters
             if (code === 0)
-                root.statusMessage = "已在屏幕上显示显示器编号。";
+                root.statusMessage = qsTr("Display numbers are now shown on screen.");
             else if (!root.statusMessage)
-                root.statusMessage = "标识显示器失败。";
+                root.statusMessage = qsTr("Could not identify displays.");
         }
     }
 }

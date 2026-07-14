@@ -8,96 +8,96 @@ QtObject {
     readonly property list<var> pages: [
         // Appearance
         {
-            label: qsTr("壁纸和样式"),
+            label: qsTr("Wallpaper & style"),
             icon: "palette",
-            description: qsTr("壁纸、字体、颜色"),
+            description: qsTr("Wallpaper, fonts, colours"),
             category: "appearance"
         },
 
         // Connectivity
         {
-            label: qsTr("显示"),
+            label: qsTr("Display"),
             icon: "monitor",
-            description: qsTr("分辨率、界面缩放、显示缩放"),
+            description: qsTr("Resolution, UI scale, display scaling"),
             category: "connectivity"
         },
         {
-            label: qsTr("鼠标和触摸板"),
+            label: qsTr("Mouse & touchpad"),
             icon: "touchpad_mouse",
-            description: qsTr("触摸板开关"),
+            description: qsTr("Touchpad and pointer controls"),
             category: "connectivity"
         },
         {
-            label: qsTr("网络"),
+            label: qsTr("Network"),
             icon: "wifi",
-            description: qsTr("无线网络、有线网络"),
+            description: qsTr("Wi-Fi, ethernet"),
             category: "connectivity"
         },
         {
-            label: qsTr("已连接设备"),
+            label: qsTr("Connected devices"),
             icon: "devices_other",
-            description: qsTr("蓝牙、配对"),
+            description: qsTr("Bluetooth, pairing"),
             category: "connectivity",
             noFill: true
         },
         {
-            label: qsTr("音频"),
+            label: qsTr("Audio"),
             icon: "volume_up",
-            description: qsTr("应用音量、声音设备"),
+            description: qsTr("App volumes, sound devices"),
             category: "connectivity"
         },
 
         // System
         {
-            label: qsTr("Villode 更新"),
+            label: qsTr("Villode updates"),
             icon: "update",
-            description: qsTr("同步 Shell、中文化与桌面组件"),
+            description: qsTr("Sync Shell, translations and desktop components"),
             category: "system"
         },
         {
-            label: qsTr("锁屏与电源"),
+            label: qsTr("Lock screen & power"),
             icon: "power_settings_new",
-            description: qsTr("锁屏、关屏、睡眠与空闲超时"),
+            description: qsTr("Lock, display off, sleep and idle timeouts"),
             category: "system"
         },
         {
-            label: qsTr("插件"),
+            label: qsTr("Plugins"),
             icon: "extension",
-            description: qsTr("管理插件"),
+            description: qsTr("Manage plugins"),
             category: "system"
         },
 
         // Shell
         {
-            label: qsTr("面板"),
+            label: qsTr("Panels"),
             icon: "dock_to_bottom",
-            description: qsTr("仪表盘、任务栏、启动器、侧边栏"),
+            description: qsTr("Dashboard, taskbar, launcher, sidebar"),
             category: "shell"
         },
         {
-            label: qsTr("应用"),
+            label: qsTr("Apps"),
             icon: "apps",
-            description: qsTr("默认应用、收藏、隐藏应用"),
+            description: qsTr("Default apps, favourites, hidden apps"),
             category: "shell"
         },
         {
-            label: qsTr("服务"),
+            label: qsTr("Services"),
             icon: "build",
-            description: qsTr("轮询间隔、歌词后端"),
+            description: qsTr("Poll intervals, lyrics backend"),
             category: "shell"
         },
         {
-            label: qsTr("语言和地区"),
+            label: qsTr("Language & region"),
             icon: "globe",
-            description: qsTr("界面语言、天气位置、显示单位"),
+            description: qsTr("UI language, weather location, display units"),
             category: "shell"
         },
 
         // About
         {
-            label: qsTr("关于"),
+            label: qsTr("About"),
             icon: "info",
-            description: qsTr("系统信息、致谢"),
+            description: qsTr("System information, credits"),
             category: "about"
         },
     ]
