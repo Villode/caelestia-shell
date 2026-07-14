@@ -27,21 +27,19 @@ StyledRect {
     color: Colours.tPalette.m3surfaceContainer
     radius: Tokens.rounding.full
 
+    readonly property bool anyLockKey: Hypr.capsLock || Hypr.numLock
+    readonly property int hPad: Tokens.padding.medium
+    readonly property int vPad: Tokens.padding.medium
+
     clip: true
-    implicitWidth: root.isVertical ? Tokens.sizes.bar.innerWidth : (iconColumn.implicitWidth + Tokens.padding.medium * 2)
-    implicitHeight: root.isVertical ? (iconColumn.implicitHeight + Tokens.padding.medium * 2) : Tokens.sizes.bar.innerWidth
+    implicitWidth: root.isVertical ? Tokens.sizes.bar.innerWidth : (iconColumn.implicitWidth + hPad * 2)
+    implicitHeight: root.isVertical ? (iconColumn.implicitHeight + vPad * 2) : Tokens.sizes.bar.innerWidth
 
     GridLayout {
         id: iconColumn
 
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: parent.top
-        anchors.bottom: parent.bottom
-        anchors.leftMargin: root.isVertical ? 0 : Tokens.padding.medium
-        anchors.rightMargin: root.isVertical ? 0 : Tokens.padding.medium
-        anchors.topMargin: root.isVertical ? Tokens.padding.medium : 0
-        anchors.bottomMargin: root.isVertical ? Tokens.padding.medium : 0
+        // Center the row/column inside the capsule so padding is even on both sides.
+        anchors.centerIn: parent
         columns: root.isVertical ? 1 : 100
         rows: root.isVertical ? 100 : 1
         flow: root.isVertical ? GridLayout.TopToBottom : GridLayout.LeftToRight
@@ -49,77 +47,29 @@ StyledRect {
         columnSpacing: Tokens.spacing.medium / 2
         rowSpacing: Tokens.spacing.medium / 2
 
-        // Lock keys status
+        // Lock keys status — only occupy layout space when a lock key is actually on.
         WrappedLoader {
             name: "lockstatus"
-            active: Config.bar.status.showLockStatus
+            active: Config.bar.status.showLockStatus && root.anyLockKey
+            visible: active
 
-            sourceComponent: ColumnLayout {
-                spacing: 0
+            sourceComponent: GridLayout {
+                columns: root.isVertical ? 1 : 100
+                rows: root.isVertical ? 100 : 1
+                flow: root.isVertical ? GridLayout.TopToBottom : GridLayout.LeftToRight
+                columnSpacing: iconColumn.columnSpacing
+                rowSpacing: iconColumn.rowSpacing
 
-                Item {
-                    implicitWidth: capslockIcon.implicitWidth
-                    implicitHeight: Hypr.capsLock ? capslockIcon.implicitHeight : 0
-
-                    MaterialIcon {
-                        id: capslockIcon
-
-                        anchors.centerIn: parent
-
-                        scale: Hypr.capsLock ? 1 : 0.5
-                        opacity: Hypr.capsLock ? 1 : 0
-
-                        text: "keyboard_capslock_badge"
-                        color: root.colour
-
-                        Behavior on opacity {
-                            Anim {
-                                type: Anim.DefaultEffects
-                            }
-                        }
-
-                        Behavior on scale {
-                            Anim {}
-                        }
-                    }
-
-                    Behavior on implicitHeight {
-                        Anim {}
-                    }
+                MaterialIcon {
+                    visible: Hypr.capsLock
+                    text: "keyboard_capslock_badge"
+                    color: root.colour
                 }
 
-                Item {
-                    Layout.topMargin: root.isVertical && Hypr.capsLock && Hypr.numLock ? iconColumn.rowSpacing : 0
-                    Layout.leftMargin: !root.isVertical && Hypr.capsLock && Hypr.numLock ? iconColumn.columnSpacing : 0
-
-                    implicitWidth: numlockIcon.implicitWidth
-                    implicitHeight: Hypr.numLock ? numlockIcon.implicitHeight : 0
-
-                    MaterialIcon {
-                        id: numlockIcon
-
-                        anchors.centerIn: parent
-
-                        scale: Hypr.numLock ? 1 : 0.5
-                        opacity: Hypr.numLock ? 1 : 0
-
-                        text: "looks_one"
-                        color: root.colour
-
-                        Behavior on opacity {
-                            Anim {
-                                type: Anim.DefaultEffects
-                            }
-                        }
-
-                        Behavior on scale {
-                            Anim {}
-                        }
-                    }
-
-                    Behavior on implicitHeight {
-                        Anim {}
-                    }
+                MaterialIcon {
+                    visible: Hypr.numLock
+                    text: "looks_one"
+                    color: root.colour
                 }
             }
         }
@@ -187,9 +137,6 @@ StyledRect {
 
         // Bluetooth section
         WrappedLoader {
-            Layout.preferredWidth: root.isVertical ? undefined : implicitWidth
-            Layout.preferredHeight: root.isVertical ? implicitHeight : undefined
-
             name: "bluetooth"
             active: Config.bar.status.showBluetooth
 
@@ -250,14 +197,6 @@ StyledRect {
                     }
                 }
             }
-
-            Behavior on Layout.preferredWidth {
-                Anim {}
-            }
-
-            Behavior on Layout.preferredHeight {
-                Anim {}
-            }
         }
 
         // Battery icon
@@ -287,7 +226,7 @@ StyledRect {
         required property string name
 
         asynchronous: true
-        Layout.alignment: Qt.AlignHCenter
+        Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
         visible: active
     }
 }

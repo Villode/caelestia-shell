@@ -221,8 +221,12 @@ GridLayout {
             return null;
         }
 
-        asynchronous: true
+        // Logo + workspaces must paint on the first frame after Shell restart;
+        // async load can leave an empty gap next to the logo until a later layout pass.
+        asynchronous: entryId !== "logo" && entryId !== "workspaces"
         Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+        Layout.minimumWidth: entryId === "workspaces" ? Tokens.sizes.bar.innerWidth : 0
+        Layout.minimumHeight: entryId === "workspaces" ? Tokens.sizes.bar.innerWidth : 0
 
         // Cursed ahh thing to add padding to first and last enabled components
         Layout.topMargin: root.isVertical && findFirstEnabled() === this ? root.vPadding : 0

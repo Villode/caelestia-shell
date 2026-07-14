@@ -38,7 +38,7 @@ StyledRect {
         rowSpacing: Tokens.spacing.extraSmall
 
         Loader {
-            Layout.alignment: Qt.AlignHCenter
+            Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
             asynchronous: true
             active: Config.bar.clock.showIcon
             visible: active
@@ -50,7 +50,7 @@ StyledRect {
         }
 
         Loader {
-            Layout.alignment: Qt.AlignHCenter
+            Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
             asynchronous: true
             active: Config.bar.clock.showDate
             visible: active
@@ -63,26 +63,29 @@ StyledRect {
                 rowSpacing: Math.max(0, (root.isVertical ? layout.rowSpacing : layout.columnSpacing) - 4)
 
                 StyledText {
-                    Layout.alignment: Qt.AlignHCenter
+                    Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                     text: Time.format("ddd")
                     font: Tokens.font.body.builders.small.scale(0.9).build()
                     color: root.colour
                 }
 
                 StyledText {
-                    Layout.alignment: Qt.AlignHCenter
+                    Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                     text: Time.format("d")
                     font: root.font.scale(1.1).build()
                     color: root.colour
                 }
 
+                // Vertical: thin horizontal rule. Horizontal: thin vertical rule.
                 StyledRect {
                     Layout.fillWidth: root.isVertical
                     Layout.fillHeight: !root.isVertical
+                    Layout.preferredWidth: root.isVertical ? -1 : 1
+                    Layout.preferredHeight: root.isVertical ? 1 : -1
                     Layout.leftMargin: root.isVertical ? -Tokens.padding.extraSmall : Tokens.padding.extraSmall / 2
                     Layout.rightMargin: root.isVertical ? -Tokens.padding.extraSmall : Tokens.padding.extraSmall / 2
-                    Layout.topMargin: root.isVertical ? 4 : -Tokens.padding.extraSmall
-                    Layout.bottomMargin: root.isVertical ? Tokens.padding.extraSmall / 2 : -Tokens.padding.extraSmall
+                    Layout.topMargin: root.isVertical ? 4 : Tokens.padding.extraSmall / 2
+                    Layout.bottomMargin: root.isVertical ? Tokens.padding.extraSmall / 2 : Tokens.padding.extraSmall / 2
                     implicitWidth: root.isVertical ? 0 : 1
                     implicitHeight: root.isVertical ? 1 : 0
                     color: Colours.palette.m3outlineVariant
@@ -90,46 +93,65 @@ StyledRect {
             }
         }
 
-        StyledText {
-            Layout.alignment: Qt.AlignHCenter
-            text: Time.hourStr
-            font: {
-                const scale = text === "11" ? 1.15 : Math.min(1.05, Math.max(hourMetrics.width, minMetrics.width) / hourMetrics.width);
-                return root.font.width(scale * 100).letterSpacing(scale).build();
-            }
-            color: root.colour
+        // Horizontal bar: single "03:54" so digits are not jammed into "0354".
+        // Vertical bar: stacked hour / minute (original look).
+        Loader {
+            Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+            active: !root.isVertical
+            visible: active
 
-            TextMetrics {
-                id: hourMetrics
-
+            sourceComponent: StyledText {
+                text: GlobalConfig.services.useTwelveHourClock ? Time.format("h:mm") : Time.format("HH:mm")
                 font: root.font.build()
-                text: Time.hourStr
-            }
-        }
-
-        StyledText {
-            Layout.topMargin: root.isVertical ? -parent.rowSpacing - 4 : 0
-            Layout.leftMargin: root.isVertical ? 0 : -parent.columnSpacing - 4
-            Layout.alignment: Qt.AlignHCenter
-            text: Time.minuteStr
-            font: {
-                const scale = text === "11" ? 1.15 : Math.min(1.05, Math.max(hourMetrics.width, minMetrics.width) / minMetrics.width);
-                return root.font.width(scale * 100).letterSpacing(scale).build();
-            }
-            color: root.colour
-
-            TextMetrics {
-                id: minMetrics
-
-                font: root.font.build()
-                text: Time.minuteStr
+                color: root.colour
             }
         }
 
         Loader {
-            Layout.topMargin: root.isVertical ? -parent.rowSpacing - 4 : 0
-            Layout.leftMargin: root.isVertical ? 0 : -parent.columnSpacing - 4
-            Layout.alignment: Qt.AlignHCenter
+            Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+            active: root.isVertical
+            visible: active
+
+            sourceComponent: ColumnLayout {
+                spacing: 0
+
+                StyledText {
+                    Layout.alignment: Qt.AlignHCenter
+                    text: Time.hourStr
+                    font: {
+                        const scale = text === "11" ? 1.15 : Math.min(1.05, Math.max(hourMetrics.width, minMetrics.width) / Math.max(1, hourMetrics.width));
+                        return root.font.width(scale * 100).letterSpacing(scale).build();
+                    }
+                    color: root.colour
+
+                    TextMetrics {
+                        id: hourMetrics
+                        font: root.font.build()
+                        text: Time.hourStr
+                    }
+                }
+
+                StyledText {
+                    Layout.topMargin: -4
+                    Layout.alignment: Qt.AlignHCenter
+                    text: Time.minuteStr
+                    font: {
+                        const scale = text === "11" ? 1.15 : Math.min(1.05, Math.max(hourMetrics.width, minMetrics.width) / Math.max(1, minMetrics.width));
+                        return root.font.width(scale * 100).letterSpacing(scale).build();
+                    }
+                    color: root.colour
+
+                    TextMetrics {
+                        id: minMetrics
+                        font: root.font.build()
+                        text: Time.minuteStr
+                    }
+                }
+            }
+        }
+
+        Loader {
+            Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
             asynchronous: true
             active: GlobalConfig.services.useTwelveHourClock
             visible: active

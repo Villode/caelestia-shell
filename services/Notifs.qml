@@ -83,8 +83,11 @@ Singleton {
     NotificationServer {
         id: server
 
-        keepOnReload: false
+        // Keep the FDO bus across quickshell reloads so browsers (Chrome) do not
+        // fall back to their own tiled notification windows while the shell restarts.
+        keepOnReload: true
         actionsSupported: true
+        bodySupported: true
         bodyHyperlinksSupported: true
         bodyImagesSupported: true
         bodyMarkupSupported: true

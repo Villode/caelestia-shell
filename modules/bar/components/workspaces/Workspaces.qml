@@ -35,8 +35,12 @@ StyledClippingRect {
 
     property real blur: onSpecial ? 1 : 0
 
-    implicitWidth: root.isVertical ? Tokens.sizes.bar.innerWidth : (layout.implicitWidth + Tokens.padding.small)
-    implicitHeight: root.isVertical ? (layout.implicitHeight + Tokens.padding.small) : Tokens.sizes.bar.innerWidth
+    // Minimum box = one cell so the pill never collapses to 0×0 on cold start.
+    readonly property int minBox: Tokens.sizes.bar.innerWidth
+    readonly property int shownCount: Math.max(1, Config.bar.workspaces.shown)
+
+    implicitWidth: root.isVertical ? minBox : Math.max(minBox, layout.implicitWidth + Tokens.padding.small)
+    implicitHeight: root.isVertical ? Math.max(minBox, layout.implicitHeight + Tokens.padding.small) : minBox
 
     color: Colours.tPalette.m3surfaceContainer
     radius: Tokens.rounding.full
@@ -55,7 +59,8 @@ StyledClippingRect {
         }
 
         Loader {
-            asynchronous: true
+            // Sync load — async delayed paint can leave an empty pill after Shell restart.
+            asynchronous: false
             active: Config.bar.workspaces.occupiedBg
 
             anchors.fill: parent
@@ -81,7 +86,7 @@ StyledClippingRect {
             Repeater {
                 id: workspaces
 
-                model: Config.bar.workspaces.shown
+                model: root.shownCount
 
                 Workspace {
                     activeWsId: root.activeWsId
@@ -92,7 +97,7 @@ StyledClippingRect {
         }
 
         Loader {
-            asynchronous: true
+            asynchronous: false
             anchors.horizontalCenter: root.isVertical ? parent.horizontalCenter : undefined
             anchors.verticalCenter: root.isVertical ? undefined : parent.verticalCenter
             active: Config.bar.workspaces.activeIndicator

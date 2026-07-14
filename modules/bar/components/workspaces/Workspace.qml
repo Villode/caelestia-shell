@@ -25,18 +25,26 @@ Item {
     readonly property bool isVertical: barPosition !== "top"
 
     readonly property bool isWorkspace: true // Flag for finding workspace children
-    // Unanimated prop for others to use as reference
-    readonly property int size: (isVertical ? implicitHeight : implicitWidth) + (hasWindows ? Tokens.padding.extraSmall : 0)
+    // Fixed cell along the bar thickness — never depends on laid-out size (avoids 0-size
+    // collapse on Shell restart before content/Hypr data is ready).
+    readonly property int cellSize: Tokens.sizes.bar.innerWidth - Tokens.padding.small
+    // Extent along the bar axis for ActiveIndicator / OccupiedBg.
+    readonly property int size: {
+        const along = isVertical ? Math.max(cellSize, content.implicitHeight) : Math.max(cellSize, content.implicitWidth);
+        return along + (hasWindows ? Tokens.padding.extraSmall : 0);
+    }
 
     readonly property int ws: groupOffset + index + 1
     readonly property bool isOccupied: occupied[ws] ?? false
     readonly property bool hasWindows: isOccupied && Config.bar.workspaces.showWindows
 
     Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-    Layout.preferredWidth: isVertical ? (Tokens.sizes.bar.innerWidth - Tokens.padding.small) : size
-    Layout.preferredHeight: isVertical ? size : (Tokens.sizes.bar.innerWidth - Tokens.padding.small)
-    implicitWidth: isVertical ? (Tokens.sizes.bar.innerWidth - Tokens.padding.small) : content.implicitWidth
-    implicitHeight: isVertical ? content.implicitHeight : (Tokens.sizes.bar.innerWidth - Tokens.padding.small)
+    Layout.preferredWidth: isVertical ? cellSize : size
+    Layout.preferredHeight: isVertical ? size : cellSize
+    Layout.minimumWidth: isVertical ? cellSize : cellSize
+    Layout.minimumHeight: isVertical ? cellSize : cellSize
+    implicitWidth: isVertical ? cellSize : Math.max(cellSize, content.implicitWidth)
+    implicitHeight: isVertical ? Math.max(cellSize, content.implicitHeight) : cellSize
 
     GridLayout {
         id: content
