@@ -4590,12 +4590,12 @@ Keyboard layout: %1</source>
         </message>
         <message>
             <location line="+1" />
-            <location line="+356" />
+            <location line="+360" />
             <source>Video files</source>
             <translation>视频文件</translation>
         </message>
         <message>
-            <location line="-345" />
+            <location line="-349" />
             <source>Choose web file</source>
             <translation>选择网页文件</translation>
         </message>
@@ -4661,7 +4661,7 @@ Keyboard layout: %1</source>
             <translation>用视频或网页为桌面增加动态效果</translation>
         </message>
         <message>
-            <location line="+7" />
+            <location line="+11" />
             <source>Video</source>
             <translation>视频</translation>
         </message>

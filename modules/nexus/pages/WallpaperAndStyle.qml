@@ -345,9 +345,9 @@ PageBase {
                     anchors.margins: Tokens.padding.large
                     spacing: Tokens.spacing.medium
 
-                    ColumnLayout {
+                    RowLayout {
                         Layout.fillWidth: true
-                        spacing: Tokens.spacing.small
+                        spacing: Tokens.spacing.medium
 
                         ColumnLayout {
                             Layout.fillWidth: true
@@ -366,6 +366,10 @@ PageBase {
                         }
 
                         SegmentedSlider {
+                            Layout.fillWidth: false
+                            Layout.preferredWidth: 196
+                            Layout.alignment: Qt.AlignTop
+                            implicitHeight: 40
                             labels: [qsTr("Video"), qsTr("Web")]
                             icons: ["movie", "language"]
                             currentIndex: root.desktopMode === "video" ? 0 : 1
