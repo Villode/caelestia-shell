@@ -113,21 +113,19 @@ Item {
     focus: visibilities.multitasking
 
     ColumnLayout {
-        anchors.left: parent.left
-        anchors.top: parent.top
-        anchors.leftMargin: root.edgePad
-        anchors.topMargin: root.edgePad
+        anchors.centerIn: parent
         visible: root.clients.length === 0
         spacing: Tokens.spacing.small
 
         MaterialIcon {
-            Layout.alignment: Qt.AlignLeft
+            Layout.alignment: Qt.AlignHCenter
             text: "web_asset_off"
             color: Colours.palette.m3outline
             fontStyle: Tokens.font.icon.builders.extraLarge.scale(1.4).build()
         }
 
         StyledText {
+            Layout.alignment: Qt.AlignHCenter
             text: qsTr("没有正在运行的应用")
             color: Colours.palette.m3outline
             font: Tokens.font.body.medium
