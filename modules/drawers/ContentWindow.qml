@@ -126,6 +126,17 @@ StyledWindow {
         }
     }
 
+    Connections {
+        target: panels.popouts
+
+        function onHasCurrentChanged(): void {
+            // The multitasking scrim sits in the same layer surface and would
+            // darken the translucent popout before Hyprland can blur it.
+            if (panels.popouts.hasCurrent)
+                visibilities.multitasking = false;
+        }
+    }
+
     // Dim desktop (must sit UNDER blob panel backgrounds so top popouts keep glass).
     // Full-screen visual only — dock is Overlay above this Top layer. Input for
     // dismiss is handled by Regions (Combine mask) + Interactions click handler;
