@@ -147,6 +147,76 @@ PageBase {
 
     Component.onCompleted: refreshDesktop()
 
+    component SegmentedSlider: StyledRect {
+        id: selector
+
+        required property list<string> labels
+        property list<string> icons: []
+        property int currentIndex
+        signal selected(int index)
+
+        Layout.fillWidth: true
+        implicitHeight: 48
+        radius: Tokens.rounding.large
+        color: Colours.tPalette.m3surfaceContainerHigh
+
+        readonly property real segmentWidth: (width - 8) / Math.max(1, labels.length)
+
+        StyledRect {
+            x: 4 + selector.currentIndex * selector.segmentWidth
+            y: 4
+            width: selector.segmentWidth
+            height: parent.height - 8
+            radius: Tokens.rounding.medium
+            color: Colours.palette.m3secondaryContainer
+
+            Behavior on x {
+                Anim { type: Anim.Emphasized }
+            }
+        }
+
+        Row {
+            anchors.fill: parent
+            anchors.margins: 4
+
+            Repeater {
+                model: selector.labels
+
+                Item {
+                    required property string modelData
+                    required property int index
+                    width: selector.segmentWidth
+                    height: parent.height
+
+                    RowLayout {
+                        anchors.centerIn: parent
+                        spacing: Tokens.spacing.small
+
+                        MaterialIcon {
+                            visible: selector.icons.length > index && selector.icons[index].length > 0
+                            text: visible ? selector.icons[index] : ""
+                            color: index === selector.currentIndex ? Colours.palette.m3onSecondaryContainer : Colours.palette.m3onSurfaceVariant
+                            fontStyle: Tokens.font.icon.small
+                            fill: index === selector.currentIndex ? 1 : 0
+                        }
+
+                        StyledText {
+                            text: parent.parent.modelData
+                            color: index === selector.currentIndex ? Colours.palette.m3onSecondaryContainer : Colours.palette.m3onSurfaceVariant
+                            font: Tokens.font.label.large
+                        }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: selector.selected(index)
+                    }
+                }
+            }
+        }
+    }
+
     ColumnLayout {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: parent.top
@@ -275,9 +345,9 @@ PageBase {
                     anchors.margins: Tokens.padding.large
                     spacing: Tokens.spacing.medium
 
-                    RowLayout {
+                    ColumnLayout {
                         Layout.fillWidth: true
-                        spacing: Tokens.spacing.medium
+                        spacing: Tokens.spacing.small
 
                         ColumnLayout {
                             Layout.fillWidth: true
@@ -295,34 +365,18 @@ PageBase {
                             }
                         }
 
-                        ButtonRow {
-                            Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                            spacing: 0
-
-                            IconTextButton {
-                                icon: "movie"
-                                text: qsTr("Video")
-                                isToggle: false
-                                checked: root.desktopMode === "video"
-                                type: IconTextButton.Tonal
-                                onClicked: {
+                        SegmentedSlider {
+                            labels: [qsTr("Video"), qsTr("Web")]
+                            icons: ["movie", "language"]
+                            currentIndex: root.desktopMode === "video" ? 0 : 1
+                            onSelected: index => {
+                                if (index === 0) {
                                     root.desktopMode = "video";
-                                    root.syncDesktopSource();
-                                    root.desktopMessage = "";
-                                }
-                            }
-
-                            IconTextButton {
-                                icon: "language"
-                                text: qsTr("Web")
-                                isToggle: false
-                                checked: root.desktopMode === "html"
-                                type: IconTextButton.Tonal
-                                onClicked: {
+                                } else {
                                     root.desktopMode = "html";
-                                    root.syncDesktopSource();
-                                    root.desktopMessage = "";
                                 }
+                                root.syncDesktopSource();
+                                root.desktopMessage = "";
                             }
                         }
                     }
@@ -374,33 +428,11 @@ PageBase {
                             color: Colours.palette.m3onSurfaceVariant
                         }
 
-                        ButtonRow {
-                            Layout.alignment: Qt.AlignLeft
-                            spacing: 0
-
-                            IconTextButton {
-                                text: qsTr("Fill screen")
-                                isToggle: false
-                                checked: root.desktopFit === "cover"
-                                type: IconTextButton.Tonal
-                                onClicked: root.desktopFit = "cover"
-                            }
-
-                            IconTextButton {
-                                text: qsTr("Fit entire picture")
-                                isToggle: false
-                                checked: root.desktopFit === "contain"
-                                type: IconTextButton.Tonal
-                                onClicked: root.desktopFit = "contain"
-                            }
-
-                            IconTextButton {
-                                text: qsTr("Stretch to fill")
-                                isToggle: false
-                                checked: root.desktopFit === "stretch"
-                                type: IconTextButton.Tonal
-                                onClicked: root.desktopFit = "stretch"
-                            }
+                        SegmentedSlider {
+                            labels: [qsTr("Fill screen"), qsTr("Fit entire picture"), qsTr("Stretch to fill")]
+                            icons: ["crop_free", "fit_screen", "open_in_full"]
+                            currentIndex: root.desktopFit === "cover" ? 0 : root.desktopFit === "contain" ? 1 : 2
+                            onSelected: index => root.desktopFit = ["cover", "contain", "stretch"][index]
                         }
                     }
 

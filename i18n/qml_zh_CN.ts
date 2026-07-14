@@ -4590,12 +4590,12 @@ Keyboard layout: %1</source>
         </message>
         <message>
             <location line="+1" />
-            <location line="+302" />
+            <location line="+356" />
             <source>Video files</source>
             <translation>视频文件</translation>
         </message>
         <message>
-            <location line="-291" />
+            <location line="-345" />
             <source>Choose web file</source>
             <translation>选择网页文件</translation>
         </message>
@@ -4651,7 +4651,7 @@ Keyboard layout: %1</source>
             <translation>停止动态壁纸失败。</translation>
         </message>
         <message>
-            <location line="+147" />
+            <location line="+217" />
             <source>Dynamic desktop</source>
             <translation>动态桌面</translation>
         </message>
@@ -4661,17 +4661,17 @@ Keyboard layout: %1</source>
             <translation>用视频或网页为桌面增加动态效果</translation>
         </message>
         <message>
-            <location line="+12" />
+            <location line="+7" />
             <source>Video</source>
             <translation>视频</translation>
         </message>
         <message>
-            <location line="+13" />
+            <location line="+0" />
             <source>Web</source>
             <translation>网页</translation>
         </message>
         <message>
-            <location line="+20" />
+            <location line="+22" />
             <source>HTML file or URL</source>
             <translation>HTML 文件或网址</translation>
         </message>
@@ -4691,22 +4691,22 @@ Keyboard layout: %1</source>
             <translation>画面适配</translation>
         </message>
         <message>
-            <location line="+10" />
+            <location line="+6" />
             <source>Fill screen</source>
             <translation>铺满屏幕</translation>
         </message>
         <message>
-            <location line="+8" />
+            <location line="+0" />
             <source>Fit entire picture</source>
             <translation>完整显示</translation>
         </message>
         <message>
-            <location line="+8" />
+            <location line="+0" />
             <source>Stretch to fill</source>
             <translation>拉伸填满</translation>
         </message>
         <message>
-            <location line="+13" />
+            <location line="+11" />
             <source>Failed</source>
             <translation>失败</translation>
         </message>
