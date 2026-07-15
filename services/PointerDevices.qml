@@ -13,6 +13,10 @@ Singleton {
     property list<var> touchpads: []
     property list<var> mice: []
     property bool touchpadEnabled: true
+    // Guard: never restore touchpad state into the compositor before the saved
+    // state file has loaded, or we may push the default (enabled) over a saved
+    // "disabled" and then lock out the correct re-apply via restoredAfterStart.
+    property bool touchpadStateLoaded: false
     property bool busy: false
     property string statusMessage: ""
     property string pendingEnabled: ""
@@ -155,7 +159,7 @@ Singleton {
         for (const pad of touchpads) {
             cmds.push(`hyprctl keyword "device[${pad.name}]:enabled" ${enabled ? 1 : 0}`);
         }
-        applyProc.command = ["bash", "-lc", cmds.join(" && ")];
+        applyProc.command = ["bash", "-c", cmds.join(" && ")];
         applyProc.running = true;
     }
 
@@ -607,11 +611,19 @@ exit \${PIPESTATUS[0]}
         }
         // Stop legacy Xiaomi side-key daemon if still running.
         cmds.push(`pkill -f '[v]illode-mi-side-daemon' >/dev/null 2>&1 || true`);
-        sideBindProc.command = ["bash", "-lc", cmds.join(" ; ")];
+        sideBindProc.command = ["bash", "-c", cmds.join(" ; ")];
         sideBindProc.running = true;
     }
 
+    // Debounced entry point: coalesces rapid slider drags / toggle spam into a
+    // single hyprctl burst instead of spawning a shell per pixel. Crucially it
+    // no longer rebuilds side-button keybinds — those only change via the map
+    // mutators, so scroll/sensitivity changes must not hammer the keybind IPC.
     function applyMouseLive(): void {
+        mouseApplyTimer.restart();
+    }
+
+    function pushMouseLive(): void {
         // Hyprland only converts middle-button drag to scroll when
         // scroll_method = on_button_down (scroll_button alone does nothing).
         const method = middleScroll ? "on_button_down" : "2fg";
@@ -633,10 +645,8 @@ exit \${PIPESTATUS[0]}
             cmds.push(`hyprctl keyword "device[${n}]:scroll_method" ${method}`);
             cmds.push(`hyprctl keyword "device[${n}]:scroll_button" ${btn}`);
         }
-        mouseApplyProc.command = ["bash", "-lc", cmds.join(" ; ")];
+        mouseApplyProc.command = ["bash", "-c", cmds.join(" ; ")];
         mouseApplyProc.running = true;
-        // Side-button binds live separately.
-        applySideBindsLive();
     }
 
     function buildTouchpadConf(enabled: bool): string {
@@ -788,6 +798,12 @@ exit \${PIPESTATUS[0]}
         // Wait until we at least attempted to load state files (devices may arrive first).
         if (!touchpads.length && !mice.length)
             return;
+        // If a touchpad exists, never restore before its saved state has loaded —
+        // otherwise we'd push the default (enabled) and latch restoredAfterStart,
+        // permanently ignoring a saved "disabled". stateFile on(Loaded|LoadFailed)
+        // re-invokes this once the state is known.
+        if (touchpads.length && !touchpadStateLoaded)
+            return;
         restoredAfterStart = true;
         ensureSourceProc.running = true;
         if (touchpads.length) {
@@ -804,8 +820,12 @@ exit \${PIPESTATUS[0]}
             // Keep conf files in sync with current device names + desired state.
             persist(touchpadEnabled);
         }
-        if (mouseStateLoaded)
+        if (mouseStateLoaded) {
             applyMouseLive();
+            // Side-binds are no longer chained off applyMouseLive, so restore
+            // recorded mappings explicitly once after start.
+            applySideBindsLive();
+        }
     }
 
     function parseOptions(text: string): void {
@@ -893,7 +913,12 @@ exit \${PIPESTATUS[0]}
                     buttonMaps = maps;
             }
             // Apply saved values to live session (in case conf wasn't sourced yet).
-            Qt.callLater(() => applyMouseLive(), 200);
+            // buttonMaps were just loaded, so restore side-binds too (applyMouseLive
+            // no longer does this).
+            Qt.callLater(() => {
+                applyMouseLive();
+                applySideBindsLive();
+            }, 200);
         } catch (e) {
             // keep defaults
         }
@@ -1208,6 +1233,14 @@ done
         stderr: StdioCollector {}
     }
 
+    // Coalesce rapid mouse-setting changes (slider drags, toggle spam) into one
+    // hyprctl burst so the compositor isn't hammered per event.
+    Timer {
+        id: mouseApplyTimer
+        interval: 60
+        onTriggered: root.pushMouseLive()
+    }
+
     Timer {
         id: mousePersistTimer
         interval: 350
@@ -1224,6 +1257,7 @@ done
                 root.touchpadEnabled = false;
             else if (v === "1" || v === "true")
                 root.touchpadEnabled = true;
+            root.touchpadStateLoaded = true;
             // If devices already enumerated, push state into Hypr now.
             if (!root.restoredAfterStart && root.touchpads.length)
                 Qt.callLater(() => root.applyPersistedSettings(), 50);
@@ -1231,6 +1265,10 @@ done
         onLoadFailed: err => {
             if (err === FileViewError.FileNotFound)
                 root.touchpadEnabled = true;
+            // No saved state: default (enabled) is authoritative, so allow restore.
+            root.touchpadStateLoaded = true;
+            if (!root.restoredAfterStart && root.touchpads.length)
+                Qt.callLater(() => root.applyPersistedSettings(), 50);
         }
     }
 
