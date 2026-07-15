@@ -1,0 +1,10 @@
+name: Verify organization Actions
+
+on:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "GitHub Actions is available for u0n0u."
