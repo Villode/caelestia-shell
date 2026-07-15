@@ -25,7 +25,7 @@ Item {
     }
 
     Component.onCompleted: {
-        if (source)
+        if (source && !current)
             Qt.callLater(() => {
                 current = imgComp.createObject(this, {
                     path: source

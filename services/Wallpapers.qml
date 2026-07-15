@@ -22,6 +22,7 @@ Searcher {
     property bool previewColourLock
     property bool pendingPreviewClear
     property bool pendingDesktopStaticSync
+    property string syncedDesktopStaticPath
 
     function getCategoryFor(w: FileSystemEntry): string {
         let category = w.parentDir.slice(Paths.wallsdir.length + 1);
@@ -39,9 +40,10 @@ Searcher {
     function syncVillodeDesktop(path: string): void {
         if (!path)
             return;
-        // Always force mode=static in villode-desktop so a previous video/html
-        // wallpaper cannot come back after Shell crash or session restart.
         GlobalConfig.background.wallpaperEnabled = true;
+        if (syncedDesktopStaticPath === path)
+            return;
+        syncedDesktopStaticPath = path;
         Quickshell.execDetached(["villode-desktop", "--set-static", path, "--fit", "cover"]);
     }
 
