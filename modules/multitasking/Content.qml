@@ -203,8 +203,8 @@ Item {
                 anchors.margins: 1
                 captureSource: card.client?.wayland ?? null // qmllint disable unresolved-type
                 live: true
-                constraintSize.width: width
-                constraintSize.height: height
+                constraintSize.width: card.cardWidth - 2
+                constraintSize.height: card.cardHeight - 2
             }
 
             Rectangle {

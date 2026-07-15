@@ -52,12 +52,14 @@ Item {
     Item {
         id: multitaskingWrapper
 
+        readonly property bool multitaskingActive: multitasking.shouldBeActive || multitasking.offsetScale < 0.999
+
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
         // Height = card strip only (not full screen) so bottom dock stays free for input
-        height: multitasking.visible || multitasking.shouldBeActive ? multitasking.implicitHeight + Tokens.padding.large : 0
-        visible: multitasking.visible || multitasking.shouldBeActive
+        height: multitaskingActive ? multitasking.implicitHeight + Tokens.padding.large : 0
+        visible: multitaskingActive
         z: 10
         clip: false
 
