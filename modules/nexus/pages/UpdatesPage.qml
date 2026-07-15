@@ -52,7 +52,11 @@ PageBase {
 
     function launchUpdate(): void {
         const terminal = [...GlobalConfig.general.apps.terminal];
-        Quickshell.execDetached([Quickshell.shellPath("assets/villode_terminal_exec.sh"), String(terminal.length), ...terminal, "--", "sh", "-lc", "villode-caelestia-update; code=$?; echo; if [ $code -eq 0 ]; then echo '更新完成。'; else echo '更新失败，退出码：'$code; fi; echo '按回车键关闭…'; read -r; exit $code"]);
+        // The updater only syncs installed components by default; the button is
+        // labelled "Install" when 未安装 rows exist, so opt into installing them.
+        const hasMissing = root.components.some(item => item.status === "未安装");
+        const updateCmd = hasMissing ? "villode-caelestia-update --install-missing" : "villode-caelestia-update";
+        Quickshell.execDetached([Quickshell.shellPath("assets/villode_terminal_exec.sh"), String(terminal.length), ...terminal, "--", "sh", "-lc", updateCmd + "; code=$?; echo; if [ $code -eq 0 ]; then echo '更新完成。'; else echo '更新失败，退出码：'$code; fi; echo '按回车键关闭…'; read -r; exit $code"]);
     }
 
     function parseUpdatesJson(text: string): void {
