@@ -4405,6 +4405,14 @@ Keyboard layout: %1</source>
             <translation>检查更新失败，请确认网络连接。</translation>
         </message>
         <message>
+            <source>Update check timed out. GitHub may be slow or unreachable; try again later or configure a mirror (VILLODE_GITHUB_MIRRORS).</source>
+            <translation>检查更新超时。GitHub 可能较慢或不可达；请稍后重试，或配置镜像（VILLODE_GITHUB_MIRRORS）。</translation>
+        </message>
+        <message>
+            <source>Could not check for updates. Check your network connection, or set VILLODE_GITHUB_MIRRORS / use offline mode.</source>
+            <translation>检查更新失败。请确认网络，或设置 VILLODE_GITHUB_MIRRORS / 使用离线模式。</translation>
+        </message>
+        <message>
             <location line="+24" />
             <source>Component</source>
             <translation>组件</translation>
@@ -4481,9 +4489,37 @@ Keyboard layout: %1</source>
             <translation>上次检查 %1</translation>
         </message>
         <message>
+            <source>Last checked %1 · %2</source>
+            <translation>上次检查 %1 · %2</translation>
+        </message>
+        <message>
+            <source>Last checked %1 · source %2</source>
+            <translation>上次检查 %1 · 来源 %2</translation>
+        </message>
+        <message>
             <location line="+0" />
             <source>Villode release channel</source>
             <translation>来自 Villode 发布通道</translation>
+        </message>
+        <message>
+            <source>GitHub</source>
+            <translation>GitHub</translation>
+        </message>
+        <message>
+            <source>GitHub mirror</source>
+            <translation>GitHub 镜像</translation>
+        </message>
+        <message>
+            <source>Local cache (GitHub unreachable)</source>
+            <translation>本地缓存（GitHub 不可达）</translation>
+        </message>
+        <message>
+            <source>Offline cache</source>
+            <translation>离线缓存</translation>
+        </message>
+        <message>
+            <source>Installed release channel</source>
+            <translation>已安装的发布通道</translation>
         </message>
         <message>
             <location line="+9" />

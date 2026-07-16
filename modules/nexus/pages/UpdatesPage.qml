@@ -19,26 +19,34 @@ PageBase {
     property string errorText
     property string lastChecked
     property string checkedAtIso: ""
+    property string channelSource: ""
+    property bool networkDegraded: false
+    property string lastStderr: ""
     readonly property int updateCount: components.filter(item => item.status === "有更新" || item.status === "需要修复" || item.status === "未安装").length
 
     title: qsTr("Villode updates")
 
     property Process checkProcess: Process {
         id: checkProcess
-        command: ["villode-caelestia-update", "--check-json"]
+        // Bound the whole check so a stuck git never freezes the settings UI.
+        // The updater itself also applies per-attempt git timeouts + mirrors.
+        command: ["timeout", "--signal=TERM", "--kill-after=5", "90", "villode-caelestia-update", "--check-json"]
         stdout: StdioCollector {
             onStreamFinished: root.parseUpdatesJson(text)
         }
         stderr: StdioCollector {
-            onStreamFinished: {
-                if (text.trim())
-                    root.errorText = text.trim();
-            }
+            onStreamFinished: root.lastStderr = text.trim()
         }
         onExited: code => { // qmllint disable signal-handler-parameters
             root.checking = false;
-            if (code !== 0 && !root.errorText)
-                root.errorText = qsTr("Could not check for updates. Check your network connection.");
+            if (code === 0)
+                return;
+            if (code === 124 || code === 137)
+                root.errorText = qsTr("Update check timed out. GitHub may be slow or unreachable; try again later or configure a mirror (VILLODE_GITHUB_MIRRORS).");
+            else if (root.lastStderr)
+                root.errorText = root.lastStderr;
+            else
+                root.errorText = qsTr("Could not check for updates. Check your network connection, or set VILLODE_GITHUB_MIRRORS / use offline mode.");
         }
     }
 
@@ -47,6 +55,8 @@ PageBase {
             return;
         root.checking = true;
         root.errorText = "";
+        root.lastStderr = "";
+        root.networkDegraded = false;
         checkProcess.running = true;
     }
 
@@ -57,6 +67,23 @@ PageBase {
         const hasMissing = root.components.some(item => item.status === "未安装");
         const updateCmd = hasMissing ? "villode-caelestia-update --install-missing" : "villode-caelestia-update";
         Quickshell.execDetached([Quickshell.shellPath("assets/villode_terminal_exec.sh"), String(terminal.length), ...terminal, "--", "sh", "-lc", updateCmd + "; code=$?; echo; if [ $code -eq 0 ]; then echo '更新完成。'; else echo '更新失败，退出码：'$code; fi; echo '按回车键关闭…'; read -r; exit $code"]);
+    }
+
+    function channelSourceLabel(source: string): string {
+        switch (source) {
+        case "online-github":
+            return qsTr("GitHub");
+        case "online-mirror":
+            return qsTr("GitHub mirror");
+        case "stale-cache":
+            return qsTr("Local cache (GitHub unreachable)");
+        case "offline-cache":
+            return qsTr("Offline cache");
+        case "offline-release":
+            return qsTr("Installed release channel");
+        default:
+            return source ? source : qsTr("Villode release channel");
+        }
     }
 
     function parseUpdatesJson(text: string): void {
@@ -81,6 +108,8 @@ PageBase {
             root.checkedOnce = true;
             root.checkedAtIso = data.checkedAt || "";
             root.lastChecked = root.formatDateTime(data.checkedAt) || Qt.formatDateTime(new Date(), "yyyy-MM-dd HH:mm");
+            root.channelSource = data.channelSource || "";
+            root.networkDegraded = !!data.networkDegraded;
             root.errorText = "";
         } catch (e) {
             root.parseUpdatesTsv(text);
@@ -240,8 +269,17 @@ PageBase {
 
                     StyledText {
                         Layout.fillWidth: true
-                        text: root.errorText || (root.lastChecked ? qsTr("Last checked %1").arg(root.lastChecked) : qsTr("Villode release channel"))
-                        color: root.errorText ? Colours.palette.m3error : Colours.palette.m3outline
+                        text: {
+                            if (root.errorText)
+                                return root.errorText;
+                            const source = root.channelSourceLabel(root.channelSource);
+                            if (root.lastChecked)
+                                return root.networkDegraded
+                                    ? qsTr("Last checked %1 · %2").arg(root.lastChecked).arg(source)
+                                    : qsTr("Last checked %1 · source %2").arg(root.lastChecked).arg(source);
+                            return source;
+                        }
+                        color: root.errorText ? Colours.palette.m3error : (root.networkDegraded ? Colours.palette.m3tertiary : Colours.palette.m3outline)
                         font: Tokens.font.label.small
                         elide: Text.ElideRight
                     }
