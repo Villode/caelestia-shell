@@ -185,8 +185,14 @@ PageBase {
                             root.nState.openSubPage(2);
                             return;
                         }
-                        // New secured network: ask password in-page (do not grey-out forever).
                         network.currentSelected = false;
+                        // New network: show password sheet under the Wi‑Fi list for secured APs.
+                        // Do not attempt connect first (would drop the current link without secrets).
+                        const secured = network.modelData.isSecure || (network.modelData.security && network.modelData.security.length > 0 && network.modelData.security !== "--");
+                        if (secured) {
+                            root.askWifiPassword(network.modelData);
+                            return;
+                        }
                         NetworkConnection.handleConnect(network.modelData, null, n => root.askWifiPassword(n));
                     }
                 }
@@ -281,6 +287,96 @@ PageBase {
                 Behavior on implicitHeight {
                     Anim {
                         type: Anim.DefaultEffects
+                    }
+                }
+            }
+        }
+
+        // —— Wi‑Fi 密码（紧挨列表下方）——
+        ConnectedRect {
+            Layout.fillWidth: true
+            visible: root.showWifiPassword
+            first: true
+            last: true
+            implicitHeight: passCol.implicitHeight + Tokens.padding.large * 2
+
+            ColumnLayout {
+                id: passCol
+                anchors.fill: parent
+                anchors.margins: Tokens.padding.large
+                spacing: Tokens.spacing.small
+
+                StyledText {
+                    Layout.fillWidth: true
+                    text: root.pendingWifi ? qsTr("Connect to “%1”").arg(root.pendingWifi.ssid || "") : qsTr("Wi‑Fi password")
+                    font: Tokens.font.body.large
+                    elide: Text.ElideRight
+                }
+
+                StyledText {
+                    Layout.fillWidth: true
+                    text: qsTr("Enter the network password. Your current connection stays up until this succeeds.")
+                    color: Colours.palette.m3outline
+                    font: Tokens.font.label.small
+                    wrapMode: Text.WordWrap
+                }
+
+                M3TextField {
+                    id: wifiPassField
+                    Layout.fillWidth: true
+                    label: qsTr("Password")
+                    placeholder: qsTr("Wi‑Fi password")
+                    leadingIcon: "password"
+                    password: true
+                    text: root.wifiPassword
+                    onTextChanged: root.wifiPassword = text
+                    onAccepted: root.submitWifiPassword()
+                    Component.onCompleted: {
+                        if (root.showWifiPassword)
+                            forceFieldFocus();
+                    }
+                }
+
+                // Focus password field when sheet opens
+                Connections {
+                    target: root
+                    function onShowWifiPasswordChanged(): void {
+                        if (root.showWifiPassword)
+                            Qt.callLater(() => wifiPassField.forceFieldFocus());
+                    }
+                }
+
+                StyledText {
+                    visible: root.wifiConnectError.length > 0
+                    Layout.fillWidth: true
+                    text: root.wifiConnectError
+                    color: Colours.palette.m3error
+                    font: Tokens.font.label.small
+                    wrapMode: Text.WordWrap
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: Tokens.spacing.small
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+
+                    IconTextButton {
+                        icon: "close"
+                        text: qsTr("Cancel")
+                        type: IconTextButton.Tonal
+                        enabled: !root.wifiConnecting
+                        onClicked: root.cancelWifiPassword()
+                    }
+
+                    IconTextButton {
+                        icon: "link"
+                        text: root.wifiConnecting ? qsTr("Connecting…") : qsTr("Connect")
+                        type: IconTextButton.Filled
+                        enabled: !root.wifiConnecting && root.wifiPassword.length > 0
+                        onClicked: root.submitWifiPassword()
                     }
                 }
             }
@@ -487,85 +583,6 @@ PageBase {
                 }
             }
         }
-
-        // —— 密码输入（未知 Wi‑Fi）——
-        ConnectedRect {
-            Layout.fillWidth: true
-            Layout.topMargin: Tokens.spacing.large - parent.spacing
-            visible: root.showWifiPassword
-            first: true
-            last: true
-            implicitHeight: passCol.implicitHeight + Tokens.padding.large * 2
-
-            ColumnLayout {
-                id: passCol
-                anchors.fill: parent
-                anchors.margins: Tokens.padding.large
-                spacing: Tokens.spacing.small
-
-                StyledText {
-                    Layout.fillWidth: true
-                    text: root.pendingWifi ? qsTr("Connect to “%1”").arg(root.pendingWifi.ssid || "") : qsTr("Wi‑Fi password")
-                    font: Tokens.font.body.large
-                    elide: Text.ElideRight
-                }
-
-                StyledText {
-                    Layout.fillWidth: true
-                    text: qsTr("Enter the network password. Your current connection stays up until this succeeds.")
-                    color: Colours.palette.m3outline
-                    font: Tokens.font.label.small
-                    wrapMode: Text.WordWrap
-                }
-
-                M3TextField {
-                    id: wifiPassField
-                    Layout.fillWidth: true
-                    label: qsTr("Password")
-                    placeholder: qsTr("Wi‑Fi password")
-                    leadingIcon: "password"
-                    password: true
-                    text: root.wifiPassword
-                    onTextChanged: root.wifiPassword = text
-                    onAccepted: root.submitWifiPassword()
-                }
-
-                StyledText {
-                    visible: root.wifiConnectError.length > 0
-                    Layout.fillWidth: true
-                    text: root.wifiConnectError
-                    color: Colours.palette.m3error
-                    font: Tokens.font.label.small
-                    wrapMode: Text.WordWrap
-                }
-
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: Tokens.spacing.small
-
-                    Item {
-                        Layout.fillWidth: true
-                    }
-
-                    IconTextButton {
-                        icon: "close"
-                        text: qsTr("Cancel")
-                        type: IconTextButton.Tonal
-                        enabled: !root.wifiConnecting
-                        onClicked: root.cancelWifiPassword()
-                    }
-
-                    IconTextButton {
-                        icon: "link"
-                        text: root.wifiConnecting ? qsTr("Connecting…") : qsTr("Connect")
-                        type: IconTextButton.Filled
-                        enabled: !root.wifiConnecting && root.wifiPassword.length > 0
-                        onClicked: root.submitWifiPassword()
-                    }
-                }
-            }
-        }
-    }
 
     Component.onCompleted: {
         Nmcli.refreshVpnConnections(() => {});
