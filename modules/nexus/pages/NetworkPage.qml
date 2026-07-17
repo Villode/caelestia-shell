@@ -13,9 +13,53 @@ import qs.modules.nexus.common
 PageBase {
     id: root
 
-    signal networkSelected(ap: Nmcli.AccessPoint)
+    signal networkSelected(var ap)
+
+    // Inline Wi‑Fi password sheet (settings has no bar password popout).
+    property var pendingWifi: null
+    property bool showWifiPassword: false
+    property string wifiPassword: ""
+    property bool wifiConnecting: false
+    property string wifiConnectError: ""
 
     title: qsTr("Network")
+
+    function askWifiPassword(network): void {
+        root.pendingWifi = network;
+        root.wifiPassword = "";
+        root.wifiConnectError = "";
+        root.wifiConnecting = false;
+        root.showWifiPassword = true;
+    }
+
+    function cancelWifiPassword(): void {
+        root.showWifiPassword = false;
+        root.pendingWifi = null;
+        root.wifiPassword = "";
+        root.wifiConnectError = "";
+        root.wifiConnecting = false;
+        // Clear greyed-out selection state on all rows via signal
+        root.networkSelected(null);
+    }
+
+    function submitWifiPassword(): void {
+        if (!root.pendingWifi || root.wifiConnecting)
+            return;
+        const pass = root.wifiPassword;
+        if (!pass || pass.length === 0)
+            return;
+        root.wifiConnecting = true;
+        root.wifiConnectError = "";
+        NetworkConnection.connectWithPassword(root.pendingWifi, pass, result => {
+            root.wifiConnecting = false;
+            if (result && result.success) {
+                root.cancelWifiPassword();
+                return;
+            }
+            root.wifiConnectError = qsTr("Connection failed. Check the password and try again.");
+            root.wifiPassword = "";
+        });
+    }
 
     ColumnLayout {
         anchors.horizontalCenter: parent.horizontalCenter
@@ -99,8 +143,8 @@ PageBase {
                 id: network
 
                 required property Nmcli.AccessPoint modelData
-                property bool currentSelected
-                property real textOpacity: (currentSelected || Nmcli.connectingSsid() === modelData.ssid) ? 0.5 : 1
+                property bool currentSelected: false
+                property real textOpacity: (Nmcli.connectingSsid() === modelData.ssid || (root.pendingWifi && root.pendingWifi.ssid === modelData.ssid && root.wifiConnecting)) ? 0.5 : 1
 
                 anchors.left: networkList.list.contentItem.left
                 anchors.right: networkList.list.contentItem.right
@@ -122,8 +166,8 @@ PageBase {
                 }
 
                 Connections {
-                    function onNetworkSelected(ap: Nmcli.AccessPoint): void {
-                        if (ap !== network.modelData)
+                    function onNetworkSelected(ap: var): void {
+                        if (!ap || ap !== network.modelData)
                             network.currentSelected = false;
                     }
 
@@ -133,16 +177,17 @@ PageBase {
                 StateLayer {
                     anchors.fill: parent
                     radius: Tokens.rounding.extraSmall
-                    disabled: network.currentSelected || Nmcli.connectingSsid() === network.modelData.ssid
+                    // Only disable while actively connecting to THIS ssid, not after a failed click.
+                    disabled: Nmcli.connectingSsid() === network.modelData.ssid || root.wifiConnecting
                     onClicked: {
                         if (network.modelData.active || Nmcli.hasSavedProfile(network.modelData.ssid)) {
                             root.nState.selectedWifiSsid = network.modelData.ssid;
                             root.nState.openSubPage(2);
-                        } else {
-                            NetworkConnection.handleConnect(network.modelData);
-                            network.currentSelected = true;
-                            root.networkSelected(network.modelData);
+                            return;
                         }
+                        // New secured network: ask password in-page (do not grey-out forever).
+                        network.currentSelected = false;
+                        NetworkConnection.handleConnect(network.modelData, null, n => root.askWifiPassword(n));
                     }
                 }
 
@@ -439,6 +484,84 @@ PageBase {
                     text: qsTr("Rescan wireless networks")
                     font: Tokens.font.body.small
                     elide: Text.ElideRight
+                }
+            }
+        }
+
+        // —— 密码输入（未知 Wi‑Fi）——
+        ConnectedRect {
+            Layout.fillWidth: true
+            Layout.topMargin: Tokens.spacing.large - parent.spacing
+            visible: root.showWifiPassword
+            first: true
+            last: true
+            implicitHeight: passCol.implicitHeight + Tokens.padding.large * 2
+
+            ColumnLayout {
+                id: passCol
+                anchors.fill: parent
+                anchors.margins: Tokens.padding.large
+                spacing: Tokens.spacing.small
+
+                StyledText {
+                    Layout.fillWidth: true
+                    text: root.pendingWifi ? qsTr("Connect to “%1”").arg(root.pendingWifi.ssid || "") : qsTr("Wi‑Fi password")
+                    font: Tokens.font.body.large
+                    elide: Text.ElideRight
+                }
+
+                StyledText {
+                    Layout.fillWidth: true
+                    text: qsTr("Enter the network password. Your current connection stays up until this succeeds.")
+                    color: Colours.palette.m3outline
+                    font: Tokens.font.label.small
+                    wrapMode: Text.WordWrap
+                }
+
+                M3TextField {
+                    id: wifiPassField
+                    Layout.fillWidth: true
+                    label: qsTr("Password")
+                    placeholder: qsTr("Wi‑Fi password")
+                    leadingIcon: "password"
+                    password: true
+                    text: root.wifiPassword
+                    onTextChanged: root.wifiPassword = text
+                    onAccepted: root.submitWifiPassword()
+                }
+
+                StyledText {
+                    visible: root.wifiConnectError.length > 0
+                    Layout.fillWidth: true
+                    text: root.wifiConnectError
+                    color: Colours.palette.m3error
+                    font: Tokens.font.label.small
+                    wrapMode: Text.WordWrap
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: Tokens.spacing.small
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+
+                    IconTextButton {
+                        icon: "close"
+                        text: qsTr("Cancel")
+                        type: IconTextButton.Tonal
+                        enabled: !root.wifiConnecting
+                        onClicked: root.cancelWifiPassword()
+                    }
+
+                    IconTextButton {
+                        icon: "link"
+                        text: root.wifiConnecting ? qsTr("Connecting…") : qsTr("Connect")
+                        type: IconTextButton.Filled
+                        enabled: !root.wifiConnecting && root.wifiPassword.length > 0
+                        onClicked: root.submitWifiPassword()
+                    }
                 }
             }
         }

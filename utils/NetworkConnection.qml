@@ -42,14 +42,10 @@ QtObject {
             return;
         }
 
-        if (Nmcli.active && Nmcli.active.ssid !== network.ssid) {
-            Nmcli.disconnectFromNetwork();
-            Qt.callLater(() => {
-                root.connectToNetwork(network, session, onPasswordNeeded);
-            });
-        } else {
-            root.connectToNetwork(network, session, onPasswordNeeded);
-        }
+        // Do NOT disconnect the active network first. nmcli will switch
+        // associations when connecting to another SSID; dropping the current
+        // link before a password is available leaves the user offline.
+        root.connectToNetwork(network, session, onPasswordNeeded);
     }
 
     /**
@@ -66,35 +62,40 @@ QtObject {
             return;
         }
 
-        if (network.isSecure) {
-            const hasSavedProfile = Nmcli.hasSavedProfile(network.ssid);
+        // Open network: connect immediately without password.
+        if (!network.isSecure) {
+            Nmcli.connectToNetwork(network.ssid, "", network.bssid || "", null);
+            return;
+        }
 
-            if (hasSavedProfile) {
-                Nmcli.connectToNetwork(network.ssid, "", network.bssid, null);
-            } else {
-                // Use password check with callback
-                Nmcli.connectToNetworkWithPasswordCheck(network.ssid, network.isSecure, result => {
-                    if (result.needsPassword) {
-                        // Clear pending connection if exists
-                        if (Nmcli.pendingConnection) {
-                            Nmcli.connectionCheckTimer.stop();
-                            Nmcli.immediateCheckTimer.stop();
-                            Nmcli.immediateCheckTimer.checkCount = 0;
-                            Nmcli.pendingConnection = null;
-                        }
+        // Secured network with a saved profile: try secrets first.
+        if (Nmcli.hasSavedProfile(network.ssid)) {
+            Nmcli.connectToNetworkWithPasswordCheck(network.ssid, true, result => {
+                if (result && result.success)
+                    return;
+                if (result && result.needsPassword)
+                    root.requestPassword(network, session, onPasswordNeeded);
+            }, network.bssid || "");
+            return;
+        }
 
-                        // Handle password dialog - use session if available, otherwise use callback
-                        if (session && session.network) {
-                            session.network.showPasswordDialog = true;
-                            session.network.pendingNetwork = network;
-                        } else if (onPasswordNeeded) {
-                            onPasswordNeeded(network);
-                        }
-                    }
-                }, network.bssid);
-            }
-        } else {
-            Nmcli.connectToNetwork(network.ssid, "", network.bssid, null);
+        // Secured network, no saved profile: ask for password BEFORE any connect
+        // attempt so we never tear down the current network without a password.
+        root.requestPassword(network, session, onPasswordNeeded);
+    }
+
+    function requestPassword(network, session, onPasswordNeeded): void {
+        if (Nmcli.pendingConnection) {
+            Nmcli.connectionCheckTimer.stop();
+            Nmcli.immediateCheckTimer.stop();
+            Nmcli.immediateCheckTimer.checkCount = 0;
+            Nmcli.pendingConnection = null;
+        }
+        if (session && session.network) {
+            session.network.showPasswordDialog = true;
+            session.network.pendingNetwork = network;
+        } else if (onPasswordNeeded) {
+            onPasswordNeeded(network);
         }
     }
 

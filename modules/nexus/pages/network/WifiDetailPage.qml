@@ -571,11 +571,18 @@ PageBase {
                         }, 600);
                     } else {
                         const ap = root.accessPoint;
+                        // Prefer saved secrets / open network. Do not disconnect first.
                         if (ap)
-                            NetworkConnection.handleConnect(ap);
+                            NetworkConnection.handleConnect(ap, null, () => {
+                                root.busyAction = false;
+                            });
+                        else if (Nmcli.hasSavedProfile(root.ssid))
+                            Nmcli.connectToNetwork(root.ssid, "", "", () => {
+                                root.busyAction = false;
+                            });
                         else
-                            Nmcli.connectToNetwork(root.ssid, "", "", null);
-                        Qt.callLater(() => root.busyAction = false, 1500);
+                            root.busyAction = false;
+                        Qt.callLater(() => root.busyAction = false, 2000);
                     }
                 }
             }

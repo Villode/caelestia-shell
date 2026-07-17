@@ -5632,4 +5632,27 @@ Keyboard layout: %1</source>
             <translation>时钟显示</translation>
         </message>
     </context>
+    <context>
+        <name>NetworkPage</name>
+        <message>
+            <source>Connect to “%1”</source>
+            <translation>连接到“%1”</translation>
+        </message>
+        <message>
+            <source>Wi‑Fi password</source>
+            <translation>Wi‑Fi 密码</translation>
+        </message>
+        <message>
+            <source>Enter the network password. Your current connection stays up until this succeeds.</source>
+            <translation>请输入网络密码。当前网络在连接成功前保持不断开。</translation>
+        </message>
+        <message>
+            <source>Connection failed. Check the password and try again.</source>
+            <translation>连接失败，请检查密码后重试。</translation>
+        </message>
+        <message>
+            <source>Connecting…</source>
+            <translation>正在连接…</translation>
+        </message>
+    </context>
 </TS>

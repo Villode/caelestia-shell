@@ -509,5 +509,10 @@
     "Set date and time manually": "手动设置日期和时间",
     "Turns off network time. Format: YYYY-MM-DD HH:MM:SS": "会关闭网络对时。格式：YYYY-MM-DD HH:MM:SS",
     "Use now": "填入当前时间",
-    "Clock display": "时钟显示"
+    "Clock display": "时钟显示",
+    "Connect to “%1”": "连接到“%1”",
+    "Wi‑Fi password": "Wi‑Fi 密码",
+    "Enter the network password. Your current connection stays up until this succeeds.": "请输入网络密码。当前网络在连接成功前保持不断开。",
+    "Connection failed. Check the password and try again.": "连接失败，请检查密码后重试。",
+    "Connecting…": "正在连接…"
 }
