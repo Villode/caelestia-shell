@@ -5655,4 +5655,11 @@ Keyboard layout: %1</source>
             <translation>正在连接…</translation>
         </message>
     </context>
+    <context>
+        <name>NetworkPage</name>
+        <message>
+            <source>Connect to %1</source>
+            <translation>连接到 %1</translation>
+        </message>
+    </context>
 </TS>

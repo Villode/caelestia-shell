@@ -15,7 +15,7 @@ PageBase {
 
     signal networkSelected(var ap)
 
-    // Inline Wi‑Fi password sheet (settings has no bar password popout).
+    // Inline Wi-Fi password sheet (settings has no bar password popout).
     property var pendingWifi: null
     property bool showWifiPassword: false
     property string wifiPassword: ""
@@ -90,7 +90,7 @@ PageBase {
         }
 
         Connections {
-            function onWifiEnabledChanged(): void {
+            function onWifiEnabledChanged() {
                 if (Nmcli.wifiEnabled)
                     wifiScanDelay.start();
             }
@@ -98,7 +98,7 @@ PageBase {
             target: Nmcli
         }
 
-        // —— 有线 ——
+        // -- 有线 --
         Loader {
             Layout.fillWidth: true
             active: Nmcli.hasAvailableEthernet
@@ -111,7 +111,7 @@ PageBase {
             }
         }
 
-        // —— 无线 ——
+        // -- 无线 --
         ToggleRow {
             Layout.topMargin: Nmcli.hasAvailableEthernet ? Tokens.spacing.large : 0
             first: true
@@ -157,7 +157,7 @@ PageBase {
                 }
 
                 Connections {
-                    function onActiveChanged(): void {
+                    function onActiveChanged() {
                         if (network.modelData.active)
                             network.currentSelected = false;
                     }
@@ -166,7 +166,7 @@ PageBase {
                 }
 
                 Connections {
-                    function onNetworkSelected(ap: var): void {
+                    function onNetworkSelected(ap) {
                         if (!ap || ap !== network.modelData)
                             network.currentSelected = false;
                     }
@@ -186,7 +186,7 @@ PageBase {
                             return;
                         }
                         network.currentSelected = false;
-                        // New network: show password sheet under the Wi‑Fi list for secured APs.
+                        // New network: show password sheet under the Wi-Fi list for secured APs.
                         // Do not attempt connect first (would drop the current link without secrets).
                         const secured = network.modelData.isSecure || (network.modelData.security && network.modelData.security.length > 0 && network.modelData.security !== "--");
                         if (secured) {
@@ -292,7 +292,7 @@ PageBase {
             }
         }
 
-        // —— Wi‑Fi 密码（紧挨列表下方）——
+        // -- Wi-Fi 密码（紧挨列表下方）--
         ConnectedRect {
             Layout.fillWidth: true
             visible: root.showWifiPassword
@@ -308,7 +308,7 @@ PageBase {
 
                 StyledText {
                     Layout.fillWidth: true
-                    text: root.pendingWifi ? qsTr("Connect to “%1”").arg(root.pendingWifi.ssid || "") : qsTr("Wi‑Fi password")
+                    text: root.pendingWifi ? qsTr("Connect to %1").arg(root.pendingWifi.ssid || "") : qsTr("Wi-Fi password")
                     font: Tokens.font.body.large
                     elide: Text.ElideRight
                 }
@@ -325,7 +325,7 @@ PageBase {
                     id: wifiPassField
                     Layout.fillWidth: true
                     label: qsTr("Password")
-                    placeholder: qsTr("Wi‑Fi password")
+                    placeholder: qsTr("Wi-Fi password")
                     leadingIcon: "password"
                     password: true
                     text: root.wifiPassword
@@ -340,9 +340,9 @@ PageBase {
                 // Focus password field when sheet opens
                 Connections {
                     target: root
-                    function onShowWifiPasswordChanged(): void {
+                    function onShowWifiPasswordChanged() {
                         if (root.showWifiPassword)
-                            Qt.callLater(() => wifiPassField.forceFieldFocus());
+                            Qt.callLater(function() { wifiPassField.forceFieldFocus(); });
                     }
                 }
 
@@ -373,7 +373,7 @@ PageBase {
 
                     IconTextButton {
                         icon: "link"
-                        text: root.wifiConnecting ? qsTr("Connecting…") : qsTr("Connect")
+                        text: root.wifiConnecting ? qsTr("Connecting...") : qsTr("Connect")
                         type: IconTextButton.Filled
                         enabled: !root.wifiConnecting && root.wifiPassword.length > 0
                         onClicked: root.submitWifiPassword()
@@ -382,7 +382,7 @@ PageBase {
             }
         }
 
-        // —— VPN ——
+        // -- VPN --
         SectionHeader {
             Layout.topMargin: Tokens.spacing.large - parent.spacing
             text: qsTr("VPN")
@@ -545,7 +545,7 @@ PageBase {
             }
         }
 
-        // —— 其他 ——
+        // -- 其他 --
         ConnectedRect {
             Layout.fillWidth: true
             Layout.topMargin: Tokens.spacing.large - parent.spacing
@@ -583,6 +583,7 @@ PageBase {
                 }
             }
         }
+    }
 
     Component.onCompleted: {
         Nmcli.refreshVpnConnections(() => {});
