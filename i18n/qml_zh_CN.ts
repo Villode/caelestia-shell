@@ -4497,6 +4497,22 @@ Keyboard layout: %1</source>
             <translation>上次检查 %1 · 来源 %2</translation>
         </message>
         <message>
+            <source>Shell and cursor share one pin — one update covers both</source>
+            <translation>Shell 与指针放大共用同一锁定版本，一次更新即可</translation>
+        </message>
+        <message>
+            <source>%1 (ships with Shell)</source>
+            <translation>%1（随 Shell 提供）</translation>
+        </message>
+        <message>
+            <source>No detailed changelog offline; version pin will update from %1 to %2</source>
+            <translation>离线暂无详细变更说明；版本将从 %1 更新到 %2</translation>
+        </message>
+        <message>
+            <source>Not installed yet</source>
+            <translation>尚未安装</translation>
+        </message>
+        <message>
             <location line="+0" />
             <source>Villode release channel</source>
             <translation>来自 Villode 发布通道</translation>

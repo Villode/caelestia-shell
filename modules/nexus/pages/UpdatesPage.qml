@@ -190,6 +190,48 @@ PageBase {
         return qsTr("Update (%1)").arg(n);
     }
 
+    function summaryHint(): string {
+        if (root.errorText)
+            return root.errorText;
+        const source = root.channelSourceLabel(root.channelSource);
+        const shellUp = root.components.some(item => item.id === "shell" && (item.status === "有更新" || item.status === "需要修复"));
+        const cursorUp = root.components.some(item => item.id === "cursor" && (item.status === "有更新" || item.status === "需要修复"));
+        let note = "";
+        if (shellUp && cursorUp)
+            note = qsTr("Shell and cursor share one pin — one update covers both");
+        if (root.lastChecked) {
+            const base = root.networkDegraded
+                ? qsTr("Last checked %1 · %2").arg(root.lastChecked).arg(source)
+                : qsTr("Last checked %1 · source %2").arg(root.lastChecked).arg(source);
+            return note ? `${base} · ${note}` : base;
+        }
+        return note || source;
+    }
+
+    function componentBlurb(item: var): string {
+        if (item.status === "未安装")
+            return item.latest && item.latest !== "—"
+                ? qsTr("Available %1").arg(item.latest)
+                : qsTr("Not installed");
+        if (item.installed === item.latest)
+            return qsTr("Version %1").arg(item.installed);
+        let line = `${item.installed} → ${item.latest}`;
+        if (item.id === "cursor")
+            line = qsTr("%1 (ships with Shell)").arg(line);
+        return line;
+    }
+
+    function changeLines(item: var): var {
+        const list = Array.isArray(item.changes) ? item.changes.slice() : [];
+        if (list.length > 0)
+            return list;
+        if (item.status === "有更新" || item.status === "需要修复")
+            return [qsTr("No detailed changelog offline; version pin will update from %1 to %2").arg(item.installed || "—").arg(item.latest || "—")];
+        if (item.status === "未安装")
+            return [qsTr("Not installed yet")];
+        return [qsTr("No change notes")];
+    }
+
     function componentIcon(id: string): string {
         switch (id) {
         case "shell":
@@ -269,16 +311,7 @@ PageBase {
 
                     StyledText {
                         Layout.fillWidth: true
-                        text: {
-                            if (root.errorText)
-                                return root.errorText;
-                            const source = root.channelSourceLabel(root.channelSource);
-                            if (root.lastChecked)
-                                return root.networkDegraded
-                                    ? qsTr("Last checked %1 · %2").arg(root.lastChecked).arg(source)
-                                    : qsTr("Last checked %1 · source %2").arg(root.lastChecked).arg(source);
-                            return source;
-                        }
+                        text: root.summaryHint()
                         color: root.errorText ? Colours.palette.m3error : (root.networkDegraded ? Colours.palette.m3tertiary : Colours.palette.m3outline)
                         font: Tokens.font.label.small
                         elide: Text.ElideRight
@@ -368,15 +401,7 @@ PageBase {
 
                                 StyledText {
                                     Layout.fillWidth: true
-                                    text: {
-                                        if (card.modelData.status === "未安装")
-                                            return card.modelData.latest && card.modelData.latest !== "—"
-                                                ? qsTr("Available %1").arg(card.modelData.latest)
-                                                : qsTr("Not installed");
-                                        if (card.modelData.installed === card.modelData.latest)
-                                            return qsTr("Version %1").arg(card.modelData.installed);
-                                        return `${card.modelData.installed} → ${card.modelData.latest}`;
-                                    }
+                                    text: root.componentBlurb(card.modelData)
                                     color: Colours.palette.m3outline
                                     font: Tokens.font.label.small
                                     elide: Text.ElideRight
@@ -465,7 +490,7 @@ PageBase {
                         }
 
                         Repeater {
-                            model: card.modelData.changes
+                            model: root.changeLines(card.modelData)
 
                             RowLayout {
                                 required property string modelData
@@ -487,13 +512,6 @@ PageBase {
                                     wrapMode: Text.WordWrap
                                 }
                             }
-                        }
-
-                        StyledText {
-                            visible: !card.modelData.changes || card.modelData.changes.length === 0
-                            text: qsTr("No change notes")
-                            color: Colours.palette.m3outline
-                            font: Tokens.font.label.small
                         }
                     }
                 }

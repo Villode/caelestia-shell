@@ -417,5 +417,9 @@
     "Experimental: place the taskbar on the left, right, or top edge": "实验功能：将任务栏放在左侧、右侧或顶部",
     "Left": "左侧",
     "Right": "右侧",
-    "Top": "顶部"
+    "Top": "顶部",
+    "Shell and cursor share one pin — one update covers both": "Shell 与指针放大共用同一锁定版本，一次更新即可",
+    "%1 (ships with Shell)": "%1（随 Shell 提供）",
+    "No detailed changelog offline; version pin will update from %1 to %2": "离线暂无详细变更说明；版本将从 %1 更新到 %2",
+    "Not installed yet": "尚未安装"
 }
