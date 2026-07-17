@@ -143,12 +143,13 @@ PageBase {
                 id: network
 
                 required property Nmcli.AccessPoint modelData
-                property bool currentSelected: false
-                property real textOpacity: (Nmcli.connectingSsid() === modelData.ssid || (root.pendingWifi && root.pendingWifi.ssid === modelData.ssid && root.wifiConnecting)) ? 0.5 : 1
+                readonly property bool passwordOpen: root.showWifiPassword && root.pendingWifi && root.pendingWifi.ssid === modelData.ssid
+                property real textOpacity: (Nmcli.connectingSsid() === modelData.ssid || (network.passwordOpen && root.wifiConnecting)) ? 0.5 : 1
 
                 anchors.left: networkList.list.contentItem.left
                 anchors.right: networkList.list.contentItem.right
-                implicitHeight: networkLayout.implicitHeight + Tokens.padding.large * 2
+                // Expand this row when it is the one asking for a password.
+                implicitHeight: rowBlock.implicitHeight + (passwordLoader.active ? passwordLoader.implicitHeight : 0)
 
                 Behavior on textOpacity {
                     Anim {
@@ -156,121 +157,123 @@ PageBase {
                     }
                 }
 
-                Connections {
-                    function onActiveChanged() {
-                        if (network.modelData.active)
-                            network.currentSelected = false;
-                    }
-
-                    target: network.modelData
+                Behavior on implicitHeight {
+                    Anim {}
                 }
 
-                Connections {
-                    function onNetworkSelected(ap) {
-                        if (!ap || ap !== network.modelData)
-                            network.currentSelected = false;
-                    }
+                Column {
+                    id: rowBlock
+                    width: parent.width
 
-                    target: root
-                }
+                    Item {
+                        width: parent.width
+                        height: networkLayout.implicitHeight + Tokens.padding.large * 2
 
-                StateLayer {
-                    anchors.fill: parent
-                    radius: Tokens.rounding.extraSmall
-                    // Only disable while actively connecting to THIS ssid, not after a failed click.
-                    disabled: Nmcli.connectingSsid() === network.modelData.ssid || root.wifiConnecting
-                    onClicked: {
-                        if (network.modelData.active || Nmcli.hasSavedProfile(network.modelData.ssid)) {
-                            root.nState.selectedWifiSsid = network.modelData.ssid;
-                            root.nState.openSubPage(2);
-                            return;
-                        }
-                        network.currentSelected = false;
-                        // New network: show password sheet under the Wi-Fi list for secured APs.
-                        // Do not attempt connect first (would drop the current link without secrets).
-                        const secured = network.modelData.isSecure || (network.modelData.security && network.modelData.security.length > 0 && network.modelData.security !== "--");
-                        if (secured) {
-                            root.askWifiPassword(network.modelData);
-                            return;
-                        }
-                        NetworkConnection.handleConnect(network.modelData, null, n => root.askWifiPassword(n));
-                    }
-                }
-
-                RowLayout {
-                    id: networkLayout
-
-                    anchors.fill: parent
-                    anchors.margins: Tokens.padding.large
-                    anchors.leftMargin: Tokens.padding.extraLarge
-                    anchors.rightMargin: Tokens.padding.extraLarge
-                    spacing: Tokens.spacing.medium
-
-                    MaterialIcon {
-                        text: Icons.getNetworkIcon(network.modelData.strength)
-                        color: network.modelData.active ? Colours.palette.m3primary : Colours.palette.m3onSurfaceVariant
-                        fontStyle: Tokens.font.icon.medium
-                        opacity: network.textOpacity
-                    }
-
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 0
-                        opacity: network.textOpacity
-
-                        StyledText {
-                            Layout.fillWidth: true
-                            text: network.modelData.ssid
-                            font: Tokens.font.body.small
-                            elide: Text.ElideRight
-                        }
-
-                        StyledText {
-                            Layout.fillWidth: true
-                            text: {
-                                const sec = network.modelData.security || qsTr("Open");
-                                if (network.modelData.active)
-                                    return qsTr("%1 · Connected").arg(sec);
-                                if (Nmcli.hasSavedProfile(network.modelData.ssid))
-                                    return qsTr("%1 · Saved").arg(sec);
-                                return qsTr("Security: %1").arg(sec);
+                        StateLayer {
+                            anchors.fill: parent
+                            radius: Tokens.rounding.extraSmall
+                            disabled: Nmcli.connectingSsid() === network.modelData.ssid || root.wifiConnecting
+                            onClicked: {
+                                if (network.modelData.active || Nmcli.hasSavedProfile(network.modelData.ssid)) {
+                                    root.nState.selectedWifiSsid = network.modelData.ssid;
+                                    root.nState.openSubPage(2);
+                                    return;
+                                }
+                                // Open password form under THIS row for secured networks.
+                                const secured = network.modelData.isSecure || (network.modelData.security && network.modelData.security.length > 0 && network.modelData.security !== "--");
+                                if (secured) {
+                                    root.askWifiPassword(network.modelData);
+                                    return;
+                                }
+                                NetworkConnection.handleConnect(network.modelData, null, n => root.askWifiPassword(n));
                             }
-                            color: Colours.palette.m3outline
-                            font: Tokens.font.label.small
-                            elide: Text.ElideRight
                         }
-                    }
 
-                    IconButton {
-                        visible: network.modelData.active
-                        z: 2
-                        type: IconButton.Tonal
-                        isRound: true
-                        icon: "link_off"
-                        onClicked: Nmcli.disconnectFromNetwork()
-                    }
+                        RowLayout {
+                            id: networkLayout
 
-                    AnimLoader {
-                        sourceComp: Nmcli.connectingSsid() === network.modelData.ssid ? loadingComp : iconComp
-
-                        Component {
-                            id: iconComp
+                            anchors.fill: parent
+                            anchors.margins: Tokens.padding.large
+                            anchors.leftMargin: Tokens.padding.extraLarge
+                            anchors.rightMargin: Tokens.padding.extraLarge
+                            spacing: Tokens.spacing.medium
 
                             MaterialIcon {
-                                text: network.modelData.active ? "settings" : (Nmcli.hasSavedProfile(network.modelData.ssid) ? "chevron_right" : "lock")
+                                text: Icons.getNetworkIcon(network.modelData.strength)
                                 color: network.modelData.active ? Colours.palette.m3primary : Colours.palette.m3onSurfaceVariant
                                 fontStyle: Tokens.font.icon.medium
                                 opacity: network.textOpacity
                             }
-                        }
 
-                        Component {
-                            id: loadingComp
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 0
+                                opacity: network.textOpacity
 
-                            LoadingIndicator {
-                                implicitSize: Math.round(Tokens.font.icon.medium.pointSize * 1.3)
+                                StyledText {
+                                    Layout.fillWidth: true
+                                    text: network.modelData.ssid
+                                    font: Tokens.font.body.small
+                                    elide: Text.ElideRight
+                                }
+
+                                StyledText {
+                                    Layout.fillWidth: true
+                                    text: {
+                                        const sec = network.modelData.security || qsTr("Open");
+                                        if (network.modelData.active)
+                                            return qsTr("%1 · Connected").arg(sec);
+                                        if (Nmcli.hasSavedProfile(network.modelData.ssid))
+                                            return qsTr("%1 · Saved").arg(sec);
+                                        return qsTr("Security: %1").arg(sec);
+                                    }
+                                    color: Colours.palette.m3outline
+                                    font: Tokens.font.label.small
+                                    elide: Text.ElideRight
+                                }
+                            }
+
+                            IconButton {
+                                visible: network.modelData.active
+                                z: 2
+                                type: IconButton.Tonal
+                                isRound: true
+                                icon: "link_off"
+                                onClicked: Nmcli.disconnectFromNetwork()
+                            }
+
+                            AnimLoader {
+                                sourceComp: Nmcli.connectingSsid() === network.modelData.ssid ? loadingComp : iconComp
+
+                                Component {
+                                    id: iconComp
+
+                                    MaterialIcon {
+                                        text: network.modelData.active ? "settings" : (Nmcli.hasSavedProfile(network.modelData.ssid) ? "chevron_right" : "lock")
+                                        color: network.modelData.active ? Colours.palette.m3primary : Colours.palette.m3onSurfaceVariant
+                                        fontStyle: Tokens.font.icon.medium
+                                        opacity: network.textOpacity
+                                    }
+                                }
+
+                                Component {
+                                    id: loadingComp
+
+                                    LoadingIndicator {
+                                        implicitSize: Math.round(Tokens.font.icon.medium.pointSize * 1.3)
+                                    }
+                                }
                             }
                         }
+                    }
+
+                    // Password form directly under this Wi-Fi row
+                    Loader {
+                        id: passwordLoader
+                        width: parent.width
+                        active: network.passwordOpen
+                        visible: active
+                        sourceComponent: passwordFormComp
                     }
                 }
             }
@@ -292,91 +295,84 @@ PageBase {
             }
         }
 
-        // -- Wi-Fi 密码（紧挨列表下方）--
-        ConnectedRect {
-            Layout.fillWidth: true
-            visible: root.showWifiPassword
-            first: true
-            last: true
-            implicitHeight: passCol.implicitHeight + Tokens.padding.large * 2
+        // Shared password form used by the expanded Wi-Fi row (under that SSID).
+        Component {
+            id: passwordFormComp
 
-            ColumnLayout {
-                id: passCol
-                anchors.fill: parent
-                anchors.margins: Tokens.padding.large
-                spacing: Tokens.spacing.small
+            Item {
+                width: parent.width
+                implicitHeight: passInner.implicitHeight + Tokens.padding.medium * 2
 
-                StyledText {
-                    Layout.fillWidth: true
-                    text: root.pendingWifi ? qsTr("Connect to %1").arg(root.pendingWifi.ssid || "") : qsTr("Wi-Fi password")
-                    font: Tokens.font.body.large
-                    elide: Text.ElideRight
+                Rectangle {
+                    anchors.fill: parent
+                    anchors.leftMargin: Tokens.padding.large
+                    anchors.rightMargin: Tokens.padding.large
+                    anchors.bottomMargin: Tokens.padding.small
+                    radius: Tokens.rounding.medium
+                    color: Colours.tPalette.m3surfaceContainerHigh
                 }
 
-                StyledText {
-                    Layout.fillWidth: true
-                    text: qsTr("Enter the network password. Your current connection stays up until this succeeds.")
-                    color: Colours.palette.m3outline
-                    font: Tokens.font.label.small
-                    wrapMode: Text.WordWrap
-                }
-
-                M3TextField {
-                    id: wifiPassField
-                    Layout.fillWidth: true
-                    label: qsTr("Password")
-                    placeholder: qsTr("Wi-Fi password")
-                    leadingIcon: "password"
-                    password: true
-                    text: root.wifiPassword
-                    onTextChanged: root.wifiPassword = text
-                    onAccepted: root.submitWifiPassword()
-                    Component.onCompleted: {
-                        if (root.showWifiPassword)
-                            forceFieldFocus();
-                    }
-                }
-
-                // Focus password field when sheet opens
-                Connections {
-                    target: root
-                    function onShowWifiPasswordChanged() {
-                        if (root.showWifiPassword)
-                            Qt.callLater(function() { wifiPassField.forceFieldFocus(); });
-                    }
-                }
-
-                StyledText {
-                    visible: root.wifiConnectError.length > 0
-                    Layout.fillWidth: true
-                    text: root.wifiConnectError
-                    color: Colours.palette.m3error
-                    font: Tokens.font.label.small
-                    wrapMode: Text.WordWrap
-                }
-
-                RowLayout {
-                    Layout.fillWidth: true
+                ColumnLayout {
+                    id: passInner
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    anchors.margins: Tokens.padding.large
                     spacing: Tokens.spacing.small
 
-                    Item {
+                    StyledText {
                         Layout.fillWidth: true
+                        text: qsTr("Enter the network password. Your current connection stays up until this succeeds.")
+                        color: Colours.palette.m3outline
+                        font: Tokens.font.label.small
+                        wrapMode: Text.WordWrap
                     }
 
-                    IconTextButton {
-                        icon: "close"
-                        text: qsTr("Cancel")
-                        type: IconTextButton.Tonal
-                        enabled: !root.wifiConnecting
-                        onClicked: root.cancelWifiPassword()
+                    M3TextField {
+                        id: wifiPassField
+                        Layout.fillWidth: true
+                        label: qsTr("Password")
+                        placeholder: qsTr("Wi-Fi password")
+                        leadingIcon: "password"
+                        password: true
+                        text: root.wifiPassword
+                        onTextChanged: root.wifiPassword = text
+                        onAccepted: root.submitWifiPassword()
+                        Component.onCompleted: forceFieldFocus()
                     }
 
-                    IconTextButton {
-                        icon: "link"
-                        text: root.wifiConnecting ? qsTr("Connecting...") : qsTr("Connect")
-                        type: IconTextButton.Filled
-                        enabled: !root.wifiConnecting && root.wifiPassword.length > 0
-                        onClicked: root.submitWifiPassword()
+                    StyledText {
+                        visible: root.wifiConnectError.length > 0
+                        Layout.fillWidth: true
+                        text: root.wifiConnectError
+                        color: Colours.palette.m3error
+                        font: Tokens.font.label.small
+                        wrapMode: Text.WordWrap
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: Tokens.spacing.small
+
+                        Item {
+                            Layout.fillWidth: true
+                        }
+
+                        IconTextButton {
+                            icon: "close"
+                            text: qsTr("Cancel")
+                            type: IconTextButton.Tonal
+                            enabled: !root.wifiConnecting
+                            onClicked: root.cancelWifiPassword()
+                        }
+
+                        IconTextButton {
+                            icon: "link"
+                            text: root.wifiConnecting ? qsTr("Connecting...") : qsTr("Connect")
+                            type: IconTextButton.Filled
+                            enabled: !root.wifiConnecting && root.wifiPassword.length > 0
+                            onClicked: root.submitWifiPassword()
+                        }
                     }
                 }
             }
