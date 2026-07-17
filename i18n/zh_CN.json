@@ -511,8 +511,10 @@
     "Use now": "填入当前时间",
     "Clock display": "时钟显示",
     "Wi‑Fi password": "Wi‑Fi 密码",
-    "Enter the network password. Your current connection stays up until this succeeds.": "请输入网络密码。当前网络在连接成功前保持不断开。",
+    "Enter the network password. Your current connection stays up until this succeeds.": "请输入网络密码。连接成功前不会断开当前网络。",
     "Connection failed. Check the password and try again.": "连接失败，请检查密码后重试。",
     "Connecting…": "正在连接…",
-    "Connect to %1": "连接到 %1"
+    "Connect to %1": "连接到 %1",
+    "Connecting...": "正在连接…",
+    "Wi-Fi password": "Wi-Fi 密码"
 }

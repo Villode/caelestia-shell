@@ -5662,4 +5662,11 @@ Keyboard layout: %1</source>
             <translation>连接到 %1</translation>
         </message>
     </context>
+    <context>
+        <name>NetworkPage</name>
+        <message>
+            <source>Wi-Fi password</source>
+            <translation>Wi-Fi 密码</translation>
+        </message>
+    </context>
 </TS>

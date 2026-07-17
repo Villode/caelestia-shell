@@ -125,6 +125,7 @@ PageBase {
         ItemList {
             id: networkList
 
+            last: true
             showList: Nmcli.wifiEnabled
             placeholderIcon: Nmcli.wifiEnabled ? "wifi_find" : "signal_wifi_off"
             placeholderText: Nmcli.wifiEnabled ? qsTr("No networks found") : qsTr("Wireless is disabled")
@@ -273,6 +274,8 @@ PageBase {
                         width: parent.width
                         active: network.passwordOpen
                         visible: active
+                        // Bind height tightly so ListView does not leave a tall empty band.
+                        height: active && item ? item.implicitHeight : 0
                         sourceComponent: passwordFormComp
                     }
                 }
@@ -295,20 +298,22 @@ PageBase {
             }
         }
 
-        // Shared password form used by the expanded Wi-Fi row (under that SSID).
+        // Compact password form under the selected Wi-Fi row only.
         Component {
             id: passwordFormComp
 
             Item {
-                width: parent.width
-                implicitHeight: passInner.implicitHeight + Tokens.padding.medium * 2
+                width: parent ? parent.width : 0
+                // Tight height: field + buttons, no large empty band.
+                implicitHeight: passInner.implicitHeight + Tokens.padding.small * 2
 
                 Rectangle {
                     anchors.fill: parent
-                    anchors.leftMargin: Tokens.padding.large
-                    anchors.rightMargin: Tokens.padding.large
+                    anchors.leftMargin: Tokens.padding.largeIncreased
+                    anchors.rightMargin: Tokens.padding.largeIncreased
+                    anchors.topMargin: 0
                     anchors.bottomMargin: Tokens.padding.small
-                    radius: Tokens.rounding.medium
+                    radius: Tokens.rounding.large
                     color: Colours.tPalette.m3surfaceContainerHigh
                 }
 
@@ -317,20 +322,16 @@ PageBase {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.top: parent.top
-                    anchors.margins: Tokens.padding.large
-                    spacing: Tokens.spacing.small
-
-                    StyledText {
-                        Layout.fillWidth: true
-                        text: qsTr("Enter the network password. Your current connection stays up until this succeeds.")
-                        color: Colours.palette.m3outline
-                        font: Tokens.font.label.small
-                        wrapMode: Text.WordWrap
-                    }
+                    anchors.leftMargin: Tokens.padding.largeIncreased + Tokens.padding.medium
+                    anchors.rightMargin: Tokens.padding.largeIncreased + Tokens.padding.medium
+                    anchors.topMargin: Tokens.padding.small
+                    anchors.bottomMargin: Tokens.padding.small
+                    spacing: Tokens.spacing.extraSmall
 
                     M3TextField {
                         id: wifiPassField
                         Layout.fillWidth: true
+                        Layout.preferredHeight: 48
                         label: qsTr("Password")
                         placeholder: qsTr("Wi-Fi password")
                         leadingIcon: "password"
@@ -352,7 +353,8 @@ PageBase {
 
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: Tokens.spacing.small
+                        Layout.topMargin: Tokens.spacing.extraSmall
+                        spacing: Tokens.spacing.extraSmall
 
                         Item {
                             Layout.fillWidth: true
@@ -368,7 +370,7 @@ PageBase {
 
                         IconTextButton {
                             icon: "link"
-                            text: root.wifiConnecting ? qsTr("Connecting...") : qsTr("Connect")
+                            text: root.wifiConnecting ? qsTr("Connecting…") : qsTr("Connect")
                             type: IconTextButton.Filled
                             enabled: !root.wifiConnecting && root.wifiPassword.length > 0
                             onClicked: root.submitWifiPassword()
