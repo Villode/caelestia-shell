@@ -5250,4 +5250,303 @@ Keyboard layout: %1</source>
             <translation>图片文件</translation>
         </message>
     </context>
+    <context>
+        <name>UpdatesPage</name>
+        <message>
+            <source>Already used</source>
+            <translation>已被使用</translation>
+        </message>
+        <message>
+            <source>Press shortcut</source>
+            <translation>请按快捷键</translation>
+        </message>
+        <message>
+            <source>Press the new key combination; Backspace clears it</source>
+            <translation>请按新的组合键；按退格键可清除</translation>
+        </message>
+        <message>
+            <source>Apps and Shell</source>
+            <translation>应用与 Shell</translation>
+        </message>
+        <message>
+            <source>Click a shortcut to record a new key combination</source>
+            <translation>点击快捷键即可录制新的组合键</translation>
+        </message>
+        <message>
+            <source>Changes apply immediately. Backspace or Delete removes a shortcut.</source>
+            <translation>修改会立即生效；按退格键或删除键可移除快捷键。</translation>
+        </message>
+        <message>
+            <source>Previewing %1</source>
+            <translation>正在预览：%1</translation>
+        </message>
+        <message>
+            <source>Highlighted keys: %1</source>
+            <translation>已高亮按键：%1</translation>
+        </message>
+        <message>
+            <source>Select a shortcut below to preview or change it. Changes apply immediately.</source>
+            <translation>选择下方快捷键即可在键盘上预览，修改会立即生效。</translation>
+        </message>
+        <message>
+            <source>Villode components</source>
+            <translation>Villode 组件</translation>
+        </message>
+        <message>
+            <source>Component updates only change Villode Shell / Dock / … to versions locked by the release channel. They do not run pacman -Syu.</source>
+            <translation>组件更新只会把 Villode Shell / Dock 等同步到发布渠道锁定的版本，不会执行 pacman -Syu。</translation>
+        </message>
+        <message>
+            <source>System packages</source>
+            <translation>系统软件包</translation>
+        </message>
+        <message>
+            <source>Checking system packages...</source>
+            <translation>正在检查系统软件包…</translation>
+        </message>
+        <message>
+            <source>System package check failed</source>
+            <translation>系统软件包检查失败</translation>
+        </message>
+        <message>
+            <source>%1 system packages can be upgraded</source>
+            <translation>有 %1 个系统软件包可升级</translation>
+        </message>
+        <message>
+            <source>System packages appear up to date</source>
+            <translation>系统软件包已是最新</translation>
+        </message>
+        <message>
+            <source>Arch rolling: pacman -Syu (separate from Villode components)</source>
+            <translation>Arch 滚动更新：pacman -Syu（与 Villode 组件无关）</translation>
+        </message>
+        <message>
+            <source>System upgrade (%1)</source>
+            <translation>系统更新 (%1)</translation>
+        </message>
+        <message>
+            <source>System upgrade</source>
+            <translation>系统更新</translation>
+        </message>
+        <message>
+            <source>Full system upgrade may include kernel, drivers and core libraries. Review the package list in the terminal before confirming.</source>
+            <translation>完整系统更新可能包含内核、驱动与基础库。请在终端中查看列表后再确认。</translation>
+        </message>
+        <message>
+            <source>Notable packages: %1</source>
+            <translation>需注意的包：%1</translation>
+        </message>
+        <message>
+            <source>Hide package list</source>
+            <translation>收起软件包列表</translation>
+        </message>
+        <message>
+            <source>Show package list (%1)</source>
+            <translation>显示软件包列表 (%1)</translation>
+        </message>
+        <message>
+            <source>List truncated in the UI; full list is shown in the terminal before upgrade.</source>
+            <translation>界面仅显示部分列表；完整列表会在终端升级前展示。</translation>
+        </message>
+        <message>
+            <source>System upgrade runs sudo pacman -Syu in a terminal and asks for confirmation. It is optional and independent of Villode component updates.</source>
+            <translation>系统更新会在终端运行 sudo pacman -Syu 并要求确认。可选，与 Villode 组件更新相互独立。</translation>
+        </message>
+        <message>
+            <source>System package check timed out. Network or package mirrors may be slow.</source>
+            <translation>系统软件包检查超时。网络或软件源可能较慢。</translation>
+        </message>
+        <message>
+            <source>Could not check system packages. Is pacman available?</source>
+            <translation>无法检查系统软件包。是否已安装 pacman？</translation>
+        </message>
+        <message>
+            <source>Could not parse system package list.</source>
+            <translation>无法解析系统软件包列表。</translation>
+        </message>
+        <message>
+            <source>Software update</source>
+            <translation>软件更新</translation>
+        </message>
+        <message>
+            <source>Check timed out. Network may be slow.</source>
+            <translation>检查超时，网络可能较慢。</translation>
+        </message>
+        <message>
+            <source>Could not check for updates.</source>
+            <translation>无法检查更新。</translation>
+        </message>
+        <message>
+            <source>System check timed out.</source>
+            <translation>系统检查超时。</translation>
+        </message>
+        <message>
+            <source>Could not check system packages.</source>
+            <translation>无法检查系统软件包。</translation>
+        </message>
+        <message>
+            <source>Online</source>
+            <translation>在线</translation>
+        </message>
+        <message>
+            <source>Cached (offline)</source>
+            <translation>缓存（离线）</translation>
+        </message>
+        <message>
+            <source>Installed channel</source>
+            <translation>已安装渠道</translation>
+        </message>
+        <message>
+            <source>Release channel</source>
+            <translation>发布渠道</translation>
+        </message>
+        <message>
+            <source>Desktop shell</source>
+            <translation>桌面 Shell</translation>
+        </message>
+        <message>
+            <source>Chinese language pack</source>
+            <translation>中文语言包</translation>
+        </message>
+        <message>
+            <source>Dock</source>
+            <translation>Dock</translation>
+        </message>
+        <message>
+            <source>Pointer zoom</source>
+            <translation>指针放大</translation>
+        </message>
+        <message>
+            <source>Needs repair</source>
+            <translation>需要修复</translation>
+        </message>
+        <message>
+            <source>Checking for updates…</source>
+            <translation>正在检查更新…</translation>
+        </message>
+        <message>
+            <source>Could not check</source>
+            <translation>无法检查</translation>
+        </message>
+        <message>
+            <source>%1 updates available</source>
+            <translation>有 %1 项可更新</translation>
+        </message>
+        <message>
+            <source>You're up to date</source>
+            <translation>已是最新</translation>
+        </message>
+        <message>
+            <source>Please wait</source>
+            <translation>请稍候</translation>
+        </message>
+        <message>
+            <source>%1 Villode</source>
+            <translation>Villode %1 项</translation>
+        </message>
+        <message>
+            <source>%1 system</source>
+            <translation>系统 %1 项</translation>
+        </message>
+        <message>
+            <source>Pull to refresh is not available — use Check</source>
+            <translation>请使用「检查」刷新</translation>
+        </message>
+        <message>
+            <source>%1 → %2 · with shell</source>
+            <translation>%1 → %2 · 随 Shell</translation>
+        </message>
+        <message>
+            <source>Updates to version %1</source>
+            <translation>将更新到版本 %1</translation>
+        </message>
+        <message>
+            <source>No details</source>
+            <translation>暂无说明</translation>
+        </message>
+        <message>
+            <source>Update Villode</source>
+            <translation>更新 Villode</translation>
+        </message>
+        <message>
+            <source>Villode</source>
+            <translation>Villode</translation>
+        </message>
+        <message>
+            <source>Desktop components</source>
+            <translation>桌面组件</translation>
+        </message>
+        <message>
+            <source>%1 items · safe component update</source>
+            <translation>%1 项 · 仅更新组件</translation>
+        </message>
+        <message>
+            <source>Shell, dock, launcher and more</source>
+            <translation>Shell、Dock、启动台等</translation>
+        </message>
+        <message>
+            <source>%1 new</source>
+            <translation>%1 项新版本</translation>
+        </message>
+        <message>
+            <source>OK</source>
+            <translation>正常</translation>
+        </message>
+        <message>
+            <source>Checking…</source>
+            <translation>检查中…</translation>
+        </message>
+        <message>
+            <source>%1 packages · full system upgrade</source>
+            <translation>%1 个软件包 · 完整系统升级</translation>
+        </message>
+        <message>
+            <source>No system upgrades found</source>
+            <translation>未发现系统升级</translation>
+        </message>
+        <message>
+            <source>May include kernel, drivers and libraries. Confirm carefully in the terminal.</source>
+            <translation>可能包含内核、驱动与基础库，请在终端中仔细确认。</translation>
+        </message>
+        <message>
+            <source>Includes: %1</source>
+            <translation>包含：%1</translation>
+        </message>
+        <message>
+            <source>Upgrade system</source>
+            <translation>升级系统</translation>
+        </message>
+        <message>
+            <source>Hide</source>
+            <translation>收起</translation>
+        </message>
+        <message>
+            <source>List</source>
+            <translation>列表</translation>
+        </message>
+        <message>
+            <source>More packages will be shown in the terminal.</source>
+            <translation>更多软件包将在终端中显示。</translation>
+        </message>
+        <message>
+            <source>Villode updates only your desktop components. System upgrade is optional and separate.</source>
+            <translation>Villode 只更新桌面组件；系统升级为可选项，两者相互独立。</translation>
+        </message>
+        <message>
+            <source>Villode components only — not a full system upgrade.</source>
+            <translation>仅更新 Villode 组件，不是完整系统升级。</translation>
+        </message>
+        <message>
+            <source>Done.</source>
+            <translation>完成。</translation>
+        </message>
+        <message>
+            <source>Failed.</source>
+            <translation>失败。</translation>
+        </message>
+        <message>
+            <source>Press Enter to close…</source>
+            <translation>按回车键关闭…</translation>
+        </message>
+    </context>
 </TS>
