@@ -24,6 +24,14 @@ PageBase {
 
     title: qsTr("Network")
 
+    // Prefer Chinese labels when UI language is zh (qm can lag behind hot reloads).
+    function trUi(en: string, zh: string): string {
+        const lang = (GlobalConfig.services.uiLanguage || "system");
+        if (lang === "zh_CN" || lang === "zh" || (lang === "system" && Qt.locale().name.indexOf("zh") === 0))
+            return zh;
+        return qsTr(en);
+    }
+
     function askWifiPassword(network): void {
         root.pendingWifi = network;
         root.wifiPassword = "";
@@ -149,8 +157,8 @@ PageBase {
 
                 anchors.left: networkList.list.contentItem.left
                 anchors.right: networkList.list.contentItem.right
-                // Expand this row when it is the one asking for a password.
-                implicitHeight: rowBlock.implicitHeight + (passwordLoader.active ? passwordLoader.implicitHeight : 0)
+                // rowBlock Column already includes passwordLoader height — do not add twice.
+                implicitHeight: rowBlock.implicitHeight
 
                 Behavior on textOpacity {
                     Anim {
@@ -158,17 +166,14 @@ PageBase {
                     }
                 }
 
-                Behavior on implicitHeight {
-                    Anim {}
-                }
-
-                Column {
+                ColumnLayout {
                     id: rowBlock
                     width: parent.width
+                    spacing: 0
 
                     Item {
-                        width: parent.width
-                        height: networkLayout.implicitHeight + Tokens.padding.large * 2
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: networkLayout.implicitHeight + Tokens.padding.medium * 2
 
                         StateLayer {
                             anchors.fill: parent
@@ -180,7 +185,6 @@ PageBase {
                                     root.nState.openSubPage(2);
                                     return;
                                 }
-                                // Open password form under THIS row for secured networks.
                                 const secured = network.modelData.isSecure || (network.modelData.security && network.modelData.security.length > 0 && network.modelData.security !== "--");
                                 if (secured) {
                                     root.askWifiPassword(network.modelData);
@@ -194,9 +198,9 @@ PageBase {
                             id: networkLayout
 
                             anchors.fill: parent
-                            anchors.margins: Tokens.padding.large
-                            anchors.leftMargin: Tokens.padding.extraLarge
-                            anchors.rightMargin: Tokens.padding.extraLarge
+                            anchors.margins: Tokens.padding.medium
+                            anchors.leftMargin: Tokens.padding.largeIncreased
+                            anchors.rightMargin: Tokens.padding.largeIncreased
                             spacing: Tokens.spacing.medium
 
                             MaterialIcon {
@@ -268,14 +272,12 @@ PageBase {
                         }
                     }
 
-                    // Password form directly under this Wi-Fi row
                     Loader {
                         id: passwordLoader
-                        width: parent.width
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: active && item ? item.implicitHeight : 0
                         active: network.passwordOpen
                         visible: active
-                        // Bind height tightly so ListView does not leave a tall empty band.
-                        height: active && item ? item.implicitHeight : 0
                         sourceComponent: passwordFormComp
                     }
                 }
@@ -303,77 +305,76 @@ PageBase {
             id: passwordFormComp
 
             Item {
-                width: parent ? parent.width : 0
-                // Tight height: field + buttons, no large empty band.
-                implicitHeight: passInner.implicitHeight + Tokens.padding.small * 2
+                // Root sizes to content only — no stretchable empty region.
+                implicitWidth: parent ? parent.width : 0
+                implicitHeight: passCard.implicitHeight + Tokens.padding.small
 
                 Rectangle {
-                    anchors.fill: parent
-                    anchors.leftMargin: Tokens.padding.largeIncreased
-                    anchors.rightMargin: Tokens.padding.largeIncreased
-                    anchors.topMargin: 0
-                    anchors.bottomMargin: Tokens.padding.small
-                    radius: Tokens.rounding.large
-                    color: Colours.tPalette.m3surfaceContainerHigh
-                }
-
-                ColumnLayout {
-                    id: passInner
+                    id: passCard
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.top: parent.top
-                    anchors.leftMargin: Tokens.padding.largeIncreased + Tokens.padding.medium
-                    anchors.rightMargin: Tokens.padding.largeIncreased + Tokens.padding.medium
-                    anchors.topMargin: Tokens.padding.small
-                    anchors.bottomMargin: Tokens.padding.small
-                    spacing: Tokens.spacing.extraSmall
+                    anchors.leftMargin: Tokens.padding.largeIncreased
+                    anchors.rightMargin: Tokens.padding.largeIncreased
+                    implicitHeight: passInner.implicitHeight + Tokens.padding.medium * 2
+                    radius: Tokens.rounding.large
+                    color: Colours.tPalette.m3surfaceContainerHigh
 
-                    M3TextField {
-                        id: wifiPassField
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 48
-                        label: qsTr("Password")
-                        placeholder: qsTr("Wi-Fi password")
-                        leadingIcon: "password"
-                        password: true
-                        text: root.wifiPassword
-                        onTextChanged: root.wifiPassword = text
-                        onAccepted: root.submitWifiPassword()
-                        Component.onCompleted: forceFieldFocus()
-                    }
+                    ColumnLayout {
+                        id: passInner
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.margins: Tokens.padding.medium
+                        spacing: Tokens.spacing.medium
 
-                    StyledText {
-                        visible: root.wifiConnectError.length > 0
-                        Layout.fillWidth: true
-                        text: root.wifiConnectError
-                        color: Colours.palette.m3error
-                        font: Tokens.font.label.small
-                        wrapMode: Text.WordWrap
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Layout.topMargin: Tokens.spacing.extraSmall
-                        spacing: Tokens.spacing.extraSmall
-
-                        Item {
+                        M3TextField {
+                            id: wifiPassField
                             Layout.fillWidth: true
+                            Layout.preferredHeight: 48
+                            label: root.trUi("Password", "密码")
+                            placeholder: root.trUi("Wi-Fi password", "Wi-Fi 密码")
+                            leadingIcon: "password"
+                            password: true
+                            text: root.wifiPassword
+                            onTextChanged: root.wifiPassword = text
+                            onAccepted: root.submitWifiPassword()
+                            Component.onCompleted: forceFieldFocus()
                         }
 
-                        IconTextButton {
-                            icon: "close"
-                            text: qsTr("Cancel")
-                            type: IconTextButton.Tonal
-                            enabled: !root.wifiConnecting
-                            onClicked: root.cancelWifiPassword()
+                        StyledText {
+                            visible: root.wifiConnectError.length > 0
+                            Layout.fillWidth: true
+                            text: root.wifiConnectError
+                            color: Colours.palette.m3error
+                            font: Tokens.font.label.small
+                            wrapMode: Text.WordWrap
                         }
 
-                        IconTextButton {
-                            icon: "link"
-                            text: root.wifiConnecting ? qsTr("Connecting…") : qsTr("Connect")
-                            type: IconTextButton.Filled
-                            enabled: !root.wifiConnecting && root.wifiPassword.length > 0
-                            onClicked: root.submitWifiPassword()
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Layout.topMargin: Tokens.spacing.small
+                            spacing: Tokens.spacing.small
+
+                            Item {
+                                Layout.fillWidth: true
+                            }
+
+                            IconTextButton {
+                                icon: "close"
+                                text: root.trUi("Cancel", "取消")
+                                type: IconTextButton.Tonal
+                                enabled: !root.wifiConnecting
+                                onClicked: root.cancelWifiPassword()
+                            }
+
+                            IconTextButton {
+                                icon: "link"
+                                text: root.wifiConnecting ? root.trUi("Connecting…", "正在连接…") : root.trUi("Connect", "连接")
+                                type: IconTextButton.Filled
+                                enabled: !root.wifiConnecting && root.wifiPassword.length > 0
+                                onClicked: root.submitWifiPassword()
+                            }
                         }
                     }
                 }
