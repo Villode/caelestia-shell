@@ -5549,4 +5549,87 @@ Keyboard layout: %1</source>
             <translation>按回车键关闭…</translation>
         </message>
     </context>
+    <context>
+        <name>LanguageAndRegion</name>
+        <message>
+            <source>Language, time zone, date and time, weather</source>
+            <translation>语言、时区、日期时间、天气</translation>
+        </message>
+        <message>
+            <source>Date and time</source>
+            <translation>日期和时间</translation>
+        </message>
+        <message>
+            <source>Reading system time…</source>
+            <translation>正在读取系统时间…</translation>
+        </message>
+        <message>
+            <source>Network time on · synced</source>
+            <translation>网络对时已开启 · 已同步</translation>
+        </message>
+        <message>
+            <source>Network time on · syncing…</source>
+            <translation>网络对时已开启 · 同步中…</translation>
+        </message>
+        <message>
+            <source>Network time off · manual</source>
+            <translation>网络对时已关闭 · 手动</translation>
+        </message>
+        <message>
+            <source>Refresh</source>
+            <translation>刷新</translation>
+        </message>
+        <message>
+            <source>UTC %1</source>
+            <translation>UTC %1</translation>
+        </message>
+        <message>
+            <source>Could not read system time settings.</source>
+            <translation>无法读取系统时间设置。</translation>
+        </message>
+        <message>
+            <source>Could not parse time status.</source>
+            <translation>无法解析时间状态。</translation>
+        </message>
+        <message>
+            <source>Set time automatically</source>
+            <translation>自动设置时间</translation>
+        </message>
+        <message>
+            <source>Use network time (NTP). Recommended.</source>
+            <translation>使用网络时间（NTP）。推荐开启。</translation>
+        </message>
+        <message>
+            <source>Time zone</source>
+            <translation>时区</translation>
+        </message>
+        <message>
+            <source>Current: %1</source>
+            <translation>当前：%1</translation>
+        </message>
+        <message>
+            <source>Search time zone</source>
+            <translation>搜索时区</translation>
+        </message>
+        <message>
+            <source>e.g. Shanghai, Tokyo, New_York</source>
+            <translation>例如 Shanghai、Tokyo、New_York</translation>
+        </message>
+        <message>
+            <source>Set date and time manually</source>
+            <translation>手动设置日期和时间</translation>
+        </message>
+        <message>
+            <source>Turns off network time. Format: YYYY-MM-DD HH:MM:SS</source>
+            <translation>会关闭网络对时。格式：YYYY-MM-DD HH:MM:SS</translation>
+        </message>
+        <message>
+            <source>Use now</source>
+            <translation>填入当前时间</translation>
+        </message>
+        <message>
+            <source>Clock display</source>
+            <translation>时钟显示</translation>
+        </message>
+    </context>
 </TS>
