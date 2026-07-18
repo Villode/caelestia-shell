@@ -27,6 +27,16 @@ if [[ -f "$HOME/.local/bin/caelestia" ]] &&
    grep -q 'Managed by Villode Caelestia Shell' "$HOME/.local/bin/caelestia" 2>/dev/null; then
     rm -f "$HOME/.local/bin/caelestia"
 fi
+# Screenshot editor + swappy shim (only remove Villode-managed copies).
+pkill -f 'villode-screenshot-editor --daemon' >/dev/null 2>&1 || true
+if [[ -f "$HOME/.local/bin/villode-screenshot-editor" ]] &&
+   grep -q 'Villode Screenshot Editor' "$HOME/.local/bin/villode-screenshot-editor" 2>/dev/null; then
+    rm -f "$HOME/.local/bin/villode-screenshot-editor"
+fi
+if [[ -f "$HOME/.local/bin/swappy" ]] &&
+   grep -q 'Villode screenshot editor (swappy-compatible shim)' "$HOME/.local/bin/swappy" 2>/dev/null; then
+    rm -f "$HOME/.local/bin/swappy"
+fi
 if [[ -f "$HOME/.local/lib/caelestia/bin/qs" ]] &&
    grep -q 'Run the binary by its full `quickshell` name' \
        "$HOME/.local/lib/caelestia/bin/qs" 2>/dev/null; then

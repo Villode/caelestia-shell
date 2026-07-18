@@ -13,4 +13,69 @@ export QT_QUICK_FLICKABLE_WHEEL_DECELERATION="${QT_QUICK_FLICKABLE_WHEEL_DECELER
 # Without a platform theme, even valid names can render as checkerboards.
 export QT_QPA_PLATFORMTHEME="${QT_QPA_PLATFORMTHEME:-gtk3}"
 
-exec /usr/bin/caelestia "$@"
+# Screenshot: region → Quickshell picker; fullscreen/geometry → grim + Villode editor.
+# Never launch stock Swappy (replaced by ~/.local/bin/villode-screenshot-editor).
+if [[ "${1:-}" == "screenshot" ]]; then
+    shift
+    region=""
+    freeze=0
+    while (($#)); do
+        case "$1" in
+            -r|--region)
+                if (($# > 1)) && [[ "$2" != -* ]]; then
+                    region="$2"
+                    shift 2
+                else
+                    region="slurp"
+                    shift
+                fi
+                ;;
+            -f|--freeze)
+                freeze=1
+                shift
+                ;;
+            -h|--help)
+                exec /usr/bin/caelestia screenshot --help
+                ;;
+            *)
+                exec /usr/bin/caelestia screenshot "$@"
+                ;;
+        esac
+    done
+
+    editor="${VILLODE_SCREENSHOT_EDITOR:-$HOME/.local/bin/villode-screenshot-editor}"
+    export PATH="$HOME/.local/bin:${PATH:-/usr/bin}"
+
+    if [[ -n "$region" ]]; then
+        if [[ "$region" == "slurp" ]]; then
+            if ((freeze)); then
+                exec qs -c caelestia ipc call picker openFreeze
+            else
+                exec qs -c caelestia ipc call picker open
+            fi
+        fi
+        # Explicit geometry → grim crop + editor
+        tmp="$(mktemp --suffix=.png /tmp/villode-ss-XXXXXX)"
+        grim -g "$region" "$tmp"
+        exec "$editor" "$tmp"
+    fi
+
+    # Fullscreen focused monitor → grim + editor
+    tmp="$(mktemp --suffix=.png /tmp/villode-ss-XXXXXX)"
+    mon="$(hyprctl -j monitors 2>/dev/null | python3 -c 'import sys,json; ms=json.load(sys.stdin); print(next((m["name"] for m in ms if m.get("focused")), ms[0]["name"] if ms else ""))' 2>/dev/null || true)"
+    if [[ -n "$mon" ]]; then
+        grim -o "$mon" "$tmp"
+    else
+        grim "$tmp"
+    fi
+    # Also seed clipboard with the raw capture
+    wl-copy --type image/png < "$tmp" 2>/dev/null || true
+    exec "$editor" "$tmp"
+fi
+
+/usr/bin/caelestia "$@"
+
+# Auto-sync GTK theme on scheme change
+if [[ "$*" == *"scheme set"* ]] || [[ "$*" == *"scheme -n"* ]] || [[ "$*" == *"scheme -m"* ]]; then
+    ~/.local/bin/caelestia-gtk-sync 2>/dev/null &
+fi

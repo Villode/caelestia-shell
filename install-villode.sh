@@ -170,6 +170,15 @@ printf 'Villode Caelestia Shell\nUpstream: %s\nRevision: %s\n' \
 mkdir -p "$HOME/.local/bin"
 install -m755 "$repo_dir/bin/caelestia-villode" "$HOME/.local/bin/caelestia"
 install -Dm755 "$repo_dir/bin/qs-villode" "$HOME/.local/lib/caelestia/bin/qs"
+# Villode screenshot editor (replaces Swappy for region/fullscreen annotation).
+if [[ -f "$repo_dir/bin/villode-screenshot-editor" ]]; then
+    install -m755 "$repo_dir/bin/villode-screenshot-editor" \
+        "$HOME/.local/bin/villode-screenshot-editor"
+fi
+if [[ -f "$repo_dir/bin/swappy-villode" ]]; then
+    # PATH shim so any remaining `swappy` calls open the Villode editor.
+    install -m755 "$repo_dir/bin/swappy-villode" "$HOME/.local/bin/swappy"
+fi
 
 # Pointer shake-to-find (Mac-style). Safe to re-run; wires Hyprland when present.
 if [[ -x "$repo_dir/contrib/villode-cursor/install.sh" ]]; then
