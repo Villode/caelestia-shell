@@ -37,6 +37,11 @@ if [[ -f "$HOME/.local/bin/swappy" ]] &&
    grep -q 'Villode screenshot editor (swappy-compatible shim)' "$HOME/.local/bin/swappy" 2>/dev/null; then
     rm -f "$HOME/.local/bin/swappy"
 fi
+if [[ -f "$HOME/.local/bin/caelestia-gtk-sync" ]] &&
+   grep -q 'Sync system GTK apps to the current Caelestia' \
+       "$HOME/.local/bin/caelestia-gtk-sync" 2>/dev/null; then
+    rm -f "$HOME/.local/bin/caelestia-gtk-sync"
+fi
 if [[ -f "$HOME/.local/lib/caelestia/bin/qs" ]] &&
    grep -q 'Run the binary by its full `quickshell` name' \
        "$HOME/.local/lib/caelestia/bin/qs" 2>/dev/null; then
