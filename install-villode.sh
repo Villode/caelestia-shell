@@ -183,6 +183,10 @@ if [[ -f "$repo_dir/bin/caelestia-gtk-sync" ]]; then
     install -m755 "$repo_dir/bin/caelestia-gtk-sync" "$HOME/.local/bin/caelestia-gtk-sync"
     "$HOME/.local/bin/caelestia-gtk-sync" >/dev/null 2>&1 || true
 fi
+if [[ -f "$repo_dir/bin/caelestia-qt-sync" ]]; then
+    install -m755 "$repo_dir/bin/caelestia-qt-sync" "$HOME/.local/bin/caelestia-qt-sync"
+    "$HOME/.local/bin/caelestia-qt-sync" >/dev/null 2>&1 || true
+fi
 
 # Pointer shake-to-find (Mac-style). Safe to re-run; wires Hyprland when present.
 if [[ -x "$repo_dir/contrib/villode-cursor/install.sh" ]]; then

@@ -42,6 +42,11 @@ if [[ -f "$HOME/.local/bin/caelestia-gtk-sync" ]] &&
        "$HOME/.local/bin/caelestia-gtk-sync" 2>/dev/null; then
     rm -f "$HOME/.local/bin/caelestia-gtk-sync"
 fi
+if [[ -f "$HOME/.local/bin/caelestia-qt-sync" ]] &&
+   grep -q 'Sync Qt6 apps to the current Caelestia' \
+       "$HOME/.local/bin/caelestia-qt-sync" 2>/dev/null; then
+    rm -f "$HOME/.local/bin/caelestia-qt-sync"
+fi
 if [[ -f "$HOME/.local/lib/caelestia/bin/qs" ]] &&
    grep -q 'Run the binary by its full `quickshell` name' \
        "$HOME/.local/lib/caelestia/bin/qs" 2>/dev/null; then
