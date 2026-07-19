@@ -19,6 +19,7 @@ import qs.modules.nexus.pages.panels.taskbar
 QtObject {
     id: root
 
+    // NOTE: index-aligned with PageRegistry.pages — always add/remove entries in both.
     readonly property list<Component> pageComps: [
         // Appearance
         Component {
@@ -120,9 +121,11 @@ QtObject {
                 }
             }
         },
-        Component {
-            PlaceholderComp {}
-        },
+        // Plugins entry hidden until a real plugin system exists.
+        // Keep in sync with PageRegistry.pages — the two lists are index-aligned.
+        // Component {
+        //     PlaceholderComp {}
+        // },
 
         // Shell
         Component {
