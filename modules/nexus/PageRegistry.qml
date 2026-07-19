@@ -66,12 +66,13 @@ QtObject {
             description: qsTr("Record keys for apps, Shell and windows"),
             category: "system"
         },
-        {
-            label: qsTr("Plugins"),
-            icon: "extension",
-            description: qsTr("Manage plugins"),
-            category: "system"
-        },
+        // Plugins entry hidden until a real plugin system exists.
+        // {
+        //     label: qsTr("Plugins"),
+        //     icon: "extension",
+        //     description: qsTr("Manage plugins"),
+        //     category: "system"
+        // },
 
         // Shell
         {

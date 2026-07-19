@@ -142,16 +142,13 @@ PageBase {
             value: CUtils.qtVersion || "…"
         }
 
-        // Plugins
-        SectionHeader {
-            text: qsTr("Plugins")
-        }
-
-        InfoRow {
-            first: true
-            last: true
-            label: qsTr("Loaded plugins")
-            value: root.pluginCount.toString()
-        }
+        // Plugins section hidden until a real plugin system exists.
+        // SectionHeader { text: qsTr("Plugins") }
+        // InfoRow {
+        //     first: true
+        //     last: true
+        //     label: qsTr("Loaded plugins")
+        //     value: root.pluginCount.toString()
+        // }
     }
 }
