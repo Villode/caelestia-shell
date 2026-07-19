@@ -73,7 +73,18 @@ Singleton {
         const parts = shortcut.split("+").map(part => part.trim()).filter(part => part.length > 0);
         if (parts.length === 0)
             return null;
-        const key = parts.pop();
+        let key = parts.pop();
+        // Hyprland expects PrintScreen for the capture key on some builds/keymaps.
+        const keyAliases = {
+            print: "Print",
+            printscreen: "Print",
+            prtsc: "Print",
+            prtscn: "Print",
+            sysrq: "Print"
+        };
+        const alias = keyAliases[key.toLowerCase()];
+        if (alias)
+            key = alias;
         const modifiers = parts.map(part => {
             switch (part.toLowerCase()) {
             case "super": return "SUPER";
@@ -82,8 +93,18 @@ Singleton {
             case "shift": return "SHIFT";
             default: return part.toUpperCase();
             }
-        });
+        }).filter(part => part.length > 0);
         return { modifiers: modifiers.join(" "), key: key };
+    }
+
+    function bindSpec(binding: var): string {
+        // Hyprctl accepts both ",Print" and ", Print". Prefer no-space form for bare keys
+        // because empty-modifier binds are easy to break with stray spaces.
+        if (!binding)
+            return "";
+        if (!binding.modifiers || binding.modifiers.length === 0)
+            return `,${binding.key}`;
+        return `${binding.modifiers}, ${binding.key}`;
     }
 
     function dispatch(action: string): string {
@@ -112,8 +133,12 @@ Singleton {
         for (const action of actionIds) {
             for (const chord of [defaults[action], previouslyApplied[action], shortcut(action)]) {
                 const binding = parsed(chord || "");
-                if (binding)
-                    remove[`${binding.modifiers}, ${binding.key}`] = true;
+                if (binding) {
+                    remove[bindSpec(binding)] = true;
+                    // Also clear the spaced empty-mod form used by older builds.
+                    if (!binding.modifiers || binding.modifiers.length === 0)
+                        remove[`, ${binding.key}`] = true;
+                }
             }
         }
         for (const binding of Object.keys(remove))
@@ -122,8 +147,14 @@ Singleton {
             const chord = shortcut(action);
             const binding = parsed(chord);
             const actionDispatch = dispatch(action);
-            if (binding && actionDispatch)
-                commands.push(`keyword bind ${binding.modifiers}, ${binding.key}, ${actionDispatch}`);
+            if (binding && actionDispatch) {
+                const spec = bindSpec(binding);
+                // Regular bind for normal sessions.
+                commands.push(`keyword bind ${spec}, ${actionDispatch}`);
+                // Locked bind so Print still works on lockscreen / special states.
+                if (action === "screenshot")
+                    commands.push(`keyword bindl ${spec}, ${actionDispatch}`);
+            }
             previouslyApplied[action] = chord;
         }
         if (commands.length > 0)
