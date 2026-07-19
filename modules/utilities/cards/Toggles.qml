@@ -43,7 +43,7 @@ StyledRect {
     implicitHeight: layout.implicitHeight + Tokens.padding.extraLargeIncreased
 
     radius: Tokens.rounding.large
-    color: { const c = Colours.palette.m3surfaceContainer; return Qt.rgba(c.r, c.g, c.b, 1); }
+    color: Colours.tPalette.m3surfaceContainer
 
     ColumnLayout {
         id: layout

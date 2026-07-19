@@ -13,11 +13,8 @@ ShapePath {
     readonly property real roundingY: flatten ? wrapper.height / 2 : rounding
 
     strokeWidth: -1
-    // Fully opaque panel fill (palette colours are often translucent for blur)
-    fillColor: {
-        const c = Colours.palette.m3surface;
-        return Qt.rgba(c.r, c.g, c.b, 1);
-    }
+    // Translucent so Hyprland layer blur on caelestia-drawers shows glass frost.
+    fillColor: Colours.tPalette.m3surface
 
     PathLine {
         relativeX: -(root.wrapper.width + root.rounding)

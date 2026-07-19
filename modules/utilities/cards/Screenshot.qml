@@ -24,11 +24,8 @@ StyledRect {
     implicitHeight: nonAnimHeight
 
     radius: Tokens.rounding.large
-    // Opaque — tPalette is translucent and looks empty over desktop/scrim
-    color: {
-        const c = Colours.palette.m3surfaceContainer;
-        return Qt.rgba(c.r, c.g, c.b, 1);
-    }
+    // Glass card — layer blur on caelestia-drawers frosts the translucent fill.
+    color: Colours.tPalette.m3surfaceContainer
 
     RowLayout {
         id: layout
