@@ -501,6 +501,27 @@ PageBase {
             case Qt.Key_End: return "End";
             case Qt.Key_PageUp: return "Page_Up";
             case Qt.Key_PageDown: return "Page_Down";
+            // Print/SysReq produce no event.text on Wayland, so they must be
+            // mapped explicitly or shortcut capture silently ignores them.
+            case Qt.Key_Print: return "Print";
+            case Qt.Key_SysReq: return "Print";
+            case Qt.Key_ScrollLock: return "Scroll_Lock";
+            case Qt.Key_Pause: return "Pause";
+            case Qt.Key_Insert: return "Insert";
+            case Qt.Key_Delete: return "Delete";
+            case Qt.Key_Menu: return "Menu";
+            case Qt.Key_F1: return "F1";
+            case Qt.Key_F2: return "F2";
+            case Qt.Key_F3: return "F3";
+            case Qt.Key_F4: return "F4";
+            case Qt.Key_F5: return "F5";
+            case Qt.Key_F6: return "F6";
+            case Qt.Key_F7: return "F7";
+            case Qt.Key_F8: return "F8";
+            case Qt.Key_F9: return "F9";
+            case Qt.Key_F10: return "F10";
+            case Qt.Key_F11: return "F11";
+            case Qt.Key_F12: return "F12";
             case Qt.Key_Comma: return "Comma";
             case Qt.Key_Less: return "Comma";
             case Qt.Key_Period: return "Period";
@@ -516,7 +537,10 @@ PageBase {
             case Qt.Key_Equal: return "Equal";
             case Qt.Key_Plus: return "Equal";
             }
-            return event.text ? event.text.toUpperCase() : "";
+            // Prefer nativeVirtualKey / key when text is empty (media/sys keys).
+            if (event.text && event.text.length > 0)
+                return event.text.toUpperCase();
+            return "";
         }
 
         function cancelRecording(): void {
