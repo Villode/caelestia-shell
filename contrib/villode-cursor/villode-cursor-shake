@@ -41,7 +41,21 @@ DEFAULTS = {
     "hotspot_x": 0.31,
     "hotspot_y": 0.12,
     "debug": 0,
+    # Runtime knobs (Nexus Mouse settings / shake.conf)
+    "enabled": 1,  # 0 = never auto-magnify (pulse still works)
+    "sensitivity": 0.35,  # 0=hard, 1=easy — scales detection thresholds
 }
+
+# Threshold keys softened when sensitivity is higher (and tightened when lower).
+_SENS_SCALE_KEYS = (
+    "min_path_px",
+    "min_stroke_px",
+    "min_amplitude_px",
+    "min_speed_px_s",
+    "min_ratio",
+    "activate_intensity",
+    "min_reversals",
+)
 
 
 def load_overrides(path: Path) -> dict:
@@ -65,6 +79,33 @@ def load_overrides(path: Path) -> dict:
                 out[key] = float(val)
         except ValueError:
             continue
+    return out
+
+
+def apply_sensitivity(cfg: dict) -> dict:
+    """Return a copy of cfg with detection thresholds scaled by sensitivity.
+
+    sensitivity 0.0 → ~1.35× harder thresholds (and higher activate_intensity)
+    sensitivity 0.5 → baseline (DEFAULTS / conf base values)
+    sensitivity 1.0 → ~0.65× easier thresholds
+    """
+    out = dict(cfg)
+    sens = max(0.0, min(1.0, float(out.get("sensitivity", 0.35))))
+    # Map 0..1 → scale 1.35..0.65 (lower scale = easier to trigger)
+    scale = 1.35 - sens * 0.70
+    base = {k: float(DEFAULTS[k]) for k in _SENS_SCALE_KEYS}
+    # Prefer conf absolute bases when present (already in out before scaling).
+    for key in _SENS_SCALE_KEYS:
+        raw = float(out.get(key, base[key]))
+        # Don't double-scale if caller already put conf values in out — treat
+        # conf values as the "medium" baseline at sens=0.5.
+        scaled = raw * scale / (1.35 - 0.5 * 0.70)  # normalize so sens=0.5 → raw
+        if key == "min_reversals":
+            out[key] = max(2, int(round(scaled)))
+        else:
+            out[key] = max(0.01, scaled)
+    out["enabled"] = 1 if int(out.get("enabled", 1)) else 0
+    out["sensitivity"] = sens
     return out
 
 
@@ -282,7 +323,7 @@ def ensure_svg(cfg: dict) -> Path:
     return dest
 
 
-def run_overlay(cfg: dict) -> int:
+def run_overlay(cfg: dict, conf_path: Path | None = None) -> int:
     import cairo
     import gi
 
@@ -296,7 +337,9 @@ def run_overlay(cfg: dict) -> int:
     pid_file = runtime / "villode-cursor-shake.pid"
     force_file = runtime / "villode-cursor-shake.force"
     log_path = Path("/tmp/villode-cursor-shake.log")
-    debug = bool(cfg.get("debug"))
+    conf_path = conf_path or (Path.home() / ".config" / "villode-cursor" / "shake.conf")
+    debug_flag = bool(cfg.get("debug"))
+    debug = debug_flag
 
     if pid_file.exists():
         try:
@@ -325,18 +368,18 @@ def run_overlay(cfg: dict) -> int:
         min_amplitude=float(cfg["min_amplitude_px"]),
         min_speed=float(cfg["min_speed_px_s"]),
     )
-    activate_intensity = float(cfg["activate_intensity"])
-    cooldown_s = float(cfg["cooldown_s"])
+    activate_intensity0 = float(cfg["activate_intensity"])
+    cooldown_s0 = float(cfg["cooldown_s"])
+    hold_s0 = float(cfg["hold_s"])
 
     base_px = float(cfg["base_px"])
-    max_scale = float(cfg["max_scale"])
-    grow_rate = float(cfg["grow_rate"])
-    shrink_rate = float(cfg["shrink_rate"])
-    hold_s = float(cfg["hold_s"])
+    max_scale0 = float(cfg["max_scale"])
+    grow_rate0 = float(cfg["grow_rate"])
+    shrink_rate0 = float(cfg["shrink_rate"])
     hot_nx = float(cfg["hotspot_x"])
     hot_ny = float(cfg["hotspot_y"])
     pad = 28  # shadow room
-    canvas = int(math.ceil(base_px * (max_scale + 0.25))) + pad * 2
+    canvas = int(math.ceil(base_px * (max_scale0 + 0.25))) + pad * 2
     interval_ms = max(8, int(round(1000.0 / max(60.0, float(cfg["poll_hz"])))))
 
     st = {
@@ -354,6 +397,15 @@ def run_overlay(cfg: dict) -> int:
         "last_log": 0.0,
         "idle_frames": 0,
         "rested_at": 0.0,  # cooldown after full rest
+        "enabled": int(cfg.get("enabled", 1)),
+        "activate_intensity": activate_intensity0,
+        "hold_s": hold_s0,
+        "cooldown_s": cooldown_s0,
+        "max_scale": max_scale0,
+        "grow_rate": grow_rate0,
+        "shrink_rate": shrink_rate0,
+        "cfg_mtime": 0.0,
+        "cfg_check_left": 0,
     }
 
     def log(msg: str) -> None:
@@ -491,8 +543,51 @@ def run_overlay(cfg: dict) -> int:
             win.hide()
             st["visible"] = False
 
+    def reload_live_cfg() -> None:
+        """Hot-reload enabled / sensitivity / thresholds from shake.conf."""
+        try:
+            mtime = conf_path.stat().st_mtime if conf_path.is_file() else 0.0
+        except OSError:
+            mtime = 0.0
+        if mtime and mtime == st.get("cfg_mtime"):
+            return
+        st["cfg_mtime"] = mtime
+        fresh = dict(DEFAULTS)
+        fresh.update(load_overrides(conf_path))
+        if debug_flag:
+            fresh["debug"] = 1
+        fresh = apply_sensitivity(fresh)
+        st["cfg"] = fresh
+        # Rebuild detector thresholds without dropping samples mid-shake.
+        detector.window_s = float(fresh["window_s"])
+        detector.min_path = float(fresh["min_path_px"])
+        detector.min_reversals = int(fresh["min_reversals"])
+        detector.min_ratio = float(fresh["min_ratio"])
+        detector.min_stroke = float(fresh["min_stroke_px"])
+        detector.min_amplitude = float(fresh["min_amplitude_px"])
+        detector.min_speed = float(fresh["min_speed_px_s"])
+        st["activate_intensity"] = float(fresh["activate_intensity"])
+        st["enabled"] = int(fresh.get("enabled", 1))
+        st["hold_s"] = float(fresh["hold_s"])
+        st["cooldown_s"] = float(fresh["cooldown_s"])
+        st["max_scale"] = float(fresh["max_scale"])
+        st["grow_rate"] = float(fresh["grow_rate"])
+        st["shrink_rate"] = float(fresh["shrink_rate"])
+        if debug_flag or fresh.get("debug"):
+            log(
+                f"reload enabled={st['enabled']} sens={fresh['sensitivity']:.2f} "
+                f"act={st['activate_intensity']:.2f} path={detector.min_path:.0f}"
+            )
+
     def tick() -> bool:
         try:
+            # Cheap: only re-read conf when mtime changes.
+            if st.get("cfg_check_left", 0) <= 0:
+                reload_live_cfg()
+                st["cfg_check_left"] = 15  # ~ every 15 ticks
+            else:
+                st["cfg_check_left"] -= 1
+
             t = time.monotonic()
             dt = min(0.05, max(0.001, t - st["last_t"]))
             st["last_t"] = t
@@ -505,7 +600,17 @@ def run_overlay(cfg: dict) -> int:
             st["cx"], st["cy"] = cx, cy
 
             force = read_force()
-            intensity = detector.update(t, cx, cy)
+            # When disabled, skip detection (pulse/--force still works).
+            if st.get("enabled", 1):
+                intensity = detector.update(t, cx, cy)
+            else:
+                intensity = 0.0
+            activate_intensity = float(st.get("activate_intensity", activate_intensity0))
+            hold_s = float(st.get("hold_s", hold_s0))
+            cooldown_s = float(st.get("cooldown_s", cooldown_s0))
+            max_scale = float(st.get("max_scale", max_scale0))
+            grow_rate = float(st.get("grow_rate", grow_rate0))
+            shrink_rate = float(st.get("shrink_rate", shrink_rate0))
             magnified = st["scale"] > 1.08
             in_cooldown = (t - st["rested_at"]) < cooldown_s and st["rested_at"] > 0
 
@@ -598,7 +703,10 @@ def run_overlay(cfg: dict) -> int:
 
     # Steady poll for shake detection (overlay hidden while idle → cheap)
     GLib.timeout_add(interval_ms, tick)
-    log(f"started small-overlay canvas={canvas} max_scale={max_scale}")
+    log(
+        f"started small-overlay canvas={canvas} max_scale={max_scale0} "
+        f"enabled={st['enabled']} sens={cfg.get('sensitivity', 0.35)}"
+    )
     Gtk.main()
     cleanup()
     return 0
@@ -619,6 +727,7 @@ def main() -> int:
     cfg.update(load_overrides(args.config))
     if args.debug:
         cfg["debug"] = 1
+    cfg = apply_sensitivity(cfg)
 
     runtime = Path(os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}"))
     force_file = runtime / "villode-cursor-shake.force"
@@ -631,7 +740,7 @@ def main() -> int:
             return 1
         return 0
 
-    return run_overlay(cfg)
+    return run_overlay(cfg, conf_path=args.config)
 
 
 if __name__ == "__main__":

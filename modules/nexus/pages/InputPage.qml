@@ -121,6 +121,122 @@ PageBase {
             }
         }
 
+        // —— 指针放大（晃动查找）——
+        SectionHeader {
+            text: qsTr("Pointer magnifier")
+        }
+
+        ToggleRow {
+            first: true
+            text: qsTr("Shake to enlarge pointer")
+            subtext: qsTr("Shake the mouse vigorously to temporarily magnify the cursor (macOS-style)")
+            checked: PointerDevices.shakeEnabled
+            enabled: !PointerDevices.busy
+            onToggled: PointerDevices.setShakeEnabled(checked)
+        }
+
+        SliderRow {
+            last: true
+            icon: "gesture"
+            label: qsTr("Shake sensitivity")
+            valueLabel: {
+                const s = PointerDevices.shakeSensitivity;
+                if (s < 0.25)
+                    return qsTr("Low · %1").arg(s.toFixed(2));
+                if (s > 0.7)
+                    return qsTr("High · %1").arg(s.toFixed(2));
+                return qsTr("Medium · %1").arg(s.toFixed(2));
+            }
+            value: PointerDevices.shakeSensitivity
+            enabled: !PointerDevices.busy && PointerDevices.shakeEnabled
+            onMoved: v => PointerDevices.setShakeSensitivity(v)
+        }
+
+        ConnectedRect {
+            Layout.fillWidth: true
+            Layout.topMargin: Tokens.spacing.small
+            first: true
+            last: true
+            implicitHeight: shakeHint.implicitHeight + Tokens.padding.medium * 2
+
+            StyledText {
+                id: shakeHint
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.leftMargin: Tokens.padding.largeIncreased
+                anchors.rightMargin: Tokens.padding.largeIncreased
+                text: qsTr("Manual pulse: Super+Shift+C. Lower sensitivity needs a stronger shake.")
+                color: Colours.palette.m3outline
+                font: Tokens.font.label.small
+                wrapMode: Text.WordWrap
+            }
+        }
+
+        // —— 点击与长按 ——
+        SectionHeader {
+            text: qsTr("Click & long-press")
+        }
+
+        SliderRow {
+            first: true
+            icon: "ads_click"
+            label: qsTr("Double-click interval")
+            valueLabel: `${PointerDevices.doubleClickMs} ms`
+            value: Math.min(1, Math.max(0, (PointerDevices.doubleClickMs - 200) / 800))
+            enabled: !PointerDevices.busy
+            onMoved: v => PointerDevices.setDoubleClickMs(200 + Math.round(v * 800))
+        }
+
+        SliderRow {
+            icon: "touch_app"
+            label: qsTr("Long-press threshold")
+            valueLabel: `${PointerDevices.longPressMs} ms`
+            value: Math.min(1, Math.max(0, (PointerDevices.longPressMs - 100) / 500))
+            enabled: !PointerDevices.busy
+            onMoved: v => PointerDevices.setLongPressMs(100 + Math.round(v * 500))
+        }
+
+        SliderRow {
+            icon: "timer"
+            label: qsTr("Click cooldown (anti-bounce)")
+            valueLabel: `${PointerDevices.clickGuardMs} ms`
+            value: Math.min(1, Math.max(0, PointerDevices.clickGuardMs / 500))
+            enabled: !PointerDevices.busy
+            onMoved: v => PointerDevices.setClickGuardMs(Math.round(v * 500))
+        }
+
+        SliderRow {
+            last: true
+            icon: "open_with"
+            label: qsTr("Drag start distance")
+            valueLabel: `${PointerDevices.dragArmPx} px`
+            value: Math.min(1, Math.max(0, (PointerDevices.dragArmPx - 2) / 28))
+            enabled: !PointerDevices.busy
+            onMoved: v => PointerDevices.setDragArmPx(2 + Math.round(v * 28))
+        }
+
+        ConnectedRect {
+            Layout.fillWidth: true
+            Layout.topMargin: Tokens.spacing.small
+            first: true
+            last: true
+            implicitHeight: clickHint.implicitHeight + Tokens.padding.medium * 2
+
+            StyledText {
+                id: clickHint
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.leftMargin: Tokens.padding.largeIncreased
+                anchors.rightMargin: Tokens.padding.largeIncreased
+                text: qsTr("Double-click interval applies to GTK/Qt apps. Long-press, cooldown and drag distance apply to Dock and Launcher.")
+                color: Colours.palette.m3outline
+                font: Tokens.font.label.small
+                wrapMode: Text.WordWrap
+            }
+        }
+
         // —— 侧键映射（按键录制）——
         SectionHeader {
             text: qsTr("Side-button mapping")

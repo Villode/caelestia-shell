@@ -2028,6 +2028,62 @@
             <translation>已检测鼠标：%1</translation>
         </message>
         <message>
+            <source>Pointer magnifier</source>
+            <translation>指针放大</translation>
+        </message>
+        <message>
+            <source>Shake to enlarge pointer</source>
+            <translation>晃动放大指针</translation>
+        </message>
+        <message>
+            <source>Shake the mouse vigorously to temporarily magnify the cursor (macOS-style)</source>
+            <translation>用力快速晃动鼠标，可暂时放大指针（类似 macOS 查找指针）</translation>
+        </message>
+        <message>
+            <source>Shake sensitivity</source>
+            <translation>晃动灵敏度</translation>
+        </message>
+        <message>
+            <source>Low · %1</source>
+            <translation>低 · %1</translation>
+        </message>
+        <message>
+            <source>High · %1</source>
+            <translation>高 · %1</translation>
+        </message>
+        <message>
+            <source>Medium · %1</source>
+            <translation>中 · %1</translation>
+        </message>
+        <message>
+            <source>Manual pulse: Super+Shift+C. Lower sensitivity needs a stronger shake.</source>
+            <translation>手动触发：Super+Shift+C。灵敏度越低，需要晃得越用力。</translation>
+        </message>
+        <message>
+            <source>Click &amp; long-press</source>
+            <translation>点击与长按</translation>
+        </message>
+        <message>
+            <source>Double-click interval</source>
+            <translation>双击间隔</translation>
+        </message>
+        <message>
+            <source>Long-press threshold</source>
+            <translation>长按阈值</translation>
+        </message>
+        <message>
+            <source>Click cooldown (anti-bounce)</source>
+            <translation>点击冷却（防连点）</translation>
+        </message>
+        <message>
+            <source>Drag start distance</source>
+            <translation>拖动启动距离</translation>
+        </message>
+        <message>
+            <source>Double-click interval applies to GTK/Qt apps. Long-press, cooldown and drag distance apply to Dock and Launcher.</source>
+            <translation>双击间隔作用于 GTK/Qt 应用。长按、点击冷却与拖动距离作用于 Dock 和启动台。</translation>
+        </message>
+        <message>
             <location line="+9" />
             <source>Side-button mapping</source>
             <translation>侧键映射</translation>

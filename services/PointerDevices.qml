@@ -34,6 +34,20 @@ Singleton {
     // accel_profile flat vs adaptive
     property bool flatAccel: false
 
+    // —— Click / long-press (shared by Dock, Launcher, gsettings/qt6ct) ——
+    // doubleClickMs: system double-click interval (GTK/Qt)
+    property int doubleClickMs: 550
+    // longPressMs: hold before drag is allowed (Dock / Launcher)
+    property int longPressMs: 250
+    // clickGuardMs: ignore re-press after a successful click (bounce guard)
+    property int clickGuardMs: 220
+    // dragArmPx: movement after long-press to start reorder drag
+    property int dragArmPx: 10
+    // —— Shake-to-find pointer magnifier (villode-cursor-shake) ——
+    property bool shakeEnabled: true
+    // 0.0 = hard to trigger, 1.0 = easy
+    property real shakeSensitivity: 0.30
+
     readonly property int btnMiddle: 274
 
     // Flexible mappings: [{ key: "mouse:275"|"XF86Back"|..., action: "browser_back" }]
@@ -209,6 +223,120 @@ Singleton {
         flatAccel = enabled;
         applyMouseLive();
         scheduleMousePersist();
+    }
+
+    function clampInt(v: real, lo: int, hi: int): int {
+        return Math.min(hi, Math.max(lo, Math.round(Number(v) || 0)));
+    }
+
+    function setDoubleClickMs(v: int): void {
+        doubleClickMs = clampInt(v, 200, 1000);
+        applyClickSettingsLive();
+        scheduleMousePersist();
+    }
+
+    function setLongPressMs(v: int): void {
+        longPressMs = clampInt(v, 100, 600);
+        applyClickSettingsLive();
+        scheduleMousePersist();
+    }
+
+    function setClickGuardMs(v: int): void {
+        clickGuardMs = clampInt(v, 0, 500);
+        applyClickSettingsLive();
+        scheduleMousePersist();
+    }
+
+    function setDragArmPx(v: int): void {
+        dragArmPx = clampInt(v, 2, 30);
+        applyClickSettingsLive();
+        scheduleMousePersist();
+    }
+
+    function clampShakeSensitivity(v: real): real {
+        return Math.min(1.0, Math.max(0.0, Math.round(Number(v) * 100) / 100));
+    }
+
+    function setShakeEnabled(enabled: bool): void {
+        shakeEnabled = enabled;
+        applyClickSettingsLive();
+        scheduleMousePersist();
+    }
+
+    function setShakeSensitivity(v: real): void {
+        shakeSensitivity = clampShakeSensitivity(v);
+        applyClickSettingsLive();
+        scheduleMousePersist();
+    }
+
+    // Push double-click to GTK/Qt; write shake.conf for cursor magnifier.
+    function applyClickSettingsLive(): void {
+        const ms = doubleClickMs;
+        const en = shakeEnabled ? 1 : 0;
+        const sens = shakeSensitivity.toFixed(2);
+        clickApplyProc.command = ["bash", "-lc", `
+gsettings set org.gnome.desktop.peripherals.mouse double-click ${ms} 2>/dev/null || true
+gsettings set org.gnome.desktop.interface double-click-time ${ms} 2>/dev/null || true
+qtconf="\${XDG_CONFIG_HOME:-\$HOME/.config}/qt6ct/qt6ct.conf"
+if [[ -f "\$qtconf" ]]; then
+  if grep -q '^double_click_interval=' "\$qtconf" 2>/dev/null; then
+    sed -i "s/^double_click_interval=.*/double_click_interval=${ms}/" "\$qtconf"
+  else
+    printf '\\ndouble_click_interval=${ms}\\n' >> "\$qtconf"
+  fi
+fi
+# Shake-to-find conf (hot-reloaded by villode-cursor-shake)
+shake_dir="\${XDG_CONFIG_HOME:-\$HOME/.config}/villode-cursor"
+mkdir -p "\$shake_dir"
+shake_conf="\$shake_dir/shake.conf"
+if [[ ! -f "\$shake_conf" ]]; then
+  cat > "\$shake_conf" <<'EOF'
+# Managed by Villode Nexus — Mouse settings
+poll_hz = 90
+window_s = 0.65
+min_path_px = 380
+min_reversals = 5
+min_stroke_px = 95
+min_amplitude_px = 110
+min_speed_px_s = 900
+min_ratio = 3.6
+activate_intensity = 0.70
+base_px = 34
+max_scale = 3.8
+grow_rate = 16
+shrink_rate = 8
+hold_s = 0.50
+cooldown_s = 0.55
+hotspot_x = 0.31
+hotspot_y = 0.12
+theme_svg = \$HOME/.local/share/villode-cursor/left_ptr.svg
+debug = 0
+EOF
+fi
+# Upsert enabled / sensitivity without rewriting the whole file when possible
+if grep -q '^enabled[[:space:]]*=' "\$shake_conf" 2>/dev/null; then
+  sed -i "s/^enabled[[:space:]]*=.*/enabled = ${en}/" "\$shake_conf"
+else
+  printf '\\nenabled = ${en}\\n' >> "\$shake_conf"
+fi
+if grep -q '^sensitivity[[:space:]]*=' "\$shake_conf" 2>/dev/null; then
+  sed -i "s/^sensitivity[[:space:]]*=.*/sensitivity = ${sens}/" "\$shake_conf"
+else
+  printf 'sensitivity = ${sens}\\n' >> "\$shake_conf"
+fi
+# Ensure daemon is running when enabled (ignore if already up)
+if [[ ${en} -eq 1 ]]; then
+  if ! pgrep -f 'python3 .*/villode-cursor-shake' >/dev/null 2>&1 \\
+     && ! pgrep -x -f 'villode-cursor-shake' >/dev/null 2>&1; then
+    if command -v villode-cursor-shake >/dev/null 2>&1; then
+      nohup villode-cursor-shake >/tmp/villode-cursor-shake.log 2>&1 &
+    elif [[ -x "\$HOME/.local/bin/villode-cursor-shake" ]]; then
+      nohup "\$HOME/.local/bin/villode-cursor-shake" >/tmp/villode-cursor-shake.log 2>&1 &
+    fi
+  fi
+fi
+`];
+        clickApplyProc.running = true;
     }
 
     function actionLabel(actionId: string): string {
@@ -719,6 +847,12 @@ exit \${PIPESTATUS[0]}
             middleScroll: middleScroll,
             middleScrollLock: middleScrollLock,
             flatAccel: flatAccel,
+            doubleClickMs: doubleClickMs,
+            longPressMs: longPressMs,
+            clickGuardMs: clickGuardMs,
+            dragArmPx: dragArmPx,
+            shakeEnabled: shakeEnabled,
+            shakeSensitivity: shakeSensitivity,
             buttonMaps: buttonMaps
         }, null, 2) + "\n";
     }
@@ -856,6 +990,18 @@ exit \${PIPESTATUS[0]}
                 middleScrollLock = data.middleScrollLock;
             if (typeof data.flatAccel === "boolean")
                 flatAccel = data.flatAccel;
+            if (typeof data.doubleClickMs === "number")
+                doubleClickMs = clampInt(data.doubleClickMs, 200, 1000);
+            if (typeof data.longPressMs === "number")
+                longPressMs = clampInt(data.longPressMs, 100, 600);
+            if (typeof data.clickGuardMs === "number")
+                clickGuardMs = clampInt(data.clickGuardMs, 0, 500);
+            if (typeof data.dragArmPx === "number")
+                dragArmPx = clampInt(data.dragArmPx, 2, 30);
+            if (typeof data.shakeEnabled === "boolean")
+                shakeEnabled = data.shakeEnabled;
+            if (typeof data.shakeSensitivity === "number")
+                shakeSensitivity = clampShakeSensitivity(data.shakeSensitivity);
             // New format
             if (Array.isArray(data.buttonMaps)) {
                 const maps = [];
@@ -918,10 +1064,16 @@ exit \${PIPESTATUS[0]}
             Qt.callLater(() => {
                 applyMouseLive();
                 applySideBindsLive();
+                applyClickSettingsLive();
             }, 200);
         } catch (e) {
             // keep defaults
         }
+    }
+
+    Process {
+        id: clickApplyProc
+        // fire-and-forget gsettings / qt6ct double-click updates
     }
 
     Component.onCompleted: {
