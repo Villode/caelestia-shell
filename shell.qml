@@ -4,6 +4,7 @@ import "modules"
 import "modules/drawers"
 import "modules/background"
 import "modules/areapicker"
+import "modules/filemanager"
 import "modules/lock"
 import "services"
 import QtQuick
@@ -22,6 +23,8 @@ ShellRoot {
     Background {}
     Drawers {}
     AreaPicker {}
+    FileManager {}
+    PortalPicker {}
     Lock {
         id: lock
     }
