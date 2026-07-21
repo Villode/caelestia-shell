@@ -102,6 +102,7 @@ Item {
 
     property string dropHoverPath: ""
     property bool dropHoverActive: false
+    property bool dragVisualActive: false
 
     function humanSize(bytes: real): string {
         if (bytes < 1024)
@@ -366,15 +367,21 @@ Item {
         }
     }
 
-    // Drag proxy for internal/external DnD (press item + move)
+    // Drag source + on-cursor ghost (file icon / name / multi-count)
     Item {
         id: dragProxy
-        width: 1
-        height: 1
-        visible: false
+        width: ghostCard.implicitWidth
+        height: ghostCard.implicitHeight
+        visible: root.dragVisualActive
+        z: 200
+        opacity: root.dragVisualActive ? 0.92 : 0
         property string path: ""
         property string name: ""
         property var paths: []
+        property bool isDir: false
+        property bool isImage: false
+        property string iconSource: ""
+        readonly property int count: (paths && paths.length) ? paths.length : (path ? 1 : 0)
         readonly property string uriList: {
             const list = (paths && paths.length) ? paths : (path ? [path] : []);
             let s = "";
@@ -397,6 +404,7 @@ Item {
             }
             return s;
         }
+
         Drag.dragType: Drag.Automatic
         Drag.mimeData: ({
             "text/uri-list": uriList,
@@ -404,8 +412,74 @@ Item {
         })
         Drag.proposedAction: Qt.CopyAction
         Drag.supportedActions: Qt.CopyAction | Qt.MoveAction
-        Drag.hotSpot.x: 0
-        Drag.hotSpot.y: 0
+        Drag.hotSpot.x: 28
+        Drag.hotSpot.y: 28
+
+        StyledRect {
+            id: ghostCard
+            anchors.left: parent.left
+            anchors.top: parent.top
+            implicitWidth: Math.min(220, ghostRow.implicitWidth + Tokens.padding.medium * 2)
+            implicitHeight: ghostRow.implicitHeight + Tokens.padding.small * 2
+            radius: Tokens.rounding.large
+            color: Colours.palette.m3surfaceContainerHigh
+            border.width: 1
+            border.color: Colours.palette.m3outlineVariant
+            // Soft lift
+            layer.enabled: true
+
+            RowLayout {
+                id: ghostRow
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.margins: Tokens.padding.small
+                spacing: Tokens.spacing.small
+
+                CachingIconImage {
+                    id: ghostIcon
+                    implicitSize: 36
+                    source: dragProxy.iconSource
+                }
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 2
+                    StyledText {
+                        Layout.fillWidth: true
+                        text: dragProxy.name
+                        elide: Text.ElideMiddle
+                        color: Colours.palette.m3onSurface
+                        font: Tokens.font.body.builders.small.weight(Font.Medium).build()
+                    }
+                    StyledText {
+                        visible: dragProxy.count > 1
+                        text: qsTr("%1 项").arg(dragProxy.count)
+                        color: Colours.palette.m3onSurfaceVariant
+                        font: Tokens.font.body.builders.small.scale(0.85).build()
+                    }
+                }
+            }
+
+            // Multi-select badge
+            Rectangle {
+                visible: dragProxy.count > 1
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.margins: -6
+                width: badgeTxt.implicitWidth + 10
+                height: badgeTxt.implicitHeight + 4
+                radius: height / 2
+                color: Colours.palette.m3primary
+                StyledText {
+                    id: badgeTxt
+                    anchors.centerIn: parent
+                    text: String(dragProxy.count)
+                    color: Colours.palette.m3onPrimary
+                    font: Tokens.font.body.builders.small.scale(0.85).weight(Font.Bold).build()
+                }
+            }
+        }
     }
 
     // Rubber-band multi-select (coords are local to `input` MouseArea)
@@ -511,18 +585,19 @@ Item {
         }
     }
 
-    // Soft highlight when dragging files over a folder / pane
+    // Subtle pane hint only while DnD active over this view (not a solid full-window frame)
     Rectangle {
         id: dropGlow
         anchors.fill: parent
         anchors.margins: Tokens.padding.extraSmall
         z: 34
         radius: Tokens.rounding.medium
-        visible: root.dropHoverActive
-        color: Qt.alpha(Colours.palette.m3primary, 0.08)
-        border.width: 2
-        border.color: Colours.palette.m3primary
-        opacity: root.dropHoverActive ? 1 : 0
+        // Only show when drop target is current folder (not a subfolder — those highlight on the tile)
+        visible: root.dropHoverActive && root.dropHoverPath === root.state.cwdPath()
+        color: Qt.alpha(Colours.palette.m3primary, 0.04)
+        border.width: 1
+        border.color: Qt.alpha(Colours.palette.m3primary, 0.35)
+        opacity: visible ? 1 : 0
         Behavior on opacity { Anim { type: Anim.DefaultEffects } }
     }
 
@@ -577,27 +652,34 @@ Item {
             // Drag selection if pressed item is part of it; otherwise only that item
             if (paths.indexOf(pressHit.modelData.path) < 0)
                 paths = [pressHit.modelData.path];
-            dragProxy.path = paths[0] || pressHit.modelData.path;
-            dragProxy.name = pressHit.modelData.name;
+            const md = pressHit.modelData;
+            dragProxy.path = paths[0] || md.path;
+            dragProxy.name = md.name;
             dragProxy.paths = paths;
+            dragProxy.isDir = !!md.isDir;
+            dragProxy.isImage = !!md.isImage;
+            if (md.isImage)
+                dragProxy.iconSource = Qt.resolvedUrl(md.path);
+            else
+                dragProxy.iconSource = root.iconFor(md);
             if (paths.length > 1)
                 root.state.statusText = qsTr("拖动 %1 项…").arg(paths.length);
-            else if (pressHit.modelData.isDir)
-                root.state.statusText = qsTr("拖到文件夹放置，或拖到侧栏固定：%1").arg(pressHit.modelData.name);
+            else if (md.isDir)
+                root.state.statusText = qsTr("拖到文件夹放置，或拖到侧栏固定：%1").arg(md.name);
             else
-                root.state.statusText = qsTr("拖动：%1").arg(pressHit.modelData.name);
+                root.state.statusText = qsTr("拖动：%1").arg(md.name);
         }
 
         function beginDragAt(mx: real, my: real): void {
             if (!dragArmed || !dragProxy.path.length || dragProxy.Drag.active)
                 return;
-            // Map input-local point into dragProxy parent (root) coords
+            // Map input-local point into dragProxy parent (root) coords; offset so card sits under cursor
             const p = input.mapToItem(dragProxy.parent, mx, my);
-            dragProxy.x = p.x;
-            dragProxy.y = p.y;
-            dragProxy.Drag.hotSpot.x = 0;
-            dragProxy.Drag.hotSpot.y = 0;
-            // Manual DnD start (Automatic type still needs active=true)
+            dragProxy.Drag.hotSpot.x = 28;
+            dragProxy.Drag.hotSpot.y = 28;
+            dragProxy.x = p.x - dragProxy.Drag.hotSpot.x;
+            dragProxy.y = p.y - dragProxy.Drag.hotSpot.y;
+            root.dragVisualActive = true;
             dragProxy.Drag.active = true;
             try {
                 dragProxy.Drag.start(Qt.CopyAction | Qt.MoveAction);
@@ -642,8 +724,8 @@ Item {
                     beginDragAt(mouse.x, mouse.y);
                 else {
                     const p = input.mapToItem(dragProxy.parent, mouse.x, mouse.y);
-                    dragProxy.x = p.x;
-                    dragProxy.y = p.y;
+                    dragProxy.x = p.x - dragProxy.Drag.hotSpot.x;
+                    dragProxy.y = p.y - dragProxy.Drag.hotSpot.y;
                 }
                 if (dragProxy.Drag.active)
                     return;
@@ -685,12 +767,16 @@ Item {
                     dragProxy.Drag.drop();
                 dragProxy.Drag.active = false;
             }
+            root.dragVisualActive = false;
             dragArmed = false;
             marqueeArmed = false;
             pressHit = null;
             dragProxy.path = "";
             dragProxy.name = "";
             dragProxy.paths = [];
+            dragProxy.iconSource = "";
+            dragProxy.isDir = false;
+            dragProxy.isImage = false;
         }
         onClicked: mouse => {
             if (moved || dragProxy.Drag.active)
@@ -749,8 +835,13 @@ Item {
         implicitHeight: nonAnimHeight
         radius: Tokens.rounding.large
         opacity: isCut ? 0.42 : 1
-        color: Qt.alpha(Colours.tPalette.m3surfaceContainerHighest, (GridView.isCurrentItem || isSelected) ? Colours.tPalette.m3surfaceContainerHighest.a : 0)
-        z: GridView.isCurrentItem || isSelected || implicitHeight !== nonAnimHeight ? 1 : 0
+        readonly property bool isDropTarget: !!(modelData && modelData.isDir && root.dropHoverActive && root.dropHoverPath === modelData.path)
+        color: isDropTarget
+            ? Qt.alpha(Colours.palette.m3primary, 0.18)
+            : Qt.alpha(Colours.tPalette.m3surfaceContainerHighest, (GridView.isCurrentItem || isSelected) ? Colours.tPalette.m3surfaceContainerHighest.a : 0)
+        border.width: isDropTarget ? 2 : 0
+        border.color: Colours.palette.m3primary
+        z: GridView.isCurrentItem || isSelected || isDropTarget || implicitHeight !== nonAnimHeight ? 1 : 0
         clip: true
 
         // Drag for pinning dirs
@@ -850,7 +941,12 @@ Item {
         implicitHeight: 40
         radius: Tokens.rounding.medium
         opacity: isCut ? 0.42 : 1
-        color: Qt.alpha(Colours.tPalette.m3surfaceContainerHighest, (ListView.isCurrentItem || isSelected) ? Colours.tPalette.m3surfaceContainerHighest.a : 0)
+        readonly property bool isDropTarget: !!(modelData && modelData.isDir && root.dropHoverActive && root.dropHoverPath === modelData.path)
+        color: isDropTarget
+            ? Qt.alpha(Colours.palette.m3primary, 0.18)
+            : Qt.alpha(Colours.tPalette.m3surfaceContainerHighest, (ListView.isCurrentItem || isSelected) ? Colours.tPalette.m3surfaceContainerHighest.a : 0)
+        border.width: isDropTarget ? 2 : 0
+        border.color: Colours.palette.m3primary
 
         Behavior on opacity {
             Anim { type: Anim.DefaultEffects }
