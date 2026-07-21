@@ -999,15 +999,16 @@ Item {
         id: item
 
         required property int index
-        // ListModel roles (sorted view)
-        property string path: ""
-        property string name: ""
-        property bool isDir: false
-        property bool isImage: false
-        property real size: 0
-        property string mimeType: ""
-        property string suffix: ""
-        property string baseName: ""
+        // ListModel roles — must be required so Qt binds them from the model
+        required property string path
+        required property string name
+        required property bool isDir
+        required property bool isImage
+        required property var size
+        required property string mimeType
+        required property string suffix
+        required property string baseName
+
         readonly property var modelData: ({
             path: path,
             name: name,
@@ -1074,11 +1075,14 @@ Item {
             anchors.topMargin: Tokens.padding.medium
             implicitSize: root.itemWidth - Tokens.padding.medium * 2
             opacity: item.isCut ? 0.85 : 1
-            Component.onCompleted: {
-                if (item.modelData.isImage)
-                    source = Qt.resolvedUrl(item.modelData.path);
-                else
-                    source = root.iconFor(item.modelData);
+            // Reactive: roles change when delegate is recycled
+            source: {
+                const d = item.modelData;
+                if (!d || !d.path)
+                    return "";
+                if (d.isImage)
+                    return Qt.resolvedUrl(d.path);
+                return root.iconFor(d);
             }
         }
 
@@ -1106,14 +1110,15 @@ Item {
         id: row
 
         required property int index
-        property string path: ""
-        property string name: ""
-        property bool isDir: false
-        property bool isImage: false
-        property real size: 0
-        property string mimeType: ""
-        property string suffix: ""
-        property string baseName: ""
+        required property string path
+        required property string name
+        required property bool isDir
+        required property bool isImage
+        required property var size
+        required property string mimeType
+        required property string suffix
+        required property string baseName
+
         readonly property var modelData: ({
             path: path,
             name: name,
@@ -1157,13 +1162,13 @@ Item {
 
             CachingIconImage {
                 implicitSize: 24
-                Component.onCompleted: {
-                    if (!row.modelData)
-                        return;
-                    if (row.modelData.isImage)
-                        source = Qt.resolvedUrl(row.modelData.path);
-                    else
-                        source = root.iconFor(row.modelData);
+                source: {
+                    const d = row.modelData;
+                    if (!d || !d.path)
+                        return "";
+                    if (d.isImage)
+                        return Qt.resolvedUrl(d.path);
+                    return root.iconFor(d);
                 }
             }
 
