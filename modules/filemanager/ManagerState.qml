@@ -14,6 +14,12 @@ QtObject {
     property list<string> clipboardPaths: []
     property string statusText: qsTr("就绪")
     property string nameFilter: ""
+    // "local" = current folder filter; "global" = recursive find under home
+    property string searchScope: "local"
+    property bool globalSearchBusy: false
+    property string globalSearchQuery: ""
+    // [{ path, name, parent, isDir }]
+    property var globalResults: []
     property int refreshNonce: 0
     // Binding-friendly filters for FileSystemModel.
     // Use ["*"] (not []) for "show all" so QML/C++ empty-list edge cases cannot stick.
@@ -187,7 +193,7 @@ QtObject {
     function navigateToThisPC(): void {
         cwd = ["ThisPC"];
         selection = [];
-        nameFilter = "";
+        resetSearchOnNavigate();
         statusText = qsTr("此电脑");
         bumpRefresh();
     }
@@ -206,7 +212,7 @@ QtObject {
         else
             cwd = ["Home", place];
         selection = [];
-        nameFilter = "";
+        resetSearchOnNavigate();
         statusText = displayPath();
         bumpRefresh();
     }
@@ -224,7 +230,7 @@ QtObject {
             return;
         cwd = cwd.concat([name]);
         selection = [];
-        nameFilter = "";
+        resetSearchOnNavigate();
         statusText = displayPath();
     }
 
@@ -241,7 +247,7 @@ QtObject {
             cwd = ["ThisPC"];
         }
         selection = [];
-        nameFilter = "";
+        resetSearchOnNavigate();
         statusText = isThisPC ? qsTr("此电脑") : displayPath();
         bumpRefresh();
     }
@@ -254,7 +260,7 @@ QtObject {
         if (cwd.length === 1 && cwd[0] === "Phone")
             cwd = ["ThisPC"];
         selection = [];
-        nameFilter = "";
+        resetSearchOnNavigate();
         statusText = isThisPC ? qsTr("此电脑") : displayPath();
         bumpRefresh();
     }
@@ -308,7 +314,7 @@ QtObject {
             cwd = ["Home"].concat(path.split("/").filter(s => s.length > 0));
         }
         selection = [];
-        nameFilter = "";
+        resetSearchOnNavigate();
         statusText = displayPath();
         bumpRefresh();
     }
@@ -410,10 +416,56 @@ QtObject {
         return ["*" + escaped + "*"];
     }
 
+    function setSearchScope(scope: string): void {
+        const s = scope === "global" ? "global" : "local";
+        if (searchScope === s)
+            return;
+        searchScope = s;
+        if (s === "local") {
+            globalResults = [];
+            globalSearchBusy = false;
+            globalSearchQuery = "";
+            if (nameFilter.length)
+                statusText = qsTr("搜索：%1").arg(nameFilter);
+            else
+                statusText = qsTr("就绪");
+            bumpRefresh();
+        } else {
+            // Entering global: clear local filter effect on folder view
+            statusText = qsTr("全局搜索");
+        }
+    }
+
+    function toggleSearchScope(): void {
+        setSearchScope(searchScope === "global" ? "local" : "global");
+    }
+
+    function setGlobalResults(list: var, query: string, busy: bool): void {
+        globalResults = list || [];
+        globalSearchQuery = query || "";
+        globalSearchBusy = !!busy;
+        if (busy)
+            statusText = qsTr("正在全局搜索…");
+        else if ((query || "").length)
+            statusText = qsTr("全局：%1 · %2 项").arg(query).arg(globalResults.length);
+        else
+            statusText = qsTr("全局搜索");
+    }
+
     function setNameFilter(q: string): void {
         const next = q || "";
         const prev = nameFilter;
         nameFilter = next;
+        if (searchScope === "global") {
+            // Folder filter not applied; global search driven by toolbar
+            if (!next.length) {
+                globalResults = [];
+                globalSearchQuery = "";
+                globalSearchBusy = false;
+                statusText = qsTr("全局搜索");
+            }
+            return;
+        }
         if (nameFilter.length)
             statusText = qsTr("搜索：%1").arg(nameFilter);
         else
@@ -423,13 +475,26 @@ QtObject {
             bumpRefresh();
     }
 
-    function clearNameFilter(): void {
-        if (!nameFilter.length) {
-            statusText = qsTr("就绪");
-            bumpRefresh();
-            return;
+    function resetSearchOnNavigate(): void {
+        // Leaving folder context → drop global mode and filter
+        if (searchScope === "global") {
+            searchScope = "local";
+            globalResults = [];
+            globalSearchBusy = false;
+            globalSearchQuery = "";
         }
         nameFilter = "";
+    }
+
+    function clearNameFilter(): void {
+        nameFilter = "";
+        if (searchScope === "global") {
+            globalResults = [];
+            globalSearchQuery = "";
+            globalSearchBusy = false;
+            statusText = qsTr("全局搜索");
+            return;
+        }
         statusText = qsTr("就绪");
         bumpRefresh();
     }

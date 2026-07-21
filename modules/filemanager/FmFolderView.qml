@@ -311,6 +311,9 @@ Item {
         // Read nameFilter in this binding so clear/search always re-evaluates
         nameFilters: {
             const _ = root.state.nameFilter;
+            const scope = root.state.searchScope;
+            if (scope === "global")
+                return ["*"];
             return root.state.nameFiltersActive;
         }
         onPathChanged: {

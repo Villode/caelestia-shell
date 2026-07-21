@@ -240,7 +240,7 @@ FloatingWindow {
                     Layout.fillWidth: true
                     state: nState
                     actions: nActions
-                    visible: !nState.isThisPC
+                    visible: !nState.isThisPC || nState.searchScope === "global"
                     sortMenuOpen: sortOverlay.visible
                     onSortMenuOpenRequested: (x, y) => {
                         // x,y are bottom-right of sort button in toolbar coords
@@ -258,7 +258,7 @@ FloatingWindow {
                     FmThisPC {
                         id: thisPc
                         anchors.fill: parent
-                        visible: nState.isThisPC
+                        visible: nState.isThisPC && nState.searchScope !== "global"
                         state: nState
                         devices: nDevices
                         onOpenDevice: device => {
@@ -279,14 +279,21 @@ FloatingWindow {
                     FmFolderView {
                         id: folder
                         anchors.fill: parent
-                        visible: !nState.isThisPC
+                        visible: !nState.isThisPC && nState.searchScope !== "global"
                         state: nState
                         actions: nActions
                         onContextMenuRequested: (x, y, path, isDir, name) => {
-                            // Map into full-window chrome so menu can use status bar space and not clip
                             const p = folder.mapToItem(chrome, x, y);
                             ctx.openAt(p.x, p.y, path, isDir, name);
                         }
+                    }
+
+                    FmSearchResults {
+                        id: globalSearch
+                        anchors.fill: parent
+                        visible: nState.searchScope === "global"
+                        state: nState
+                        actions: nActions
                     }
                 }
 
