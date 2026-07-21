@@ -918,8 +918,10 @@ Item {
             anchors.margins: Tokens.padding.medium
             horizontalAlignment: Text.AlignHCenter
             text: root.state.displayName(item.modelData)
-            elide: (item.GridView.isCurrentItem || item.isSelected) ? Text.ElideNone : Text.ElideRight
+            // Keep tile height stable: always elide; at most 2 lines when focused/selected
             wrapMode: (item.GridView.isCurrentItem || item.isSelected) ? Text.WrapAtWordBoundaryOrAnywhere : Text.NoWrap
+            maximumLineCount: (item.GridView.isCurrentItem || item.isSelected) ? 2 : 1
+            elide: Text.ElideRight
         }
 
         Behavior on implicitHeight {
