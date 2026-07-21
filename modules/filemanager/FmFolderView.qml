@@ -366,7 +366,7 @@ Item {
         }
     }
 
-    // Drag proxy for pin-to-sidebar (folder long-press then move)
+    // Drag proxy for internal/external DnD (press item + move)
     Item {
         id: dragProxy
         width: 1
@@ -380,9 +380,11 @@ Item {
             let s = "";
             for (let i = 0; i < list.length; i++) {
                 if (i)
-                    s += "\n";
+                    s += "\r\n";
                 s += "file://" + list[i];
             }
+            if (list.length)
+                s += "\r\n";
             return s;
         }
         readonly property string plainList: {
@@ -565,6 +567,43 @@ Item {
         property var pressHit: null
         property int pressModifiers: 0
 
+        function armDragFromHit(): void {
+            if (!pressHit?.modelData)
+                return;
+            marqueeArmed = false;
+            root.marqueeActive = false;
+            dragArmed = true;
+            let paths = root.state.selection.slice();
+            // Drag selection if pressed item is part of it; otherwise only that item
+            if (paths.indexOf(pressHit.modelData.path) < 0)
+                paths = [pressHit.modelData.path];
+            dragProxy.path = paths[0] || pressHit.modelData.path;
+            dragProxy.name = pressHit.modelData.name;
+            dragProxy.paths = paths;
+            if (paths.length > 1)
+                root.state.statusText = qsTr("拖动 %1 项…").arg(paths.length);
+            else if (pressHit.modelData.isDir)
+                root.state.statusText = qsTr("拖到文件夹放置，或拖到侧栏固定：%1").arg(pressHit.modelData.name);
+            else
+                root.state.statusText = qsTr("拖动：%1").arg(pressHit.modelData.name);
+        }
+
+        function beginDragAt(mx: real, my: real): void {
+            if (!dragArmed || !dragProxy.path.length || dragProxy.Drag.active)
+                return;
+            // Map input-local point into dragProxy parent (root) coords
+            const p = input.mapToItem(dragProxy.parent, mx, my);
+            dragProxy.x = p.x;
+            dragProxy.y = p.y;
+            dragProxy.Drag.hotSpot.x = 0;
+            dragProxy.Drag.hotSpot.y = 0;
+            // Manual DnD start (Automatic type still needs active=true)
+            dragProxy.Drag.active = true;
+            try {
+                dragProxy.Drag.start(Qt.CopyAction | Qt.MoveAction);
+            } catch (e) {}
+        }
+
         onPressed: mouse => {
             pressX = mouse.x;
             pressY = mouse.y;
@@ -575,45 +614,42 @@ Item {
             pressModifiers = mouse.modifiers;
             const flick = root.isGrid ? grid : list;
             pressHit = flick.itemAt(mouse.x + flick.contentX, mouse.y + flick.contentY);
-            // Empty area or left-drag multi-select: arm marquee (pin drag needs long-press first)
-            if (mouse.button === Qt.LeftButton)
-                marqueeArmed = true;
+            if (mouse.button === Qt.LeftButton) {
+                if (pressHit?.modelData) {
+                    // Item press: ready to drag after small movement (no long-press)
+                    armDragFromHit();
+                } else {
+                    // Empty area: rubber-band multi-select
+                    marqueeArmed = true;
+                }
+            }
             mouse.accepted = true;
         }
         onPressAndHold: mouse => {
             if (mouse.button !== Qt.LeftButton)
                 return;
-            // Long-press on item → drag files (copy/move) or pin folder to sidebar
-            if (pressHit?.modelData) {
-                marqueeArmed = false;
-                root.marqueeActive = false;
-                dragArmed = true;
-                let paths = root.state.selection.slice();
-                if (paths.indexOf(pressHit.modelData.path) < 0)
-                    paths = [pressHit.modelData.path];
-                dragProxy.path = paths[0] || pressHit.modelData.path;
-                dragProxy.name = pressHit.modelData.name;
-                dragProxy.paths = paths;
-                if (paths.length > 1)
-                    root.state.statusText = qsTr("拖动 %1 项…").arg(paths.length);
-                else if (pressHit.modelData.isDir)
-                    root.state.statusText = qsTr("拖到文件夹放置，或拖到侧栏固定：%1").arg(pressHit.modelData.name);
-                else
-                    root.state.statusText = qsTr("拖动：%1").arg(pressHit.modelData.name);
-            }
+            // Long-press still re-arms drag (status hint) if user held still
+            if (pressHit?.modelData && !dragProxy.Drag.active)
+                armDragFromHit();
         }
         onPositionChanged: mouse => {
             if (Math.abs(mouse.x - pressX) > 6 || Math.abs(mouse.y - pressY) > 6)
                 moved = true;
 
-            if (dragArmed && moved && dragProxy.path.length && !dragProxy.Drag.active) {
-                dragProxy.x = mouse.x;
-                dragProxy.y = mouse.y;
-                dragProxy.Drag.active = true;
-                return;
+            // Item drag: start as soon as threshold crossed (files and folders)
+            if (dragArmed && moved && (mouse.buttons & Qt.LeftButton)) {
+                if (!dragProxy.Drag.active)
+                    beginDragAt(mouse.x, mouse.y);
+                else {
+                    const p = input.mapToItem(dragProxy.parent, mouse.x, mouse.y);
+                    dragProxy.x = p.x;
+                    dragProxy.y = p.y;
+                }
+                if (dragProxy.Drag.active)
+                    return;
             }
 
-            // Rubber-band selection — corners always clamped to content area
+            // Rubber-band selection — only when press started on empty space
             if (marqueeArmed && moved && !dragArmed && mouse.buttons & Qt.LeftButton) {
                 if (!root.marqueeActive) {
                     root.marqueeActive = true;
@@ -632,8 +668,9 @@ Item {
                 else if (mouse.y > height - edge)
                     flick.contentY = Math.min(Math.max(0, flick.contentHeight - flick.height), flick.contentY + 18);
             } else if (dragArmed && moved) {
-                dragProxy.x = mouse.x;
-                dragProxy.y = mouse.y;
+                const p2 = input.mapToItem(dragProxy.parent, mouse.x, mouse.y);
+                dragProxy.x = p2.x;
+                dragProxy.y = p2.y;
             }
         }
         onReleased: mouse => {
@@ -643,12 +680,17 @@ Item {
                 root.marqueeActive = false;
             }
             if (dragProxy.Drag.active) {
-                dragProxy.Drag.drop();
+                // Complete drag-and-drop; cancel if no target accepted
+                if (typeof dragProxy.Drag.drop === "function")
+                    dragProxy.Drag.drop();
                 dragProxy.Drag.active = false;
             }
             dragArmed = false;
             marqueeArmed = false;
             pressHit = null;
+            dragProxy.path = "";
+            dragProxy.name = "";
+            dragProxy.paths = [];
         }
         onClicked: mouse => {
             if (moved || dragProxy.Drag.active)
