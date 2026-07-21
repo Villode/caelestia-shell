@@ -164,6 +164,7 @@ QtObject {
     function navigateToThisPC(): void {
         cwd = ["ThisPC"];
         selection = [];
+        nameFilter = "";
         statusText = qsTr("此电脑");
         bumpRefresh();
     }
@@ -182,6 +183,7 @@ QtObject {
         else
             cwd = ["Home", place];
         selection = [];
+        nameFilter = "";
         statusText = displayPath();
         bumpRefresh();
     }
@@ -199,6 +201,7 @@ QtObject {
             return;
         cwd = cwd.concat([name]);
         selection = [];
+        nameFilter = "";
         statusText = displayPath();
     }
 
@@ -215,6 +218,7 @@ QtObject {
             cwd = ["ThisPC"];
         }
         selection = [];
+        nameFilter = "";
         statusText = isThisPC ? qsTr("此电脑") : displayPath();
         bumpRefresh();
     }
@@ -227,6 +231,7 @@ QtObject {
         if (cwd.length === 1 && cwd[0] === "Phone")
             cwd = ["ThisPC"];
         selection = [];
+        nameFilter = "";
         statusText = isThisPC ? qsTr("此电脑") : displayPath();
         bumpRefresh();
     }
@@ -280,6 +285,7 @@ QtObject {
             cwd = ["Home"].concat(path.split("/").filter(s => s.length > 0));
         }
         selection = [];
+        nameFilter = "";
         statusText = displayPath();
         bumpRefresh();
     }
@@ -365,6 +371,34 @@ QtObject {
             return;
         viewMode = mode;
         settingsChanged();
+    }
+
+    // Convert free-text search into QDir nameFilters (wildcard patterns).
+    // Empty query → [] (no filter). Plain substring → *query*.
+    // If user already types * or ?, pass through as a single pattern.
+    function nameFiltersForSearch(): list<string> {
+        const q = (nameFilter || "").trim();
+        if (!q.length)
+            return [];
+        if (q.indexOf("*") >= 0 || q.indexOf("?") >= 0)
+            return [q];
+        // Escape QDir wildcard meta in literal search
+        const escaped = q.replace(/\\/g, "\\\\").replace(/\*/g, "\\*").replace(/\?/g, "\\?");
+        return ["*" + escaped + "*"];
+    }
+
+    function setNameFilter(q: string): void {
+        if (nameFilter === q)
+            return;
+        nameFilter = q || "";
+        if (nameFilter.length)
+            statusText = qsTr("筛选：%1").arg(nameFilter);
+        else
+            statusText = qsTr("就绪");
+    }
+
+    function clearNameFilter(): void {
+        setNameFilter("");
     }
 
     function toggleShowHidden(): void {

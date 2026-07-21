@@ -138,6 +138,10 @@ FloatingWindow {
             } else if (event.key === Qt.Key_H) {
                 nState.toggleShowHidden();
                 event.accepted = true;
+            } else if (event.key === Qt.Key_F) {
+                if (toolbar.visible)
+                    toolbar.focusSearch();
+                event.accepted = true;
             } else if (event.key === Qt.Key_1) {
                 nState.setViewMode("grid");
                 event.accepted = true;
@@ -167,6 +171,7 @@ FloatingWindow {
                 }
 
                 FmToolbar {
+                    id: toolbar
                     Layout.fillWidth: true
                     state: nState
                     actions: nActions

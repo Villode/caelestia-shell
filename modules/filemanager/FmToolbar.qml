@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Layouts
 import Caelestia.Config
 import qs.components
+import qs.components.controls
 import qs.services
 
 StyledRect {
@@ -11,6 +12,11 @@ StyledRect {
 
     required property var state
     property var actions: null
+
+    function focusSearch(): void {
+        searchField.forceActiveFocus();
+        searchField.selectAll();
+    }
 
     implicitHeight: row.implicitHeight + Tokens.padding.small * 2
     color: Colours.tPalette.m3surfaceContainer
@@ -86,6 +92,70 @@ StyledRect {
         }
 
         Item { Layout.fillWidth: true }
+
+        // Current-folder name filter
+        StyledRect {
+            Layout.preferredWidth: 220
+            Layout.maximumWidth: 320
+            Layout.fillWidth: true
+            Layout.minimumWidth: 120
+            implicitHeight: searchField.implicitHeight + Tokens.padding.extraSmall
+            radius: Tokens.rounding.medium
+            color: Colours.tPalette.m3surfaceContainerHigh
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: Tokens.padding.small
+                anchors.rightMargin: Tokens.padding.extraSmall
+                spacing: Tokens.spacing.extraSmall
+
+                MaterialIcon {
+                    text: "search"
+                    color: Colours.palette.m3onSurfaceVariant
+                    fontStyle: Tokens.font.icon.small
+                }
+
+                StyledTextField {
+                    id: searchField
+                    Layout.fillWidth: true
+                    placeholderText: qsTr("筛选当前文件夹…")
+                    text: root.state.nameFilter
+                    selectByMouse: true
+                    onTextChanged: {
+                        if (root.state.nameFilter !== text)
+                            root.state.setNameFilter(text);
+                    }
+                    Keys.onEscapePressed: {
+                        if (text.length) {
+                            text = "";
+                            root.state.clearNameFilter();
+                            event.accepted = true;
+                        }
+                    }
+                }
+
+                Item {
+                    visible: searchField.text.length > 0
+                    implicitWidth: 28
+                    implicitHeight: 28
+
+                    StateLayer {
+                        radius: Tokens.rounding.full
+                        onClicked: {
+                            searchField.text = "";
+                            root.state.clearNameFilter();
+                        }
+                    }
+
+                    MaterialIcon {
+                        anchors.centerIn: parent
+                        text: "close"
+                        color: Colours.palette.m3onSurfaceVariant
+                        fontStyle: Tokens.font.icon.small
+                    }
+                }
+            }
+        }
 
         StyledRect {
             visible: root.state.isTrash()

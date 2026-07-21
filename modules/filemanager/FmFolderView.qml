@@ -131,6 +131,8 @@ Item {
             return root.state.cwdPath();
         }
         showHidden: root.state.showHidden
+        // Live name filter from toolbar search (QDir wildcards via ManagerState)
+        nameFilters: root.state.nameFiltersForSearch()
         onPathChanged: {
             grid.currentIndex = -1;
             list.currentIndex = -1;
@@ -204,7 +206,9 @@ Item {
                 fontStyle: Tokens.font.icon.builders.extraLarge.scale(2).weight(Font.Medium).build()
             }
             StyledText {
-                text: qsTr("此文件夹为空")
+                text: (root.state.nameFilter && root.state.nameFilter.length)
+                    ? qsTr("无匹配「%1」的项").arg(root.state.nameFilter)
+                    : qsTr("此文件夹为空")
                 color: Colours.palette.m3outline
                 font: Tokens.font.body.builders.large.weight(Font.Medium).build()
             }
