@@ -24,6 +24,8 @@ StyledRect {
     }
 
     function focusSearch(): void {
+        if (root.state.searchScope === "global")
+            root.state.setSearchScope("local");
         searchExpanded = true;
         Qt.callLater(() => {
             searchField.forceActiveFocus();
@@ -159,28 +161,12 @@ StyledRect {
 
         Item { Layout.fillWidth: true }
 
-        // Search scope: local folder vs global home
-        ToolBtn {
-            icon: root.state.searchScope === "global" ? "travel_explore" : "folder"
-            tip: root.state.searchScope === "global"
-                ? qsTr("当前：全局搜索（点切换为当前文件夹）")
-                : qsTr("当前：文件夹搜索（点切换为全局）")
-            active: root.state.searchScope === "global"
-            onTriggered: {
-                root.state.toggleSearchScope();
-                if (!root.searchExpanded)
-                    root.focusSearch();
-            }
-        }
-
-        // Search: icon only until expanded (Ctrl+F / click)
+        // Search current folder only (global search lives in sidebar)
         ToolBtn {
             visible: !root.searchExpanded
             icon: "search"
-            tip: root.state.searchScope === "global"
-                ? qsTr("全局搜索 (Ctrl+F)")
-                : qsTr("搜索当前文件夹 (Ctrl+F)")
-            active: root.state.nameFilter.length > 0 || root.state.searchScope === "global"
+            tip: qsTr("搜索当前文件夹 (Ctrl+F)")
+            active: root.state.nameFilter.length > 0 && root.state.searchScope !== "global"
             onTriggered: root.focusSearch()
         }
 
@@ -208,9 +194,7 @@ StyledRect {
                 StyledTextField {
                     id: searchField
                     Layout.fillWidth: true
-                    placeholderText: root.state.searchScope === "global"
-                        ? qsTr("全局搜索主目录…")
-                        : qsTr("搜索当前文件夹…")
+                    placeholderText: qsTr("搜索当前文件夹…")
                     // One-way sync from state when empty/nav; user edits drive state
                     Component.onCompleted: text = root.state.nameFilter
                     onActiveFocusChanged: {

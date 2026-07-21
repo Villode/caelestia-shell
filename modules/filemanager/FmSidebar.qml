@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Layouts
 import Caelestia.Config
 import qs.components
+import qs.components.controls
 import qs.services
 import qs.utils
 
@@ -13,6 +14,11 @@ StyledRect {
     required property var state
 
     readonly property int sidebarWidth: 230
+
+    function focusGlobalSearch(): void {
+        if (typeof globalSearchBox !== "undefined" && globalSearchBox)
+            globalSearchBox.focusGlobal();
+    }
     implicitWidth: sidebarWidth
     color: Colours.tPalette.m3surfaceContainer
 
@@ -81,10 +87,125 @@ StyledRect {
             StyledText {
                 Layout.alignment: Qt.AlignHCenter
                 Layout.topMargin: Tokens.padding.extraSmall / 2
-                Layout.bottomMargin: Tokens.spacing.medium
+                Layout.bottomMargin: Tokens.spacing.small
                 text: qsTr("文件")
                 color: Colours.palette.m3onSurface
                 font: Tokens.font.body.builders.large.weight(Font.Bold).build()
+            }
+
+            // Global search — always visible on every page
+            StyledRect {
+                id: globalSearchBox
+                Layout.fillWidth: true
+                Layout.leftMargin: Tokens.padding.small
+                Layout.rightMargin: Tokens.padding.small
+                Layout.bottomMargin: Tokens.spacing.medium
+                implicitHeight: globalField.implicitHeight + Tokens.padding.small
+                radius: Tokens.rounding.full
+                color: root.state.searchScope === "global"
+                    ? Qt.alpha(Colours.palette.m3primaryContainer, 0.85)
+                    : Colours.tPalette.m3surfaceContainerHigh
+                border.width: root.state.searchScope === "global" ? 1 : 0
+                border.color: Colours.palette.m3primary
+
+                function focusGlobal(): void {
+                    if (root.state.searchScope !== "global")
+                        root.state.setSearchScope("global");
+                    Qt.callLater(() => {
+                        globalField.forceActiveFocus();
+                        globalField.selectAll();
+                    });
+                }
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: Tokens.padding.medium
+                    anchors.rightMargin: Tokens.padding.extraSmall
+                    spacing: Tokens.spacing.extraSmall
+
+                    MaterialIcon {
+                        text: "travel_explore"
+                        color: root.state.searchScope === "global"
+                            ? Colours.palette.m3onPrimaryContainer
+                            : Colours.palette.m3onSurfaceVariant
+                        fontStyle: Tokens.font.icon.small
+                    }
+
+                    StyledTextField {
+                        id: globalField
+                        Layout.fillWidth: true
+                        placeholderText: qsTr("全局搜索…")
+                        color: root.state.searchScope === "global"
+                            ? Colours.palette.m3onPrimaryContainer
+                            : Colours.palette.m3onSurface
+                        Component.onCompleted: {
+                            if (root.state.searchScope === "global")
+                                text = root.state.nameFilter;
+                        }
+                        onActiveFocusChanged: {
+                            if (activeFocus) {
+                                if (root.state.searchScope !== "global")
+                                    root.state.setSearchScope("global");
+                                if (text !== root.state.nameFilter)
+                                    text = root.state.nameFilter;
+                            }
+                        }
+                        onTextChanged: {
+                            if (root.state.searchScope !== "global")
+                                return;
+                            if (root.state.nameFilter !== text)
+                                root.state.setNameFilter(text);
+                        }
+                        Keys.onEscapePressed: {
+                            text = "";
+                            root.state.clearNameFilter();
+                            root.state.setSearchScope("local");
+                            event.accepted = true;
+                        }
+                        Keys.onReturnPressed: event.accepted = true
+                        Keys.onEnterPressed: event.accepted = true
+                    }
+
+                    Item {
+                        implicitWidth: 26
+                        implicitHeight: 26
+                        visible: root.state.searchScope === "global" || globalField.text.length > 0
+
+                        StateLayer {
+                            radius: Tokens.rounding.full
+                            onClicked: {
+                                globalField.text = "";
+                                root.state.clearNameFilter();
+                                root.state.setSearchScope("local");
+                            }
+                        }
+
+                        MaterialIcon {
+                            anchors.centerIn: parent
+                            text: "close"
+                            color: Colours.palette.m3onSurfaceVariant
+                            fontStyle: Tokens.font.icon.small
+                        }
+                    }
+                }
+
+                Connections {
+                    target: root.state
+                    function onNameFilterChanged(): void {
+                        if (root.state.searchScope !== "global")
+                            return;
+                        if (globalField.text !== root.state.nameFilter)
+                            globalField.text = root.state.nameFilter;
+                    }
+                    function onSearchScopeChanged(): void {
+                        if (root.state.searchScope !== "global") {
+                            if (!globalField.activeFocus)
+                                globalField.text = "";
+                        } else if (globalField.text !== root.state.nameFilter) {
+                            globalField.text = root.state.nameFilter;
+                        }
+                    }
+                }
             }
 
             // Windows-style entry point

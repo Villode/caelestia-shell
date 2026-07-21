@@ -96,6 +96,12 @@ FloatingWindow {
                     event.accepted = true;
                     return;
                 }
+                if (nState.searchScope === "global") {
+                    nState.clearNameFilter();
+                    nState.setSearchScope("local");
+                    event.accepted = true;
+                    return;
+                }
                 if (nameDlg.expanded) {
                     nameDlg.close();
                     event.accepted = true;
@@ -204,8 +210,13 @@ FloatingWindow {
                 nState.toggleShowHidden();
                 event.accepted = true;
             } else if (event.key === Qt.Key_F) {
-                if (toolbar.visible)
+                if (event.modifiers & Qt.ShiftModifier) {
+                    sidebar.focusGlobalSearch();
+                } else if (toolbar.visible) {
                     toolbar.focusSearch();
+                } else {
+                    sidebar.focusGlobalSearch();
+                }
                 event.accepted = true;
             } else if (event.key === Qt.Key_1) {
                 nState.setViewMode("grid");
@@ -221,6 +232,7 @@ FloatingWindow {
             spacing: 0
 
             FmSidebar {
+                id: sidebar
                 Layout.fillHeight: true
                 state: nState
             }
@@ -240,7 +252,7 @@ FloatingWindow {
                     Layout.fillWidth: true
                     state: nState
                     actions: nActions
-                    visible: !nState.isThisPC || nState.searchScope === "global"
+                    visible: !nState.isThisPC
                     sortMenuOpen: sortOverlay.visible
                     onSortMenuOpenRequested: (x, y) => {
                         // x,y are bottom-right of sort button in toolbar coords
