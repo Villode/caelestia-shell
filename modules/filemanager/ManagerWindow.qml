@@ -85,6 +85,11 @@ FloatingWindow {
 
         Keys.onPressed: event => {
             if (event.key === Qt.Key_Escape) {
+                if (quickLook.expanded) {
+                    quickLook.close();
+                    event.accepted = true;
+                    return;
+                }
                 if (jobOverlay.expanded) {
                     event.accepted = true;
                     return;
@@ -120,6 +125,31 @@ FloatingWindow {
                     event.accepted = true;
                     return;
                 }
+            }
+            if (event.key === Qt.Key_Space && !(event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))) {
+                if (quickLook.expanded) {
+                    quickLook.close();
+                    event.accepted = true;
+                    return;
+                }
+                let meta = null;
+                if (folder.visible && typeof folder.currentMeta === "function")
+                    meta = folder.currentMeta();
+                if (!meta || !meta.path) {
+                    if (nState.selection.length === 1) {
+                        const p = nState.selection[0];
+                        meta = {
+                            path: p,
+                            name: p.split("/").pop() || p,
+                            isDir: false,
+                            isImage: false
+                        };
+                    }
+                }
+                if (meta && meta.path)
+                    quickLook.toggle(meta.path, meta.name, meta.isDir, meta.isImage);
+                event.accepted = true;
+                return;
             }
             if (!(event.modifiers & Qt.ControlModifier))
                 return;
@@ -296,6 +326,11 @@ FloatingWindow {
 
         FmJobOverlay {
             id: jobOverlay
+            anchors.fill: parent
+        }
+
+        FmQuickLook {
+            id: quickLook
             anchors.fill: parent
         }
     }

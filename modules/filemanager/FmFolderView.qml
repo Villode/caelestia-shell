@@ -49,6 +49,29 @@ Item {
         return item?.modelData?.path ?? "";
     }
 
+    function currentMeta(): var {
+        const item = isGrid ? grid.currentItem : list.currentItem;
+        const d = item?.modelData;
+        if (d)
+            return {
+                path: d.path || "",
+                name: d.name || "",
+                isDir: !!d.isDir,
+                isImage: !!d.isImage
+            };
+        // Fall back to first selected path without type info
+        if (root.state.selection.length === 1) {
+            const p = root.state.selection[0];
+            return {
+                path: p,
+                name: p.split("/").pop() || p,
+                isDir: false,
+                isImage: false
+            };
+        }
+        return null;
+    }
+
     function selectHit(hit: var, ctrl: bool): void {
         if (!hit?.modelData)
             return;
@@ -67,6 +90,18 @@ Item {
             return;
         root.actions.openEntry(hit.modelData.isDir, hit.modelData.name, hit.modelData.path);
     }
+
+    function pathAtViewPos(vx: real, vy: real): string {
+        // vx/vy in coordinates of grid/list content viewport (same as input MouseArea)
+        const flick = root.isGrid ? grid : list;
+        const hit = flick.itemAt(vx + flick.contentX, vy + flick.contentY);
+        if (hit?.modelData?.isDir)
+            return hit.modelData.path;
+        return root.state.cwdPath();
+    }
+
+    property string dropHoverPath: ""
+    property bool dropHoverActive: false
 
     function humanSize(bytes: real): string {
         if (bytes < 1024)
@@ -331,11 +366,34 @@ Item {
         visible: false
         property string path: ""
         property string name: ""
-        Drag.dragType: Drag.Automatic
-        Drag.mimeData: {
-            "text/uri-list": path ? ("file://" + path) : "",
-            "text/plain": path
+        property var paths: []
+        readonly property string uriList: {
+            const list = (paths && paths.length) ? paths : (path ? [path] : []);
+            let s = "";
+            for (let i = 0; i < list.length; i++) {
+                if (i)
+                    s += "\n";
+                s += "file://" + list[i];
+            }
+            return s;
         }
+        readonly property string plainList: {
+            const list = (paths && paths.length) ? paths : (path ? [path] : []);
+            let s = "";
+            for (let i = 0; i < list.length; i++) {
+                if (i)
+                    s += "\n";
+                s += list[i];
+            }
+            return s;
+        }
+        Drag.dragType: Drag.Automatic
+        Drag.mimeData: ({
+            "text/uri-list": uriList,
+            "text/plain": plainList
+        })
+        Drag.proposedAction: Qt.CopyAction
+        Drag.supportedActions: Qt.CopyAction | Qt.MoveAction
         Drag.hotSpot.x: 0
         Drag.hotSpot.y: 0
     }
@@ -408,6 +466,56 @@ Item {
         root.state.statusText = paths.length ? qsTr("已选中 %1 项").arg(paths.length) : root.state.statusText;
     }
 
+
+    // External / internal file drop: copy (default) or move (Qt.MoveAction)
+    DropArea {
+        id: fileDrop
+        anchors.fill: parent
+        anchors.margins: Tokens.padding.extraSmall + Tokens.padding.medium
+        keys: ["text/uri-list", "text/plain"]
+        z: 35
+
+        onEntered: drag => {
+            drag.accepted = drag.hasUrls || drag.hasText;
+            if (drag.accepted) {
+                root.dropHoverActive = true;
+                root.dropHoverPath = root.pathAtViewPos(drag.x, drag.y);
+            }
+        }
+        onPositionChanged: drag => {
+            if (!root.dropHoverActive)
+                return;
+            root.dropHoverPath = root.pathAtViewPos(drag.x, drag.y);
+        }
+        onExited: {
+            root.dropHoverActive = false;
+            root.dropHoverPath = "";
+        }
+        onDropped: drop => {
+            const dest = root.pathAtViewPos(drop.x, drop.y) || root.state.cwdPath();
+            root.dropHoverActive = false;
+            root.dropHoverPath = "";
+            const n = root.actions.dropFromEvent(drop, dest);
+            if (n > 0)
+                drop.acceptProposedAction();
+        }
+    }
+
+    // Soft highlight when dragging files over a folder / pane
+    Rectangle {
+        id: dropGlow
+        anchors.fill: parent
+        anchors.margins: Tokens.padding.extraSmall
+        z: 34
+        radius: Tokens.rounding.medium
+        visible: root.dropHoverActive
+        color: Qt.alpha(Colours.palette.m3primary, 0.08)
+        border.width: 2
+        border.color: Colours.palette.m3primary
+        opacity: root.dropHoverActive ? 1 : 0
+        Behavior on opacity { Anim { type: Anim.DefaultEffects } }
+    }
+
     // Clip layer so the rubber-band never paints outside the file pane
     Item {
         id: marqueeClip
@@ -467,14 +575,23 @@ Item {
         onPressAndHold: mouse => {
             if (mouse.button !== Qt.LeftButton)
                 return;
-            // Long-press on folder → pin drag instead of marquee
-            if (pressHit?.modelData?.isDir) {
+            // Long-press on item → drag files (copy/move) or pin folder to sidebar
+            if (pressHit?.modelData) {
                 marqueeArmed = false;
                 root.marqueeActive = false;
                 dragArmed = true;
-                dragProxy.path = pressHit.modelData.path;
+                let paths = root.state.selection.slice();
+                if (paths.indexOf(pressHit.modelData.path) < 0)
+                    paths = [pressHit.modelData.path];
+                dragProxy.path = paths[0] || pressHit.modelData.path;
                 dragProxy.name = pressHit.modelData.name;
-                root.state.statusText = qsTr("拖到左侧固定：%1").arg(pressHit.modelData.name);
+                dragProxy.paths = paths;
+                if (paths.length > 1)
+                    root.state.statusText = qsTr("拖动 %1 项…").arg(paths.length);
+                else if (pressHit.modelData.isDir)
+                    root.state.statusText = qsTr("拖到文件夹放置，或拖到侧栏固定：%1").arg(pressHit.modelData.name);
+                else
+                    root.state.statusText = qsTr("拖动：%1").arg(pressHit.modelData.name);
             }
         }
         onPositionChanged: mouse => {

@@ -95,21 +95,150 @@ Item {
             return;
         }
         const destDir = root.state.cwdPath();
-        for (let i = 0; i < paths.length; i++) {
-            const src = paths[i];
-            const base = src.split("/").pop();
-            const dest = destDir + "/" + base;
-            if (mode === "copy")
-                CUtils.copyFile(Qt.resolvedUrl(src), Qt.resolvedUrl(dest), true);
-            else if (mode === "cut")
-                Quickshell.execDetached(["gio", "move", src, dest]);
-        }
+        dropInto(paths, destDir, mode === "cut" ? "move" : "copy");
         if (mode === "cut") {
             root.state.clipboardMode = "";
             root.state.clipboardPaths = [];
         }
-        root.state.statusText = qsTr("已粘贴 %1 项").arg(paths.length);
-        root.state.bumpRefresh();
+    }
+
+
+    function parentDir(path: string): string {
+        if (!path || path === "/")
+            return "/";
+        let p = path;
+        while (p.length > 1 && p.endsWith("/"))
+            p = p.slice(0, -1);
+        const i = p.lastIndexOf("/");
+        if (i <= 0)
+            return "/";
+        return p.slice(0, i) || "/";
+    }
+
+    function normalizeLocalPath(urlOrPath: string): string {
+        if (!urlOrPath)
+            return "";
+        let p = String(urlOrPath).trim();
+        if (p.startsWith("file://")) {
+            // strip scheme; decode %XX
+            p = decodeURIComponent(p.slice(7));
+            // file:///path → /path ; file://localhost/path
+            if (p.startsWith("localhost/"))
+                p = p.slice("localhost".length);
+        }
+        while (p.length > 1 && p.endsWith("/"))
+            p = p.slice(0, -1);
+        return p;
+    }
+
+    function pathsFromDrop(drop: var): list<string> {
+        const out = [];
+        if (!drop)
+            return out;
+        if (drop.hasUrls && drop.urls && drop.urls.length) {
+            for (let i = 0; i < drop.urls.length; i++) {
+                const p = normalizeLocalPath(drop.urls[i].toString());
+                if (p.length)
+                    out.push(p);
+            }
+            return out;
+        }
+        if (drop.hasText && drop.text) {
+            const lines = String(drop.text).split(/\r?\n/);
+            for (let j = 0; j < lines.length; j++) {
+                let line = lines[j].trim();
+                if (!line.length)
+                    continue;
+                const p = normalizeLocalPath(line);
+                if (p.length)
+                    out.push(p);
+            }
+        }
+        return out;
+    }
+
+    // mode: "copy" | "move". destDir absolute path (current folder or target folder).
+    // Returns number of items scheduled.
+    function dropInto(paths: list<string>, destDir: string, mode: string): int {
+        if (!paths || !paths.length || !destDir || !destDir.length) {
+            root.state.statusText = qsTr("无法放置");
+            return 0;
+        }
+        if (root.state.isThisPC) {
+            root.state.statusText = qsTr("请先进入文件夹再放置");
+            return 0;
+        }
+        while (destDir.length > 1 && destDir.endsWith("/"))
+            destDir = destDir.slice(0, -1);
+
+        const op = (mode === "move") ? "move" : "copy";
+        let n = 0;
+        const jobs = [];
+        for (let i = 0; i < paths.length; i++) {
+            const src = normalizeLocalPath(paths[i]);
+            if (!src.length)
+                continue;
+            // Skip dropping a folder into itself or into its own child
+            if (src === destDir || destDir.startsWith(src + "/"))
+                continue;
+            // Skip no-op: already in dest
+            if (parentDir(src) === destDir && op === "move")
+                continue;
+            const base = src.split("/").pop() || "item";
+            const dest = destDir + "/" + base;
+            if (src === dest)
+                continue;
+            jobs.push({ src: src, dest: dest });
+            n++;
+        }
+        if (!n) {
+            root.state.statusText = qsTr("没有可放置的项");
+            return 0;
+        }
+
+        // Prefer gio for trash-aware move and remote/gvfs; fall back friendly message
+        for (let k = 0; k < jobs.length; k++) {
+            const j = jobs[k];
+            if (op === "copy")
+                Quickshell.execDetached(["gio", "copy", "-p", j.src, j.dest]);
+            else
+                Quickshell.execDetached(["gio", "move", j.src, j.dest]);
+        }
+        root.state.statusText = op === "move"
+            ? qsTr("已移动 %1 项").arg(n)
+            : qsTr("已复制 %1 项").arg(n);
+        // Refresh after short delay so gio can finish first write
+        Qt.callLater(() => root.state.bumpRefresh());
+        refreshTimer.restart();
+        return n;
+    }
+
+    function dropFromEvent(drop: var, destDir: string): int {
+        const paths = pathsFromDrop(drop);
+        if (!paths.length) {
+            root.state.statusText = qsTr("拖放内容无法识别");
+            return 0;
+        }
+        // Qt.MoveAction / LinkAction → move when proposed; otherwise copy
+        let mode = "copy";
+        try {
+            if (drop.proposedAction === Qt.MoveAction)
+                mode = "move";
+            else if (drop.supportedActions & Qt.MoveAction) {
+                // Modifier: if only Move is proposed by source cut, use move
+                // External file managers often use Copy by default
+            }
+        } catch (e) {}
+        // Ctrl = force copy, Shift = force move (common desktop convention)
+        // Drop event has no modifiers in Qt Quick DropArea; use proposedAction only.
+        return dropInto(paths, destDir, mode);
+    }
+
+    Timer {
+        id: refreshTimer
+        interval: 450
+        repeat: false
+        onTriggered: root.state.bumpRefresh()
     }
 
     function trash(paths: list<string>): void {
