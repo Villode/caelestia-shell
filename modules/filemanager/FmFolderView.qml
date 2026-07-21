@@ -367,7 +367,7 @@ Item {
         }
     }
 
-    // Drag source + on-cursor ghost (file icon / name / multi-count)
+    // On-cursor ghost for internal drag (no Qt Drag grab — follows mouse while pressed)
     Item {
         id: dragProxy
         width: ghostCard.implicitWidth
@@ -381,39 +381,24 @@ Item {
         property bool isDir: false
         property bool isImage: false
         property string iconSource: ""
+        property real hotX: 20
+        property real hotY: 20
         readonly property int count: (paths && paths.length) ? paths.length : (path ? 1 : 0)
-        readonly property string uriList: {
-            const list = (paths && paths.length) ? paths : (path ? [path] : []);
-            let s = "";
-            for (let i = 0; i < list.length; i++) {
-                if (i)
-                    s += "\r\n";
-                s += "file://" + list[i];
-            }
-            if (list.length)
-                s += "\r\n";
-            return s;
-        }
-        readonly property string plainList: {
-            const list = (paths && paths.length) ? paths : (path ? [path] : []);
-            let s = "";
-            for (let i = 0; i < list.length; i++) {
-                if (i)
-                    s += "\n";
-                s += list[i];
-            }
-            return s;
+
+        function moveToInputLocal(mx: real, my: real): void {
+            const p = input.mapToItem(dragProxy.parent, mx, my);
+            dragProxy.x = p.x - hotX;
+            dragProxy.y = p.y - hotY;
         }
 
-        Drag.dragType: Drag.Automatic
-        Drag.mimeData: ({
-            "text/uri-list": uriList,
-            "text/plain": plainList
-        })
-        Drag.proposedAction: Qt.CopyAction
-        Drag.supportedActions: Qt.CopyAction | Qt.MoveAction
-        Drag.hotSpot.x: 28
-        Drag.hotSpot.y: 28
+        function clear(): void {
+            path = "";
+            name = "";
+            paths = [];
+            iconSource = "";
+            isDir = false;
+            isImage = false;
+        }
 
         StyledRect {
             id: ghostCard
@@ -560,6 +545,11 @@ Item {
         z: 35
 
         onEntered: drag => {
+            // Internal drag uses mouse-follow ghost + dropInto on release (skip DropArea)
+            if (root.dragVisualActive) {
+                drag.accepted = false;
+                return;
+            }
             drag.accepted = drag.hasUrls || drag.hasText;
             if (drag.accepted) {
                 root.dropHoverActive = true;
@@ -670,20 +660,55 @@ Item {
                 root.state.statusText = qsTr("拖动：%1").arg(md.name);
         }
 
-        function beginDragAt(mx: real, my: real): void {
-            if (!dragArmed || !dragProxy.path.length || dragProxy.Drag.active)
+        function beginInternalDrag(mx: real, my: real): void {
+            if (!dragArmed || !dragProxy.path.length || root.dragVisualActive)
                 return;
-            // Map input-local point into dragProxy parent (root) coords; offset so card sits under cursor
-            const p = input.mapToItem(dragProxy.parent, mx, my);
-            dragProxy.Drag.hotSpot.x = 28;
-            dragProxy.Drag.hotSpot.y = 28;
-            dragProxy.x = p.x - dragProxy.Drag.hotSpot.x;
-            dragProxy.y = p.y - dragProxy.Drag.hotSpot.y;
             root.dragVisualActive = true;
-            dragProxy.Drag.active = true;
-            try {
-                dragProxy.Drag.start(Qt.CopyAction | Qt.MoveAction);
-            } catch (e) {}
+            dragProxy.moveToInputLocal(mx, my);
+            root.dropHoverActive = true;
+            root.dropHoverPath = root.pathAtViewPos(mx, my);
+        }
+
+        function updateInternalDrag(mx: real, my: real): void {
+            if (!root.dragVisualActive)
+                return;
+            dragProxy.moveToInputLocal(mx, my);
+            root.dropHoverActive = true;
+            root.dropHoverPath = root.pathAtViewPos(mx, my);
+        }
+
+        function finishInternalDrag(mx: real, my: real): void {
+            if (!root.dragVisualActive) {
+                dragArmed = false;
+                return;
+            }
+            const paths = (dragProxy.paths && dragProxy.paths.length)
+                ? dragProxy.paths.slice()
+                : (dragProxy.path ? [dragProxy.path] : []);
+            const dest = root.pathAtViewPos(mx, my) || root.state.cwdPath();
+            root.dragVisualActive = false;
+            root.dropHoverActive = false;
+            root.dropHoverPath = "";
+            dragArmed = false;
+            dragProxy.clear();
+            if (!paths.length)
+                return;
+            // Default internal: move when dropping into a different folder (same volume UX)
+            // Use move if destination is a subfolder of cwd, else copy for safety on same dir cancel
+            if (dest === root.state.cwdPath()) {
+                root.state.statusText = qsTr("已取消（放到原目录）");
+                return;
+            }
+            // Same-parent check handled in dropInto
+            root.actions.dropInto(paths, dest, "move");
+        }
+
+        function cancelInternalDrag(): void {
+            root.dragVisualActive = false;
+            root.dropHoverActive = false;
+            root.dropHoverPath = "";
+            dragArmed = false;
+            dragProxy.clear();
         }
 
         onPressed: mouse => {
@@ -711,24 +736,22 @@ Item {
             if (mouse.button !== Qt.LeftButton)
                 return;
             // Long-press still re-arms drag (status hint) if user held still
-            if (pressHit?.modelData && !dragProxy.Drag.active)
+            if (pressHit?.modelData && !root.dragVisualActive)
                 armDragFromHit();
         }
         onPositionChanged: mouse => {
             if (Math.abs(mouse.x - pressX) > 6 || Math.abs(mouse.y - pressY) > 6)
                 moved = true;
 
-            // Item drag: start as soon as threshold crossed (files and folders)
-            if (dragArmed && moved && (mouse.buttons & Qt.LeftButton)) {
-                if (!dragProxy.Drag.active)
-                    beginDragAt(mouse.x, mouse.y);
-                else {
-                    const p = input.mapToItem(dragProxy.parent, mouse.x, mouse.y);
-                    dragProxy.x = p.x - dragProxy.Drag.hotSpot.x;
-                    dragProxy.y = p.y - dragProxy.Drag.hotSpot.y;
-                }
-                if (dragProxy.Drag.active)
+            // Internal drag: ghost follows cursor while left button held
+            if (dragArmed && (mouse.buttons & Qt.LeftButton)) {
+                if (moved) {
+                    if (!root.dragVisualActive)
+                        beginInternalDrag(mouse.x, mouse.y);
+                    else
+                        updateInternalDrag(mouse.x, mouse.y);
                     return;
+                }
             }
 
             // Rubber-band selection — only when press started on empty space
@@ -749,10 +772,6 @@ Item {
                     flick.contentY = Math.max(0, flick.contentY - 18);
                 else if (mouse.y > height - edge)
                     flick.contentY = Math.min(Math.max(0, flick.contentHeight - flick.height), flick.contentY + 18);
-            } else if (dragArmed && moved) {
-                const p2 = input.mapToItem(dragProxy.parent, mouse.x, mouse.y);
-                dragProxy.x = p2.x;
-                dragProxy.y = p2.y;
             }
         }
         onReleased: mouse => {
@@ -761,25 +780,27 @@ Item {
                 root.applyMarqueeSelection();
                 root.marqueeActive = false;
             }
-            if (dragProxy.Drag.active) {
-                // Complete drag-and-drop; cancel if no target accepted
-                if (typeof dragProxy.Drag.drop === "function")
-                    dragProxy.Drag.drop();
-                dragProxy.Drag.active = false;
+            if (root.dragVisualActive) {
+                finishInternalDrag(mouse.x, mouse.y);
+            } else {
+                dragArmed = false;
+                dragProxy.clear();
             }
-            root.dragVisualActive = false;
-            dragArmed = false;
             marqueeArmed = false;
             pressHit = null;
-            dragProxy.path = "";
-            dragProxy.name = "";
-            dragProxy.paths = [];
-            dragProxy.iconSource = "";
-            dragProxy.isDir = false;
-            dragProxy.isImage = false;
+        }
+        onCanceled: {
+            cancelInternalDrag();
+            marqueeArmed = false;
+            pressHit = null;
+            root.marqueeActive = false;
+        }
+        onExited: {
+            // Keep ghost if still holding button (pointer left the pane briefly)
+            // actual cancel only on release outside without finish — Hypr may still deliver release
         }
         onClicked: mouse => {
-            if (moved || dragProxy.Drag.active)
+            if (moved || root.dragVisualActive)
                 return;
             const flick = root.isGrid ? grid : list;
             const hit = flick.itemAt(mouse.x + flick.contentX, mouse.y + flick.contentY);
@@ -843,28 +864,6 @@ Item {
         border.color: Colours.palette.m3primary
         z: GridView.isCurrentItem || isSelected || isDropTarget || implicitHeight !== nonAnimHeight ? 1 : 0
         clip: true
-
-        // Drag for pinning dirs
-        Drag.active: dragArea.drag.active
-        Drag.dragType: Drag.Automatic
-        Drag.mimeData: modelData ? {
-            "text/uri-list": "file://" + modelData.path,
-            "text/plain": modelData.path
-        } : ({})
-        Drag.hotSpot.x: width / 2
-        Drag.hotSpot.y: height / 2
-
-        MouseArea {
-            id: dragArea
-            anchors.fill: parent
-            acceptedButtons: Qt.LeftButton
-            // Only start drag after hold so normal click works via overlay...
-            // Overlay is z:40 above us — so drag won't work from here.
-            // Instead: use delayed drag from overlay when item is dir — skip for now;
-            // pin via context menu is primary; DropArea still accepts external drops.
-            enabled: false
-            drag.target: parent
-        }
 
         Behavior on opacity {
             Anim { type: Anim.DefaultEffects }
