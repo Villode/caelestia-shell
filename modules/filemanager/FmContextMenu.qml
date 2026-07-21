@@ -102,6 +102,11 @@ Item {
         const items = [
             { id: "open", label: qsTr("打开") },
             { id: "refresh", label: qsTr("刷新") },
+            { id: "sort-name", label: qsTr("排序：名称") },
+            { id: "sort-size", label: qsTr("排序：大小") },
+            { id: "sort-type", label: qsTr("排序：类型") },
+            { id: "sort-mtime", label: qsTr("排序：修改时间") },
+            { id: "sort-dir", label: qsTr("升序/降序") },
             { id: "copy", label: qsTr("复制") },
             { id: "cut", label: qsTr("剪切") },
             { id: "paste", label: qsTr("粘贴") },
@@ -236,6 +241,16 @@ Item {
                             } else if (id === "refresh") {
                                 root.state.bumpRefresh();
                                 root.state.statusText = qsTr("已刷新");
+                            } else if (id === "sort-name") {
+                                root.state.setSortBy("name");
+                            } else if (id === "sort-size") {
+                                root.state.setSortBy("size");
+                            } else if (id === "sort-type") {
+                                root.state.setSortBy("type");
+                            } else if (id === "sort-mtime") {
+                                root.state.setSortBy("mtime");
+                            } else if (id === "sort-dir") {
+                                root.state.toggleSortReverse();
                             } else if (id === "copy") {
                                 root.actions.copy(t);
                             } else if (id === "cut") {

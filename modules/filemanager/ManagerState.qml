@@ -39,6 +39,10 @@ QtObject {
     property string viewMode: "grid" // "grid" | "list"
     property bool showHidden: false
     property bool showExtensions: true
+    // sortBy: name | size | type | mtime
+    property string sortBy: "name"
+    property bool sortReverse: false
+    property bool foldersFirst: true
     // favorites: [{ path: string, name: string }]
     property var favorites: []
 
@@ -443,6 +447,53 @@ QtObject {
         settingsChanged();
     }
 
+    function setSortBy(key: string): void {
+        const k = key || "name";
+        if (["name", "size", "type", "mtime"].indexOf(k) < 0)
+            return;
+        if (sortBy === k) {
+            // click same key → toggle direction (common FM UX)
+            sortReverse = !sortReverse;
+        } else {
+            sortBy = k;
+            sortReverse = false;
+        }
+        statusText = sortLabel();
+        settingsChanged();
+    }
+
+    function setSortReverse(rev: bool): void {
+        sortReverse = !!rev;
+        statusText = sortLabel();
+        settingsChanged();
+    }
+
+    function toggleSortReverse(): void {
+        setSortReverse(!sortReverse);
+    }
+
+    function setFoldersFirst(on: bool): void {
+        foldersFirst = !!on;
+        statusText = foldersFirst ? qsTr("文件夹优先") : qsTr("不优先文件夹");
+        settingsChanged();
+    }
+
+    function toggleFoldersFirst(): void {
+        setFoldersFirst(!foldersFirst);
+    }
+
+    function sortLabel(): string {
+        let key = qsTr("名称");
+        if (sortBy === "size")
+            key = qsTr("大小");
+        else if (sortBy === "type")
+            key = qsTr("类型");
+        else if (sortBy === "mtime")
+            key = qsTr("修改时间");
+        const dir = sortReverse ? qsTr("降序") : qsTr("升序");
+        return qsTr("排序：%1 · %2").arg(key).arg(dir);
+    }
+
     function applySettings(data: var): void {
         if (!data)
             return;
@@ -452,6 +503,12 @@ QtObject {
             showHidden = data.showHidden;
         if (typeof data.showExtensions === "boolean")
             showExtensions = data.showExtensions;
+        if (data.sortBy === "name" || data.sortBy === "size" || data.sortBy === "type" || data.sortBy === "mtime")
+            sortBy = data.sortBy;
+        if (typeof data.sortReverse === "boolean")
+            sortReverse = data.sortReverse;
+        if (typeof data.foldersFirst === "boolean")
+            foldersFirst = data.foldersFirst;
         if (Array.isArray(data.favorites)) {
             const next = [];
             for (let i = 0; i < data.favorites.length; i++) {
@@ -471,6 +528,9 @@ QtObject {
             viewMode: viewMode,
             showHidden: showHidden,
             showExtensions: showExtensions,
+            sortBy: sortBy,
+            sortReverse: sortReverse,
+            foldersFirst: foldersFirst,
             favorites: favorites
         }, null, 2);
     }

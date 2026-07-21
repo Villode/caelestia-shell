@@ -122,6 +122,9 @@ Item {
                     root.reloadMtimes(p);
             });
         }
+        function onSortByChanged(): void { root.scheduleSortRebuild(); }
+        function onSortReverseChanged(): void { root.scheduleSortRebuild(); }
+        function onFoldersFirstChanged(): void { root.scheduleSortRebuild(); }
     }
 
     function humanSize(bytes: real): string {
@@ -178,6 +181,122 @@ Item {
         mtimeProc.running = true;
     }
 
+    // Sorted view of FileSystemModel (name/size/type/mtime)
+    ListModel {
+        id: sortedModel
+    }
+
+    property int sortEpoch: 0
+
+    function entryTypeKey(e: var): string {
+        if (!e)
+            return "";
+        if (e.isDir)
+            return "0_dir";
+        const mime = (e.mimeType || "").toLowerCase();
+        const suf = (e.suffix || "").toLowerCase();
+        if (mime.length)
+            return "1_" + mime;
+        return "2_" + suf;
+    }
+
+    function naturalKey(s: string): string {
+        // Lowercase for case-insensitive compare
+        return (s || "").toLocaleLowerCase();
+    }
+
+    function mtimeKey(name: string): string {
+        // reloadMtimes fills "YYYY-MM-DD HH:MM" — lexicographic works
+        return root.mtimeFor(name) || "";
+    }
+
+    function compareEntries(a: var, b: var): int {
+        const foldersFirst = root.state.foldersFirst;
+        if (foldersFirst && !!a.isDir !== !!b.isDir)
+            return a.isDir ? -1 : 1;
+
+        const rev = root.state.sortReverse;
+        const by = root.state.sortBy || "name";
+        let cmp = 0;
+
+        if (by === "size") {
+            const sa = a.isDir ? -1 : (a.size || 0);
+            const sb = b.isDir ? -1 : (b.size || 0);
+            cmp = sa < sb ? -1 : (sa > sb ? 1 : 0);
+        } else if (by === "type") {
+            const ta = entryTypeKey(a);
+            const tb = entryTypeKey(b);
+            cmp = ta < tb ? -1 : (ta > tb ? 1 : 0);
+            if (cmp === 0) {
+                const na = naturalKey(a.name);
+                const nb = naturalKey(b.name);
+                cmp = na < nb ? -1 : (na > nb ? 1 : 0);
+            }
+        } else if (by === "mtime") {
+            const ma = mtimeKey(a.name);
+            const mb = mtimeKey(b.name);
+            cmp = ma < mb ? -1 : (ma > mb ? 1 : 0);
+            if (cmp === 0) {
+                const na = naturalKey(a.name);
+                const nb = naturalKey(b.name);
+                cmp = na < nb ? -1 : (na > nb ? 1 : 0);
+            }
+        } else {
+            // name
+            const na = naturalKey(a.name);
+            const nb = naturalKey(b.name);
+            cmp = na < nb ? -1 : (na > nb ? 1 : 0);
+        }
+
+        if (cmp === 0)
+            return 0;
+        return rev ? -cmp : cmp;
+    }
+
+    function rebuildSorted(): void {
+        const items = [];
+        try {
+            const entries = fsModel.entries;
+            const n = entries ? entries.length : 0;
+            for (let i = 0; i < n; i++) {
+                const e = entries[i];
+                if (e)
+                    items.push(e);
+            }
+        } catch (err) {
+            // leave empty
+        }
+
+        items.sort((a, b) => root.compareEntries(a, b));
+
+        sortedModel.clear();
+        for (let j = 0; j < items.length; j++) {
+            const e = items[j];
+            sortedModel.append({
+                path: e.path || "",
+                name: e.name || "",
+                isDir: !!e.isDir,
+                isImage: !!e.isImage,
+                size: e.size || 0,
+                mimeType: e.mimeType || "",
+                suffix: e.suffix || "",
+                baseName: e.baseName || ""
+            });
+        }
+        root.sortEpoch = root.sortEpoch + 1;
+    }
+
+    Timer {
+        id: sortRebuildTimer
+        interval: 16
+        repeat: false
+        onTriggered: root.rebuildSorted()
+    }
+
+    function scheduleSortRebuild(): void {
+        sortRebuildTimer.restart();
+    }
+
     FileSystemModel {
         id: fsModel
         path: {
@@ -201,12 +320,18 @@ Item {
                 root.state.selection = [];
             if (path && path.length)
                 root.reloadMtimes(path);
-            else
+            else {
                 root.mtimeMap = {};
+                root.scheduleSortRebuild();
+            }
         }
+        onEntriesChanged: root.scheduleSortRebuild()
+        onNameFiltersChanged: root.scheduleSortRebuild()
+        onShowHiddenChanged: root.scheduleSortRebuild()
         Component.onCompleted: {
             if (path && path.length)
                 root.reloadMtimes(path);
+            root.scheduleSortRebuild();
         }
     }
 
@@ -227,6 +352,7 @@ Item {
                     map[line.slice(0, tab)] = line.slice(tab + 1);
                 }
                 root.mtimeMap = map;
+                root.scheduleSortRebuild();
             }
         }
     }
@@ -294,7 +420,7 @@ Item {
         currentIndex: -1
         keyNavigationEnabled: true
         interactive: true
-        model: fsModel
+        model: sortedModel
         delegate: GridEntry {}
 
         Keys.onEscapePressed: root.clearSelection()
@@ -325,7 +451,7 @@ Item {
         currentIndex: -1
         keyNavigationEnabled: true
         spacing: 2
-        model: fsModel
+        model: sortedModel
         delegate: ListEntry {}
 
         Keys.onEscapePressed: root.clearSelection()
@@ -873,7 +999,25 @@ Item {
         id: item
 
         required property int index
-        required property FileSystemEntry modelData
+        // ListModel roles (sorted view)
+        property string path: ""
+        property string name: ""
+        property bool isDir: false
+        property bool isImage: false
+        property real size: 0
+        property string mimeType: ""
+        property string suffix: ""
+        property string baseName: ""
+        readonly property var modelData: ({
+            path: path,
+            name: name,
+            isDir: isDir,
+            isImage: isImage,
+            size: size,
+            mimeType: mimeType,
+            suffix: suffix,
+            baseName: baseName
+        })
 
         readonly property bool isSelected: modelData ? root.state.selection.indexOf(modelData.path) >= 0 : false
         readonly property bool isCut: modelData && root.state.clipboardMode === "cut" && root.state.clipboardPaths.indexOf(modelData.path) >= 0
@@ -962,7 +1106,24 @@ Item {
         id: row
 
         required property int index
-        required property FileSystemEntry modelData
+        property string path: ""
+        property string name: ""
+        property bool isDir: false
+        property bool isImage: false
+        property real size: 0
+        property string mimeType: ""
+        property string suffix: ""
+        property string baseName: ""
+        readonly property var modelData: ({
+            path: path,
+            name: name,
+            isDir: isDir,
+            isImage: isImage,
+            size: size,
+            mimeType: mimeType,
+            suffix: suffix,
+            baseName: baseName
+        })
 
         readonly property bool isSelected: modelData ? root.state.selection.indexOf(modelData.path) >= 0 : false
         readonly property bool isCut: !!(modelData && root.state.clipboardMode === "cut" && root.state.clipboardPaths.indexOf(modelData.path) >= 0)
