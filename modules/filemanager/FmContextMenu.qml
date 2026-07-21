@@ -17,6 +17,8 @@ Item {
     property string anchorName: ""
     property bool expanded: false
     property bool showCompressFormats: false
+    property bool showSortMenu: false
+    property int menuEpoch: 0
     property real requestX: 0
     property real requestY: 0
 
@@ -32,6 +34,7 @@ Item {
         requestX = x;
         requestY = y;
         showCompressFormats = false;
+        showSortMenu = false;
         if (path && root.state.selection.indexOf(path) < 0)
             root.state.setSelection([path]);
 
@@ -79,6 +82,7 @@ Item {
     function close(): void {
         expanded = false;
         showCompressFormats = false;
+        showSortMenu = false;
     }
 
     function targets(): list<string> {
@@ -101,18 +105,28 @@ Item {
     function menuItems(): var {
         const items = [
             { id: "open", label: qsTr("打开") },
-            { id: "refresh", label: qsTr("刷新") },
-            { id: "sort-name", label: qsTr("排序：名称") },
-            { id: "sort-size", label: qsTr("排序：大小") },
-            { id: "sort-type", label: qsTr("排序：类型") },
-            { id: "sort-mtime", label: qsTr("排序：修改时间") },
-            { id: "sort-dir", label: qsTr("升序/降序") },
+            { id: "refresh", label: qsTr("刷新") }
+        ];
+
+        if (showSortMenu) {
+            items.push({ id: "sort-back", label: qsTr("‹ 排序") });
+            items.push({ id: "sort-name", label: qsTr("  名称") + (root.state.sortBy === "name" ? "  ✓" : "") });
+            items.push({ id: "sort-size", label: qsTr("  大小") + (root.state.sortBy === "size" ? "  ✓" : "") });
+            items.push({ id: "sort-type", label: qsTr("  类型") + (root.state.sortBy === "type" ? "  ✓" : "") });
+            items.push({ id: "sort-mtime", label: qsTr("  修改时间") + (root.state.sortBy === "mtime" ? "  ✓" : "") });
+            items.push({ id: "sort-dir", label: root.state.sortReverse ? qsTr("  升序") : qsTr("  降序") });
+            items.push({ id: "sort-folders", label: qsTr("  文件夹优先") + (root.state.foldersFirst ? "  ✓" : "") });
+        } else {
+            items.push({ id: "sort-menu", label: qsTr("排序 ›") });
+        }
+
+        items.push(
             { id: "copy", label: qsTr("复制") },
             { id: "cut", label: qsTr("剪切") },
             { id: "paste", label: qsTr("粘贴") },
             { id: "rename", label: qsTr("重命名") },
             { id: "mkdir", label: qsTr("新建文件夹") }
-        ];
+        );
         if (anchorIsDir && anchorPath.length) {
             if (root.state.isFavorite(anchorPath))
                 items.push({ id: "unpin", label: qsTr("取消侧栏固定") });
@@ -129,7 +143,7 @@ Item {
                 items.push({ id: "compress:tar.xz", label: qsTr("  tar.xz") });
                 items.push({ id: "compress:tar.zst", label: qsTr("  tar.zst") });
             } else {
-                items.push({ id: "compress-menu", label: qsTr("压缩为…") });
+                items.push({ id: "compress-menu", label: qsTr("压缩为 ›") });
             }
         }
 
@@ -155,6 +169,35 @@ Item {
         reposition()
     onHeightChanged: if (expanded)
         reposition()
+
+    // Rebuild checkmarks while sort submenu is open
+    Connections {
+        target: root.state
+        function onSortByChanged(): void {
+            if (root.expanded)
+                root.menuEpoch = root.menuEpoch + 1;
+        }
+        function onSortReverseChanged(): void {
+            if (root.expanded)
+                root.menuEpoch = root.menuEpoch + 1;
+        }
+        function onFoldersFirstChanged(): void {
+            if (root.expanded)
+                root.menuEpoch = root.menuEpoch + 1;
+        }
+    }
+
+    // Bump model when sort submenu toggles
+    onShowSortMenuChanged: {
+        menuEpoch = menuEpoch + 1;
+        if (expanded)
+            Qt.callLater(reposition);
+    }
+    onShowCompressFormatsChanged: {
+        menuEpoch = menuEpoch + 1;
+        if (expanded)
+            Qt.callLater(reposition);
+    }
 
     MouseArea {
         anchors.fill: parent
@@ -192,7 +235,10 @@ Item {
             spacing: 2
 
             Repeater {
-                model: root.expanded ? root.menuItems() : []
+                model: {
+                    const _ = root.menuEpoch;
+                    return root.expanded ? root.menuItems() : [];
+                }
 
                 StyledRect {
                     id: row
@@ -209,6 +255,7 @@ Item {
                             const t = root.targets();
                             if (id === "compress-menu") {
                                 root.showCompressFormats = true;
+                                root.showSortMenu = false;
                                 Qt.callLater(root.reposition);
                                 return;
                             }
@@ -241,16 +288,33 @@ Item {
                             } else if (id === "refresh") {
                                 root.state.bumpRefresh();
                                 root.state.statusText = qsTr("已刷新");
+                            } else if (id === "sort-menu") {
+                                root.showSortMenu = true;
+                                root.showCompressFormats = false;
+                                Qt.callLater(root.reposition);
+                                return;
+                            } else if (id === "sort-back") {
+                                root.showSortMenu = false;
+                                Qt.callLater(root.reposition);
+                                return;
                             } else if (id === "sort-name") {
                                 root.state.setSortBy("name");
+                                return; // stay in submenu
                             } else if (id === "sort-size") {
                                 root.state.setSortBy("size");
+                                return;
                             } else if (id === "sort-type") {
                                 root.state.setSortBy("type");
+                                return;
                             } else if (id === "sort-mtime") {
                                 root.state.setSortBy("mtime");
+                                return;
                             } else if (id === "sort-dir") {
                                 root.state.toggleSortReverse();
+                                return;
+                            } else if (id === "sort-folders") {
+                                root.state.toggleFoldersFirst();
+                                return;
                             } else if (id === "copy") {
                                 root.actions.copy(t);
                             } else if (id === "cut") {
