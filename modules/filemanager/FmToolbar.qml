@@ -23,11 +23,12 @@ StyledRect {
     }
 
     function collapseSearch(clear: bool): void {
-        if (clear)
-            root.state.clearNameFilter();
         searchExpanded = false;
-        // Drop focus so keybindings work on the window again
         searchField.focus = false;
+        if (clear) {
+            searchField.text = "";
+            root.state.clearNameFilter();
+        }
     }
 
     implicitHeight: row.implicitHeight + Tokens.padding.small * 2
@@ -156,8 +157,12 @@ StyledRect {
                             text = root.state.nameFilter;
                     }
                     onTextChanged: {
+                        // Avoid re-entrancy; always push to state
                         if (root.state.nameFilter !== text)
                             root.state.setNameFilter(text);
+                        // Empty field = show all (even if state already empty, force refresh)
+                        if (!text.length && root.state.nameFilter.length)
+                            root.state.clearNameFilter();
                     }
                     Keys.onEscapePressed: {
                         root.collapseSearch(true);
@@ -238,12 +243,10 @@ StyledRect {
     Connections {
         target: root.state
         function onNameFilterChanged(): void {
+            if (searchField.text !== root.state.nameFilter)
+                searchField.text = root.state.nameFilter;
             if (!root.state.nameFilter.length && !searchField.activeFocus)
                 root.searchExpanded = false;
-            else if (root.state.nameFilter.length && searchField.text !== root.state.nameFilter)
-                searchField.text = root.state.nameFilter;
-            if (!root.state.nameFilter.length && searchField.text.length)
-                searchField.text = "";
         }
     }
 

@@ -15,6 +15,25 @@ QtObject {
     property string statusText: qsTr("就绪")
     property string nameFilter: ""
     property int refreshNonce: 0
+    // Binding-friendly filters for FileSystemModel.
+    // Use ["*"] (not []) for "show all" so QML/C++ empty-list edge cases cannot stick.
+    readonly property var nameFiltersActive: {
+        const raw = nameFilter;
+        const q = (raw || "").trim();
+        if (!q.length)
+            return ["*"];
+        if (q.indexOf("*") >= 0 || q.indexOf("?") >= 0)
+            return [q];
+        let escaped = "";
+        for (let i = 0; i < q.length; i++) {
+            const c = q.charAt(i);
+            if (c === "\\" || c === "*" || c === "?")
+                escaped += "\\" + c;
+            else
+                escaped += c;
+        }
+        return ["*" + escaped + "*"];
+    }
 
     // View prefs
     property string viewMode: "grid" // "grid" | "list"
@@ -389,21 +408,26 @@ QtObject {
 
     function setNameFilter(q: string): void {
         const next = q || "";
-        if (nameFilter === next) {
-            if (!next.length)
-                statusText = qsTr("就绪");
-            return;
-        }
+        const prev = nameFilter;
         nameFilter = next;
         if (nameFilter.length)
             statusText = qsTr("搜索：%1").arg(nameFilter);
         else
             statusText = qsTr("就绪");
+        // Clearing search must always re-scan (nameFilters binding + model refresh)
+        if (prev !== next && !next.length)
+            bumpRefresh();
     }
 
     function clearNameFilter(): void {
+        if (!nameFilter.length) {
+            statusText = qsTr("就绪");
+            bumpRefresh();
+            return;
+        }
         nameFilter = "";
         statusText = qsTr("就绪");
+        bumpRefresh();
     }
 
     function toggleShowHidden(): void {

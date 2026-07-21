@@ -104,16 +104,20 @@ Item {
     property bool dropHoverActive: false
     property bool dragVisualActive: false
 
-    // Flip-flop path binding so FileSystemModel reloads same directory on refresh
-    property bool fsRefreshBlank: false
+    // Bump path through empty so FileSystemModel.setPath reloads same dir
+    property int fsPathTick: 0
+    property string fsPathOverride: ""
 
     Connections {
         target: root.state
         function onRefreshNonceChanged(): void {
-            root.fsRefreshBlank = true;
+            const p = root.state.isThisPC ? "" : root.state.cwdPath();
+            // Force setPath: empty first, then real path on next tick
+            root.fsPathOverride = "__refresh__";
+            root.fsPathTick = root.fsPathTick + 1;
             Qt.callLater(() => {
-                root.fsRefreshBlank = false;
-                const p = root.state.isThisPC ? "" : root.state.cwdPath();
+                root.fsPathOverride = "";
+                root.fsPathTick = root.fsPathTick + 1;
                 if (p && p.length)
                     root.reloadMtimes(p);
             });
@@ -177,14 +181,19 @@ Item {
     FileSystemModel {
         id: fsModel
         path: {
-            const _ = root.state.refreshNonce;
-            if (root.fsRefreshBlank || root.state.isThisPC)
+            const _tick = root.fsPathTick;
+            if (root.state.isThisPC)
+                return "";
+            if (root.fsPathOverride === "__refresh__")
                 return "";
             return root.state.cwdPath();
         }
         showHidden: root.state.showHidden
-        // Live name filter from toolbar search (QDir wildcards via ManagerState)
-        nameFilters: root.state.nameFiltersForSearch()
+        // Read nameFilter in this binding so clear/search always re-evaluates
+        nameFilters: {
+            const _ = root.state.nameFilter;
+            return root.state.nameFiltersActive;
+        }
         onPathChanged: {
             grid.currentIndex = -1;
             list.currentIndex = -1;
