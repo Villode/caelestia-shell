@@ -388,17 +388,22 @@ QtObject {
     }
 
     function setNameFilter(q: string): void {
-        if (nameFilter === q)
+        const next = q || "";
+        if (nameFilter === next) {
+            if (!next.length)
+                statusText = qsTr("就绪");
             return;
-        nameFilter = q || "";
+        }
+        nameFilter = next;
         if (nameFilter.length)
-            statusText = qsTr("筛选：%1").arg(nameFilter);
+            statusText = qsTr("搜索：%1").arg(nameFilter);
         else
             statusText = qsTr("就绪");
     }
 
     function clearNameFilter(): void {
-        setNameFilter("");
+        nameFilter = "";
+        statusText = qsTr("就绪");
     }
 
     function toggleShowHidden(): void {

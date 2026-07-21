@@ -101,6 +101,7 @@ Item {
     function menuItems(): var {
         const items = [
             { id: "open", label: qsTr("打开") },
+            { id: "refresh", label: qsTr("刷新") },
             { id: "copy", label: qsTr("复制") },
             { id: "cut", label: qsTr("剪切") },
             { id: "paste", label: qsTr("粘贴") },
@@ -232,6 +233,9 @@ Item {
                                     root.actions.openEntry(true, root.anchorName, root.anchorPath);
                                 else
                                     root.actions.openPaths(t);
+                            } else if (id === "refresh") {
+                                root.state.bumpRefresh();
+                                root.state.statusText = qsTr("已刷新");
                             } else if (id === "copy") {
                                 root.actions.copy(t);
                             } else if (id === "cut") {

@@ -12,10 +12,22 @@ StyledRect {
 
     required property var state
     property var actions: null
+    property bool searchExpanded: false
 
     function focusSearch(): void {
-        searchField.forceActiveFocus();
-        searchField.selectAll();
+        searchExpanded = true;
+        Qt.callLater(() => {
+            searchField.forceActiveFocus();
+            searchField.selectAll();
+        });
+    }
+
+    function collapseSearch(clear: bool): void {
+        if (clear)
+            root.state.clearNameFilter();
+        searchExpanded = false;
+        // Drop focus so keybindings work on the window again
+        searchField.focus = false;
     }
 
     implicitHeight: row.implicitHeight + Tokens.padding.small * 2
@@ -62,6 +74,16 @@ StyledRect {
             onTriggered: root.state.toggleShowHidden()
         }
 
+        ToolBtn {
+            icon: "refresh"
+            tip: qsTr("刷新")
+            active: false
+            onTriggered: {
+                root.state.bumpRefresh();
+                root.state.statusText = qsTr("已刷新");
+            }
+        }
+
         StyledRect {
             Layout.preferredWidth: 1
             Layout.preferredHeight: 20
@@ -93,12 +115,20 @@ StyledRect {
 
         Item { Layout.fillWidth: true }
 
-        // Current-folder name filter
+        // Search: icon only until expanded (Ctrl+F / click)
+        ToolBtn {
+            visible: !root.searchExpanded
+            icon: "search"
+            tip: qsTr("搜索当前文件夹 (Ctrl+F)")
+            active: root.state.nameFilter.length > 0
+            onTriggered: root.focusSearch()
+        }
+
         StyledRect {
-            Layout.preferredWidth: 220
-            Layout.maximumWidth: 320
-            Layout.fillWidth: true
-            Layout.minimumWidth: 120
+            visible: root.searchExpanded
+            Layout.preferredWidth: 240
+            Layout.maximumWidth: 360
+            Layout.minimumWidth: 160
             implicitHeight: searchField.implicitHeight + Tokens.padding.extraSmall
             radius: Tokens.rounding.medium
             color: Colours.tPalette.m3surfaceContainerHigh
@@ -118,33 +148,32 @@ StyledRect {
                 StyledTextField {
                     id: searchField
                     Layout.fillWidth: true
-                    placeholderText: qsTr("筛选当前文件夹…")
-                    text: root.state.nameFilter
-                    selectByMouse: true
+                    placeholderText: qsTr("搜索当前文件夹…")
+                    // One-way sync from state when empty/nav; user edits drive state
+                    Component.onCompleted: text = root.state.nameFilter
+                    onActiveFocusChanged: {
+                        if (activeFocus && text !== root.state.nameFilter)
+                            text = root.state.nameFilter;
+                    }
                     onTextChanged: {
                         if (root.state.nameFilter !== text)
                             root.state.setNameFilter(text);
                     }
                     Keys.onEscapePressed: {
-                        if (text.length) {
-                            text = "";
-                            root.state.clearNameFilter();
-                            event.accepted = true;
-                        }
+                        root.collapseSearch(true);
+                        event.accepted = true;
                     }
+                    Keys.onReturnPressed: event.accepted = true
+                    Keys.onEnterPressed: event.accepted = true
                 }
 
                 Item {
-                    visible: searchField.text.length > 0
                     implicitWidth: 28
                     implicitHeight: 28
 
                     StateLayer {
                         radius: Tokens.rounding.full
-                        onClicked: {
-                            searchField.text = "";
-                            root.state.clearNameFilter();
-                        }
+                        onClicked: root.collapseSearch(true)
                     }
 
                     MaterialIcon {
@@ -154,6 +183,29 @@ StyledRect {
                         fontStyle: Tokens.font.icon.small
                     }
                 }
+            }
+        }
+
+        // Badge when collapsed but filter still active (should be rare if collapse clears)
+        Rectangle {
+            visible: !root.searchExpanded && root.state.nameFilter.length > 0
+            implicitWidth: Math.max(18, filterBadge.implicitWidth + 8)
+            implicitHeight: 18
+            radius: height / 2
+            color: Colours.palette.m3primary
+            Layout.alignment: Qt.AlignVCenter
+
+            StyledText {
+                id: filterBadge
+                anchors.centerIn: parent
+                text: "•"
+                color: Colours.palette.m3onPrimary
+                font: Tokens.font.body.builders.small.scale(0.8).weight(Font.Bold).build()
+            }
+
+            StateLayer {
+                radius: parent.radius
+                onClicked: root.focusSearch()
             }
         }
 
@@ -180,12 +232,18 @@ StyledRect {
                 font: Tokens.font.body.builders.small.weight(Font.Bold).build()
             }
         }
+    }
 
-        StyledText {
-            visible: !root.state.isTrash()
-            text: root.state.viewMode === "list" ? qsTr("列表") : qsTr("图标")
-            color: Colours.palette.m3onSurfaceVariant
-            font: Tokens.font.body.builders.small.build()
+    // When cwd changes / filter cleared externally, collapse search UI if empty
+    Connections {
+        target: root.state
+        function onNameFilterChanged(): void {
+            if (!root.state.nameFilter.length && !searchField.activeFocus)
+                root.searchExpanded = false;
+            else if (root.state.nameFilter.length && searchField.text !== root.state.nameFilter)
+                searchField.text = root.state.nameFilter;
+            if (!root.state.nameFilter.length && searchField.text.length)
+                searchField.text = "";
         }
     }
 

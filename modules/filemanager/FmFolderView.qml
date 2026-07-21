@@ -104,6 +104,22 @@ Item {
     property bool dropHoverActive: false
     property bool dragVisualActive: false
 
+    // Flip-flop path binding so FileSystemModel reloads same directory on refresh
+    property bool fsRefreshBlank: false
+
+    Connections {
+        target: root.state
+        function onRefreshNonceChanged(): void {
+            root.fsRefreshBlank = true;
+            Qt.callLater(() => {
+                root.fsRefreshBlank = false;
+                const p = root.state.isThisPC ? "" : root.state.cwdPath();
+                if (p && p.length)
+                    root.reloadMtimes(p);
+            });
+        }
+    }
+
     function humanSize(bytes: real): string {
         if (bytes < 1024)
             return `${Math.round(bytes)} B`;
@@ -162,7 +178,7 @@ Item {
         id: fsModel
         path: {
             const _ = root.state.refreshNonce;
-            if (root.state.isThisPC)
+            if (root.fsRefreshBlank || root.state.isThisPC)
                 return "";
             return root.state.cwdPath();
         }
@@ -243,7 +259,7 @@ Item {
             }
             StyledText {
                 text: (root.state.nameFilter && root.state.nameFilter.length)
-                    ? qsTr("无匹配「%1」的项").arg(root.state.nameFilter)
+                    ? qsTr("无搜索结果「%1」").arg(root.state.nameFilter)
                     : qsTr("此文件夹为空")
                 color: Colours.palette.m3outline
                 font: Tokens.font.body.builders.large.weight(Font.Medium).build()
@@ -337,6 +353,10 @@ Item {
                     root.actions.mkdir("");
                 event.accepted = true;
             }
+        } else if (event.key === Qt.Key_F5) {
+            root.state.bumpRefresh();
+            root.state.statusText = qsTr("已刷新");
+            event.accepted = true;
         } else if (event.key === Qt.Key_F2) {
             const p = root.state.selection.length === 1 ? root.state.selection[0] : currentPath();
             if (p && typeof root.actions.requestRename === "function")

@@ -86,6 +86,11 @@ FloatingWindow {
 
         Keys.onPressed: event => {
             if (event.key === Qt.Key_Escape) {
+                if (toolbar.searchExpanded) {
+                    toolbar.collapseSearch(true);
+                    event.accepted = true;
+                    return;
+                }
                 if (nameDlg.expanded) {
                     nameDlg.close();
                     event.accepted = true;
@@ -120,6 +125,12 @@ FloatingWindow {
                     event.accepted = true;
                     return;
                 }
+            }
+            if (event.key === Qt.Key_F5) {
+                nState.bumpRefresh();
+                nState.statusText = qsTr("已刷新");
+                event.accepted = true;
+                return;
             }
             if (event.key === Qt.Key_F2) {
                 let path = nState.selection.length === 1 ? nState.selection[0] : "";
