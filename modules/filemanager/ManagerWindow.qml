@@ -189,10 +189,13 @@ FloatingWindow {
                                 nState.openAbsolutePath(device.path);
                         }
                         onRequestMount: device => {
-                            if (!device?.device)
+                            if (!device)
                                 return;
-                            nState.statusText = qsTr("尝试挂载 %1…").arg(device.name);
-                            nDevices.mountDevice(device.device, device.name);
+                            // Block: device=/dev/...; Phone MTP: uri=mtp://...
+                            if (!device.device && !device.uri)
+                                return;
+                            nState.statusText = qsTr("尝试挂载 %1…").arg(device.name || "");
+                            nDevices.mountDevice(device.device || "", device.name || "", device.uri || "");
                         }
                     }
 

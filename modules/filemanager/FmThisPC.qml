@@ -22,6 +22,7 @@ Item {
         const out = [];
         for (let i = 0; i < src.length; i++) {
             const k = src[i].kind;
+            // disks + USB + phone/MTP; network listed separately
             if (k !== "folder" && k !== "network")
                 out.push(src[i]);
         }

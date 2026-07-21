@@ -6,22 +6,14 @@ import Quickshell
 import Quickshell.Io
 import Caelestia.Config
 import qs.components
-import qs.components.filedialog
 import qs.services
 import qs.utils
 
-// Portal / external Open-Save picker. Reuses filedialog visuals; writes URIs to resultFile.
+// Portal Open/Save picker — same chrome as QML file manager (sidebar/header/toolbar/grid).
 Scope {
     id: root
 
     property var win: null
-
-    function finish(paths: var, cancelled: bool): void {
-        // win closes itself after writing
-        if (win) {
-            win = null;
-        }
-    }
 
     function openPicker(opts: var): void {
         if (win) {
@@ -64,8 +56,6 @@ Scope {
             property string suggestedName: ""
             property bool multiple: false
             property bool acceptDirectories: false
-            property list<string> cwd: ["Home"]
-            property string typedName: suggestedName
             property bool done: false
 
             signal pickerClosed
@@ -75,29 +65,15 @@ Scope {
                     const name = (nameField.text || "").trim();
                     return name.length > 0 && !name.includes("/");
                 }
-                if (acceptDirectories || mode === "folder") {
-                    // current folder always valid; or selected dir
-                    const file = folderContents.currentItem?.modelData;
-                    if (file && file.isDir)
-                        return true;
-                    return cwdPath().length > 0;
-                }
-                const file = folderContents.currentItem?.modelData;
-                if (!file || file.isDir)
+                if (acceptDirectories || mode === "folder")
+                    return !nState.isThisPC && nState.cwdPath().length > 0;
+                // open file(s)
+                const sel = nState.selection || [];
+                if (!sel.length)
                     return false;
-                if (filters.includes("*"))
+                if (multiple)
                     return true;
-                return filters.includes(file.suffix);
-            }
-
-            function cwdPath(): string {
-                if (!cwd.length)
-                    return Paths.home;
-                if (cwd[0] === "Home" && cwd.length === 1)
-                    return Paths.home;
-                if (cwd[0] === "Home")
-                    return Paths.home + "/" + cwd.slice(1).join("/");
-                return cwd.join("/");
+                return sel.length >= 1;
             }
 
             function writeResult(uris: var, cancelled: bool): void {
@@ -114,7 +90,6 @@ Scope {
                     for (let i = 0; i < uris.length; i++)
                         body += uris[i] + "\n";
                 }
-                // status line first for the portal backend
                 const content = (cancelled ? "CANCEL\n" : "OK\n") + body;
                 Quickshell.execDetached([
                     "python3", "-c",
@@ -132,52 +107,74 @@ Scope {
                 return "file://" + path;
             }
 
-            // Called by FolderContents on double-click file
-            function accepted(path: string): void {
-                if (mode === "save") {
-                    if (path && path.length) {
-                        const base = path.split("/").pop();
-                        if (base)
-                            typedName = base;
-                    }
-                    accept();
-                    return;
-                }
-                if (acceptDirectories || mode === "folder") {
-                    writeResult([toUri(path || cwdPath())], false);
-                    return;
-                }
-                writeResult([toUri(path)], false);
-            }
-
-            function rejected(): void {
-                reject();
-            }
-
             function accept(): void {
                 if (!selectionValid)
                     return;
                 if (mode === "save") {
                     const name = (nameField.text || "").trim();
-                    const path = cwdPath() + "/" + name;
-                    writeResult([toUri(path)], false);
+                    writeResult([toUri(nState.cwdPath() + "/" + name)], false);
                     return;
                 }
                 if (acceptDirectories || mode === "folder") {
-                    const file = folderContents.currentItem?.modelData;
-                    if (file && file.isDir)
-                        writeResult([toUri(file.path)], false);
-                    else
-                        writeResult([toUri(cwdPath())], false);
+                    const sel = nState.selection || [];
+                    // if a single directory is selected, use it; else current folder
+                    if (sel.length === 1) {
+                        writeResult([toUri(sel[0])], false);
+                        return;
+                    }
+                    writeResult([toUri(nState.cwdPath())], false);
                     return;
                 }
-                const file = folderContents.currentItem?.modelData;
-                if (file && !file.isDir)
-                    writeResult([toUri(file.path)], false);
+                const sel = nState.selection || [];
+                if (!sel.length)
+                    return;
+                const uris = [];
+                for (let i = 0; i < sel.length; i++)
+                    uris.push(toUri(sel[i]));
+                writeResult(uris, false);
             }
 
             function reject(): void {
                 writeResult([], true);
+            }
+
+            // Lightweight actions for FolderView (open/activate only; no file ops in portal)
+            QtObject {
+                id: nActions
+                function openEntry(isDir: bool, name: string, path: string): void {
+                    if (isDir) {
+                        nState.openAbsolutePath(path);
+                        return;
+                    }
+                    if (dlg.mode === "save") {
+                        nameField.text = name || "";
+                        nState.setSelection([path]);
+                        return;
+                    }
+                    if (dlg.acceptDirectories || dlg.mode === "folder")
+                        return;
+                    nState.setSelection([path]);
+                    if (!dlg.multiple)
+                        dlg.accept();
+                }
+                function openPaths(paths: list<string>): void {
+                    if (paths && paths.length)
+                        openEntry(true, "", paths[0]);
+                }
+                function copy(paths: list<string>): void {}
+                function cut(paths: list<string>): void {}
+                function paste(): void {}
+                function mkdir(): void {}
+                function trash(paths: list<string>): void {}
+                function deletePermanent(paths: list<string>): void {}
+                function requestTrash(paths: list<string>): void {}
+                function requestDelete(paths: list<string>): void {}
+                function requestEmptyTrash(): void {}
+                function emptyTrash(): void {}
+                function compress(paths: list<string>, fmt: string): void {}
+                function extract(paths: list<string>, mode: string): void {}
+                function anyArchive(paths: list<string>): bool { return false; }
+                function properties(path: string): void {}
             }
 
             implicitWidth: 1000
@@ -189,18 +186,16 @@ Scope {
             title: dialogTitle
 
             Component.onCompleted: {
-                if (startDir && startDir.length) {
-                    // map absolute path under home to cwd segments when possible
-                    const home = Paths.home;
-                    if (startDir === home || startDir === home + "/")
-                        cwd = ["Home"];
-                    else if (startDir.startsWith(home + "/")) {
-                        const rest = startDir.slice(home.length + 1).split("/").filter(s => s.length);
-                        cwd = ["Home"].concat(rest);
-                    }
-                }
+                // Apply portal filters as name filter when single simple pattern
+                if (filters && filters.length === 1 && filters[0] !== "*")
+                    nState.nameFilter = filters[0];
+                if (startDir && startDir.length)
+                    nState.openAbsolutePath(startDir);
+                else
+                    nState.navigateToPlace("Home");
                 if (mode === "save" && suggestedName)
-                    typedName = suggestedName;
+                    nameField.text = suggestedName;
+                nState.statusText = dialogTitle;
             }
 
             onVisibleChanged: {
@@ -208,151 +203,206 @@ Scope {
                     reject();
             }
 
-            // Escape
-            Item {
-                anchors.fill: parent
-                focus: true
-                Keys.onEscapePressed: dlg.reject()
+            ManagerState {
+                id: nState
             }
 
-            ColumnLayout {
-                anchors.fill: parent
-                spacing: 0
+            FmDevices {
+                id: nDevices
+                onMountFinished: (ok, message, path) => {
+                    if (ok && path)
+                        nState.openAbsolutePath(path);
+                    else if (!ok)
+                        nState.statusText = message || qsTr("挂载失败");
+                }
+            }
 
-                RowLayout {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
+            Item {
+                id: chrome
+                anchors.fill: parent
+                focus: true
+
+                Keys.onEscapePressed: dlg.reject()
+                Keys.onReturnPressed: {
+                    if (dlg.selectionValid)
+                        dlg.accept();
+                }
+                Keys.onEnterPressed: {
+                    if (dlg.selectionValid)
+                        dlg.accept();
+                }
+
+                ColumnLayout {
+                    anchors.fill: parent
                     spacing: 0
 
-                    // Lightweight places sidebar (reuse filedialog Sidebar API: dialog.cwd)
-                    Sidebar {
-                        Layout.fillHeight: true
-                        dialog: dlg
-                    }
-
-                    ColumnLayout {
+                    RowLayout {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         spacing: 0
 
-                        HeaderBar {
-                            Layout.fillWidth: true
-                            dialog: dlg
+                        FmSidebar {
+                            Layout.fillHeight: true
+                            state: nState
                         }
 
-                        FolderContents {
-                            id: folderContents
+                        ColumnLayout {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            dialog: dlg
-                        }
+                            spacing: 0
 
-                        // Save name field
-                        StyledRect {
-                            visible: dlg.mode === "save"
-                            Layout.fillWidth: true
-                            implicitHeight: nameRow.implicitHeight + Tokens.padding.medium * 2
-                            color: Colours.tPalette.m3surfaceContainer
+                            FmHeader {
+                                Layout.fillWidth: true
+                                state: nState
+                            }
 
-                            RowLayout {
-                                id: nameRow
-                                anchors.fill: parent
-                                anchors.margins: Tokens.padding.medium
-                                spacing: Tokens.spacing.medium
+                            FmToolbar {
+                                Layout.fillWidth: true
+                                state: nState
+                                actions: null
+                                visible: !nState.isThisPC
+                            }
 
-                                StyledText {
-                                    text: qsTr("文件名：")
-                                    color: Colours.palette.m3onSurfaceVariant
-                                    font: Tokens.font.body.small
+                            Item {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+
+                                FmThisPC {
+                                    anchors.fill: parent
+                                    visible: nState.isThisPC
+                                    state: nState
+                                    devices: nDevices
+                                    onOpenDevice: device => {
+                                        if (device?.path)
+                                            nState.openAbsolutePath(device.path);
+                                    }
+                                    onRequestMount: device => {
+                                        if (!device)
+                                            return;
+                                        if (!device.device && !device.uri)
+                                            return;
+                                        nDevices.mountDevice(device.device || "", device.name || "", device.uri || "");
+                                    }
                                 }
 
-                                StyledRect {
-                                    Layout.fillWidth: true
-                                    implicitHeight: nameField.implicitHeight + Tokens.padding.small * 2
-                                    radius: Tokens.rounding.medium
-                                    color: Colours.tPalette.m3surfaceContainerHigh
+                                FmFolderView {
+                                    anchors.fill: parent
+                                    visible: !nState.isThisPC
+                                    state: nState
+                                    actions: nActions
+                                }
+                            }
 
-                                    TextInput {
-                                        id: nameField
-                                        anchors.fill: parent
-                                        anchors.margins: Tokens.padding.small
-                                        text: dlg.typedName
-                                        color: Colours.palette.m3onSurface
+                            // Save filename
+                            StyledRect {
+                                visible: dlg.mode === "save"
+                                Layout.fillWidth: true
+                                implicitHeight: nameRow.implicitHeight + Tokens.padding.medium * 2
+                                color: Colours.tPalette.m3surfaceContainer
+
+                                RowLayout {
+                                    id: nameRow
+                                    anchors.fill: parent
+                                    anchors.margins: Tokens.padding.medium
+                                    spacing: Tokens.spacing.medium
+
+                                    StyledText {
+                                        text: qsTr("文件名：")
+                                        color: Colours.palette.m3onSurfaceVariant
                                         font: Tokens.font.body.small
-                                        clip: true
-                                        selectByMouse: true
-                                        onTextChanged: dlg.typedName = text
-                                        Keys.onReturnPressed: dlg.accept()
+                                    }
+
+                                    StyledRect {
+                                        Layout.fillWidth: true
+                                        implicitHeight: nameField.implicitHeight + Tokens.padding.small * 2
+                                        radius: Tokens.rounding.medium
+                                        color: Colours.tPalette.m3surfaceContainerHigh
+
+                                        TextInput {
+                                            id: nameField
+                                            anchors.fill: parent
+                                            anchors.margins: Tokens.padding.small
+                                            color: Colours.palette.m3onSurface
+                                            font: Tokens.font.body.small
+                                            clip: true
+                                            selectByMouse: true
+                                            Keys.onReturnPressed: dlg.accept()
+                                        }
                                     }
                                 }
                             }
-                        }
 
-                        StyledRect {
-                            Layout.fillWidth: true
-                            implicitHeight: btnRow.implicitHeight + Tokens.padding.medium * 2
-                            color: Colours.tPalette.m3surfaceContainer
+                            // Footer: status + Open/Cancel
+                            StyledRect {
+                                Layout.fillWidth: true
+                                implicitHeight: btnRow.implicitHeight + Tokens.padding.medium * 2
+                                color: Colours.tPalette.m3surfaceContainer
 
-                            RowLayout {
-                                id: btnRow
-                                anchors.fill: parent
-                                anchors.margins: Tokens.padding.medium
-                                spacing: Tokens.spacing.small
+                                RowLayout {
+                                    id: btnRow
+                                    anchors.fill: parent
+                                    anchors.margins: Tokens.padding.medium
+                                    spacing: Tokens.spacing.small
 
-                                StyledText {
-                                    visible: !dlg.acceptDirectories && dlg.mode !== "save" && dlg.mode !== "folder"
-                                    text: qsTr("筛选：")
-                                    color: Colours.palette.m3onSurfaceVariant
-                                }
-                                StyledText {
-                                    Layout.fillWidth: true
-                                    text: dlg.mode === "save"
-                                        ? qsTr("选择目录并输入文件名")
-                                        : `${dlg.filterLabel}`
-                                    color: Colours.palette.m3onSurfaceVariant
-                                    font: Tokens.font.body.small
-                                    elide: Text.ElideRight
-                                }
-
-                                StyledRect {
-                                    implicitWidth: okLbl.implicitWidth + Tokens.padding.large * 2
-                                    implicitHeight: okLbl.implicitHeight + Tokens.padding.medium
-                                    radius: Tokens.rounding.full
-                                    color: dlg.selectionValid ? Colours.palette.m3primary : Colours.palette.m3surfaceContainerHighest
-
-                                    StateLayer {
-                                        radius: parent.radius
-                                        disabled: !dlg.selectionValid
-                                        color: Colours.palette.m3onPrimary
-                                        onClicked: dlg.accept()
-                                    }
                                     StyledText {
-                                        id: okLbl
-                                        anchors.centerIn: parent
-                                        text: dlg.mode === "save" ? qsTr("保存") : (dlg.acceptDirectories || dlg.mode === "folder" ? qsTr("选择文件夹") : qsTr("打开"))
-                                        color: dlg.selectionValid ? Colours.palette.m3onPrimary : Colours.palette.m3outline
-                                        font: Tokens.font.body.builders.small.weight(Font.Bold).build()
-                                    }
-                                }
-
-                                StyledRect {
-                                    implicitWidth: cancelLbl.implicitWidth + Tokens.padding.large * 2
-                                    implicitHeight: cancelLbl.implicitHeight + Tokens.padding.medium
-                                    radius: Tokens.rounding.full
-                                    color: "transparent"
-                                    border.width: 1
-                                    border.color: Colours.palette.m3outlineVariant
-
-                                    StateLayer {
-                                        radius: parent.radius
-                                        onClicked: dlg.reject()
-                                    }
-                                    StyledText {
-                                        id: cancelLbl
-                                        anchors.centerIn: parent
-                                        text: qsTr("取消")
-                                        color: Colours.palette.m3onSurface
+                                        Layout.fillWidth: true
+                                        text: {
+                                            if (dlg.mode === "save")
+                                                return qsTr("选择目录并输入文件名");
+                                            if (dlg.acceptDirectories || dlg.mode === "folder")
+                                                return qsTr("选择文件夹，或进入目录后点「选择文件夹」");
+                                            const n = (nState.selection || []).length;
+                                            if (n)
+                                                return qsTr("已选 %1 项 · %2").arg(n).arg(dlg.filterLabel);
+                                            return dlg.filterLabel || nState.statusText;
+                                        }
+                                        color: Colours.palette.m3onSurfaceVariant
                                         font: Tokens.font.body.small
+                                        elide: Text.ElideRight
+                                    }
+
+                                    StyledRect {
+                                        implicitWidth: okLbl.implicitWidth + Tokens.padding.large * 2
+                                        implicitHeight: okLbl.implicitHeight + Tokens.padding.medium
+                                        radius: Tokens.rounding.full
+                                        color: dlg.selectionValid ? Colours.palette.m3primary : Colours.palette.m3surfaceContainerHighest
+
+                                        StateLayer {
+                                            radius: parent.radius
+                                            disabled: !dlg.selectionValid
+                                            color: Colours.palette.m3onPrimary
+                                            onClicked: dlg.accept()
+                                        }
+                                        StyledText {
+                                            id: okLbl
+                                            anchors.centerIn: parent
+                                            text: dlg.mode === "save"
+                                                ? qsTr("保存")
+                                                : (dlg.acceptDirectories || dlg.mode === "folder" ? qsTr("选择文件夹") : qsTr("打开"))
+                                            color: dlg.selectionValid ? Colours.palette.m3onPrimary : Colours.palette.m3outline
+                                            font: Tokens.font.body.builders.small.weight(Font.Bold).build()
+                                        }
+                                    }
+
+                                    StyledRect {
+                                        implicitWidth: cancelLbl.implicitWidth + Tokens.padding.large * 2
+                                        implicitHeight: cancelLbl.implicitHeight + Tokens.padding.medium
+                                        radius: Tokens.rounding.full
+                                        color: "transparent"
+                                        border.width: 1
+                                        border.color: Colours.palette.m3outlineVariant
+
+                                        StateLayer {
+                                            radius: parent.radius
+                                            onClicked: dlg.reject()
+                                        }
+                                        StyledText {
+                                            id: cancelLbl
+                                            anchors.centerIn: parent
+                                            text: qsTr("取消")
+                                            color: Colours.palette.m3onSurface
+                                            font: Tokens.font.body.small
+                                        }
                                     }
                                 }
                             }
@@ -395,12 +445,9 @@ Scope {
     IpcHandler {
         target: "filechooser"
 
-        // Preferred: qs ipc call filechooser request <jsonPath>
-        // JSON: {mode,title,resultFile,filters,startDir,suggestedName,multiple,acceptDirectories}
         function request(jsonPath: string): void {
             if (!jsonPath || !jsonPath.length)
                 return;
-            // force reload even if same path
             requestView.path = "";
             Qt.callLater(() => {
                 requestView.path = jsonPath;
@@ -408,7 +455,6 @@ Scope {
             });
         }
 
-        // Debug helpers (avoid spaces in title/path when using these)
         function open(title: string, resultFile: string, filtersCsv: string, startDir: string, multiple: string): void {
             const filters = (filtersCsv && filtersCsv.length && filtersCsv !== "*")
                 ? filtersCsv.split(",").map(s => s.trim()).filter(s => s.length)

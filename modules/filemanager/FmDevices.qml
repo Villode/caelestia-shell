@@ -34,15 +34,22 @@ Item {
         return "";
     }
 
-    function mountDevice(device: string, name: string): void {
-        if (!device || mounting)
+    function mountDevice(device: string, name: string, uri: string): void {
+        // device: /dev/sdX for block, or empty for MTP; uri: mtp://... for phone
+        const target = (uri && uri.length) ? uri : device;
+        if (!target || mounting)
             return;
         mounting = true;
         mountStatus = qsTr("正在挂载…");
-        pendingDevice = device;
-        pendingName = name || device;
+        pendingDevice = device || uri || target;
+        pendingName = name || target;
         gioMountProc.running = false;
-        gioMountProc.command = ["gio", "mount", "-d", device];
+        // Block devices: gio mount -d /dev/...
+        // MTP/phone: gio mount mtp://...
+        if (uri && uri.length)
+            gioMountProc.command = ["gio", "mount", uri];
+        else
+            gioMountProc.command = ["gio", "mount", "-d", device];
         gioMountProc.running = true;
     }
 
@@ -260,39 +267,115 @@ Item {
         }
     }
 
+    function isPhoneScheme(name: string): bool {
+        const n = (name || "").toLowerCase();
+        return n.startsWith("mtp:") || n.startsWith("gphoto2:") || n.startsWith("afc:") || n.indexOf("mtp:host=") === 0 || n.indexOf("gphoto2:host=") === 0;
+    }
+
     function appendGvfs(listing: string): void {
         const runtime = Quickshell.env("XDG_RUNTIME_DIR") || "";
         const gvfs = runtime ? `${runtime}/gvfs` : "";
         const lines = (listing || "").split("\n").map(s => s.trim()).filter(s => s.length > 0);
-        let next = (devices || []).slice().filter(d => d.kind !== "network");
-        if (!gvfs || !lines.length) {
-            devices = next;
+        // Drop previous virtual mounts; re-add from listing + volume probe
+        let next = (devices || []).slice().filter(d => d.kind !== "network" && d.kind !== "phone" && d.kind !== "mtp");
+        const seenPaths = {};
+        for (let i = 0; i < next.length; i++) {
+            if (next[i].path)
+                seenPaths[next[i].path] = true;
+        }
+        if (gvfs && lines.length) {
+            for (let i = 0; i < lines.length; i++) {
+                const name = lines[i];
+                const path = gvfs + "/" + name;
+                if (seenPaths[path])
+                    continue;
+                seenPaths[path] = true;
+                let pretty = name;
+                const m = name.match(/server=([^,]+).*share=([^,]+)/);
+                if (m)
+                    pretty = `${m[2]} @ ${m[1]}`;
+                else if (name.indexOf("mtp:host=") === 0) {
+                    pretty = name.replace(/^mtp:host=/, "").replace(/_/g, " ");
+                }
+                const phone = isPhoneScheme(name);
+                next.push({
+                    id: (phone ? "phone:" : "net:") + name,
+                    name: pretty,
+                    letter: "",
+                    subtitle: phone ? qsTr("手机 · MTP（已连接）") : qsTr("网络位置"),
+                    path: path,
+                    icon: phone ? "smartphone" : "cloud",
+                    kind: phone ? "phone" : "network",
+                    size: "",
+                    sizeBytes: 0,
+                    usedBytes: 0,
+                    freeBytes: 0,
+                    usedPct: 0,
+                    removable: phone,
+                    mounted: true,
+                    device: "",
+                    uri: phone ? ("mtp://" + name.replace(/^mtp:host=/, "") + "/") : "",
+                    fstype: phone ? "mtp" : "gvfs"
+                });
+            }
+        }
+        devices = next;
+        // Probe unmounted MTP / virtual volumes (phone file transfer)
+        volProc.running = false;
+        volProc.running = true;
+    }
+
+    function appendVolumes(jsonText: string): void {
+        let vols = [];
+        try {
+            vols = JSON.parse(jsonText || "[]");
+        } catch (e) {
             return;
         }
-        for (let i = 0; i < lines.length; i++) {
-            const name = lines[i];
-            const path = gvfs + "/" + name;
-            let pretty = name;
-            const m = name.match(/server=([^,]+).*share=([^,]+)/);
-            if (m)
-                pretty = `${m[2]} @ ${m[1]}`;
+        if (!vols || !vols.length)
+            return;
+        let next = (devices || []).slice();
+        const seen = {};
+        for (let i = 0; i < next.length; i++) {
+            if (next[i].path)
+                seen["p:" + next[i].path] = true;
+            if (next[i].uri)
+                seen["u:" + next[i].uri] = true;
+            if (next[i].id)
+                seen["i:" + next[i].id] = true;
+        }
+        for (let i = 0; i < vols.length; i++) {
+            const v = vols[i];
+            if (!v)
+                continue;
+            const uri = v.uri || "";
+            const path = v.path || "";
+            if (path && seen["p:" + path])
+                continue;
+            if (uri && seen["u:" + uri])
+                continue;
+            const id = v.id || ("vol:" + (uri || path || i));
+            if (seen["i:" + id])
+                continue;
+            const kind = v.kind || "phone";
             next.push({
-                id: "net:" + name,
-                name: pretty,
+                id: id,
+                name: v.name || qsTr("移动设备"),
                 letter: "",
-                subtitle: qsTr("网络位置"),
+                subtitle: v.mounted ? (v.subtitle || qsTr("已连接")) : qsTr("未挂载 · 点击挂载"),
                 path: path,
-                icon: "cloud",
-                kind: "network",
+                icon: kind === "phone" ? "smartphone" : "cloud",
+                kind: kind,
                 size: "",
                 sizeBytes: 0,
                 usedBytes: 0,
                 freeBytes: 0,
                 usedPct: 0,
-                removable: false,
-                mounted: true,
-                device: "",
-                fstype: "gvfs"
+                removable: true,
+                mounted: !!v.mounted && !!path,
+                device: v.device || "",
+                uri: uri,
+                fstype: v.fstype || "mtp"
             });
         }
         devices = next;
@@ -316,6 +399,53 @@ Item {
     }
 
     Process {
+        id: volProc
+        // List MTP/gphoto/afc volumes via GIO; fuse path often only on GDaemonMount
+        command: [
+            "python3", "-c",
+            "import json,os,sys\n" +
+            "try:\n import gi\n gi.require_version('Gio','2.0')\n from gi.repository import Gio\nexcept Exception:\n print('[]'); raise SystemExit(0)\n" +
+            "vm=Gio.VolumeMonitor.get()\n" +
+            "runtime=os.environ.get('XDG_RUNTIME_DIR') or ('/run/user/%d'%os.getuid())\n" +
+            "gvfs=os.path.join(runtime,'gvfs')\n" +
+            "uri_to_path={}\n" +
+            "for m in vm.get_mounts():\n" +
+            " r=m.get_root()\n" +
+            " if not r: continue\n" +
+            " u=r.get_uri() or ''\n" +
+            " p=r.get_path() or ''\n" +
+            " if u and p: uri_to_path[u.rstrip('/')]=p\n" +
+            " # also index host-style fuse dir\n" +
+            "if os.path.isdir(gvfs):\n" +
+            " for name in os.listdir(gvfs):\n" +
+            "  p=os.path.join(gvfs,name)\n" +
+            "  if name.startswith('mtp:host='):\n" +
+            "   host=name[len('mtp:host='):]\n" +
+            "   uri_to_path['mtp://'+host]=p\n" +
+            "   uri_to_path['mtp://'+host+'/']=p\n" +
+            "out=[]\n" +
+            "for v in vm.get_volumes():\n" +
+            " root=v.get_activation_root()\n" +
+            " uri=root.get_uri() if root else ''\n" +
+            " if not uri: continue\n" +
+            " scheme=uri.split(':',1)[0].lower()\n" +
+            " if scheme not in ('mtp','gphoto2','afc','smb','sftp','dav','nfs'): continue\n" +
+            " key=uri.rstrip('/')\n" +
+            " path=uri_to_path.get(key) or uri_to_path.get(key+'/') or ''\n" +
+            " mounted=bool(v.get_mount()) or bool(path)\n" +
+            " if not path and mounted:\n" +
+            "  m=v.get_mount()\n" +
+            "  if m and m.get_root(): path=m.get_root().get_path() or ''\n" +
+            " kind='phone' if scheme in ('mtp','gphoto2','afc') else 'network'\n" +
+            " out.append({'id':'vol:'+uri,'name':v.get_name() or uri,'uri':uri,'path':path or '','mounted':mounted,'device':v.get_identifier(Gio.VOLUME_IDENTIFIER_KIND_UNIX_DEVICE) or '','kind':kind,'fstype':scheme,'subtitle':('已连接' if mounted else '未挂载')})\n" +
+            "print(json.dumps(out,ensure_ascii=False))"
+        ]
+        stdout: StdioCollector {
+            onStreamFinished: root.appendVolumes(text)
+        }
+    }
+
+    Process {
         id: gioMountProc
         command: ["true"]
         stdout: StdioCollector {
@@ -329,9 +459,16 @@ Item {
                 refreshTimer.okMsg = qsTr("已挂载：%1").arg(root.pendingName);
                 refreshTimer.start();
             } else {
+                const err = (gioErr.text || gioOut.text || "").trim();
+                // MTP rarely needs pkexec; surface real error
+                const needsAuth = err.indexOf("Permission") >= 0 || err.indexOf("授权") >= 0 || err.indexOf("polkit") >= 0;
                 root.mounting = false;
-                root.mountStatus = qsTr("需要管理员权限");
-                root.mountFinished(false, "need-auth:" + (gioErr.text || gioOut.text || ""), "");
+                if (needsAuth && root.pendingDevice && root.pendingDevice.indexOf("/dev/") === 0) {
+                    root.mountStatus = qsTr("需要管理员权限");
+                    root.mountFinished(false, "need-auth:" + err, "");
+                } else {
+                    root.finishMount(false, err.length ? err : qsTr("挂载失败（请确认手机已选「文件传输/MTP」）"));
+                }
             }
         }
     }
@@ -358,21 +495,34 @@ Item {
         }
     }
 
+    function findPhonePath(uri: string): string {
+        const list = devices || [];
+        for (let i = 0; i < list.length; i++) {
+            const d = list[i];
+            if ((d.kind === "phone" || d.kind === "mtp") && d.path) {
+                if (!uri || d.uri === uri || (d.device && d.device === root.pendingDevice))
+                    return d.path;
+            }
+        }
+        return "";
+    }
+
     Timer {
         id: refreshTimer
         property string okMsg: ""
         property string openPath: ""
-        interval: 600
+        interval: 800
         repeat: false
         onTriggered: {
             root.refresh();
+            // second pass after gvfs/volume probe finishes
             Qt.callLater(() => {
-                let path = openPath || root.findMountedPath(root.pendingDevice);
-                if (!path) {
+                let path = openPath || root.findMountedPath(root.pendingDevice) || root.findPhonePath(root.pendingDevice);
+                if (!path && root.pendingDevice && root.pendingDevice.indexOf("/dev/") === 0) {
                     const base = root.pendingDevice.split("/").pop();
                     path = "/mnt/villode-" + base;
                 }
-                root.finishMount(true, okMsg, path);
+                root.finishMount(true, okMsg, path || "");
                 openPath = "";
             });
         }

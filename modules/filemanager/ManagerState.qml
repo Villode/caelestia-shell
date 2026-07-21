@@ -24,6 +24,12 @@ QtObject {
     property var favorites: []
 
     readonly property bool isThisPC: cwd.length === 1 && cwd[0] === "ThisPC"
+    readonly property bool isPhone: cwd.length >= 1 && cwd[0] === "Phone"
+
+    function gvfsDir(): string {
+        const runtime = Quickshell.env("XDG_RUNTIME_DIR") || "";
+        return runtime ? (runtime + "/gvfs") : "";
+    }
 
     readonly property var placeFolders: ({
         Downloads: ["下载", "Downloads"],
@@ -41,6 +47,7 @@ QtObject {
         ThisPC: qsTr("此电脑"),
         Home: qsTr("主目录"),
         Trash: qsTr("回收站"),
+        Phone: qsTr("手机"),
         Downloads: qsTr("下载"),
         Desktop: qsTr("桌面"),
         Documents: qsTr("文档"),
@@ -62,7 +69,7 @@ QtObject {
     signal settingsChanged
 
     function isPlaceId(name: string): bool {
-        return name === "Home" || name === "ThisPC" || name === "Trash" || !!placeFolders[name];
+        return name === "Home" || name === "ThisPC" || name === "Trash" || name === "Phone" || !!placeFolders[name];
     }
 
     function placeSelected(place: string): bool {
@@ -71,20 +78,52 @@ QtObject {
         if (place === "Trash")
             return isTrash();
         if (place === "Home")
-            return !isThisPC && !isTrash() && cwd.length >= 1 && cwd[0] === "Home" && (cwd.length === 1 || !placeFolders[cwd[1]]);
+            return !isThisPC && !isTrash() && !isPhone && cwd.length >= 1 && cwd[0] === "Home" && (cwd.length === 1 || !placeFolders[cwd[1]]);
         // place folders under Home
-        return !isThisPC && !isTrash() && cwd.length >= 2 && cwd[0] === "Home" && cwd[1] === place;
+        return !isThisPC && !isTrash() && !isPhone && cwd.length >= 2 && cwd[0] === "Home" && cwd[1] === place;
+    }
+
+    function prettyMtpHost(seg: string): string {
+        let s = seg || "";
+        if (s.startsWith("mtp:host="))
+            s = s.slice("mtp:host=".length);
+        // Xiaomi_Redmi_K90_9c073b13 → Redmi K90 (drop vendor + serial when possible)
+        s = s.replace(/_/g, " ");
+        s = s.replace(/^Xiaomi\s+/i, "");
+        // drop trailing hex-ish serial token
+        s = s.replace(/\s+[0-9a-fA-F]{6,}$/, "");
+        return s.trim() || qsTr("手机");
     }
 
     function labelForSegment(name: string): string {
         if (placeLabels[name])
             return placeLabels[name];
+        if (name && (name.startsWith("mtp:host=") || name.startsWith("gphoto2:host=") || name.startsWith("afc:")))
+            return prettyMtpHost(name);
         for (const key of Object.keys(placeFolders)) {
             const list = placeFolders[key];
             if (list.indexOf(name) >= 0)
                 return placeLabels[key] || name;
         }
         return name === "" ? "/" : name;
+    }
+
+    // Friendly bar text (not raw /run/user/.../gvfs/...)
+    function displayPath(): string {
+        if (isThisPC)
+            return qsTr("此电脑");
+        if (isPhone) {
+            const parts = [];
+            for (let i = 0; i < cwd.length; i++)
+                parts.push(labelForSegment(cwd[i]));
+            return parts.join(" / ");
+        }
+        if (isTrash())
+            return qsTr("回收站");
+        const p = cwdPath();
+        if (!p)
+            return qsTr("此电脑");
+        return Paths.shortenHome(p);
     }
 
     function preferredFolderName(place: string): string {
@@ -97,6 +136,14 @@ QtObject {
     function cwdPath(): string {
         if (cwd.length === 0 || cwd[0] === "ThisPC")
             return "";
+        if (cwd[0] === "Phone") {
+            const base = gvfsDir();
+            if (!base)
+                return "";
+            if (cwd.length === 1)
+                return base;
+            return base + "/" + cwd.slice(1).join("/");
+        }
         if (cwd[0] === "Home") {
             if (cwd.length === 1)
                 return Paths.home;
@@ -135,7 +182,7 @@ QtObject {
         else
             cwd = ["Home", place];
         selection = [];
-        statusText = Paths.shortenHome(cwdPath());
+        statusText = displayPath();
         bumpRefresh();
     }
 
@@ -152,7 +199,7 @@ QtObject {
             return;
         cwd = cwd.concat([name]);
         selection = [];
-        statusText = Paths.shortenHome(cwdPath());
+        statusText = displayPath();
     }
 
     function popDir(): void {
@@ -160,12 +207,15 @@ QtObject {
             return;
         if (cwd.length > 1) {
             cwd = cwd.slice(0, cwd.length - 1);
+            // Phone root (only "Phone") → back to This PC
+            if (cwd.length === 1 && cwd[0] === "Phone")
+                cwd = ["ThisPC"];
         } else {
             // From Home or / go back to This PC
             cwd = ["ThisPC"];
         }
         selection = [];
-        statusText = isThisPC ? qsTr("此电脑") : Paths.shortenHome(cwdPath());
+        statusText = isThisPC ? qsTr("此电脑") : displayPath();
         bumpRefresh();
     }
 
@@ -173,8 +223,11 @@ QtObject {
         if (toIndex < 0 || toIndex >= cwd.length)
             return;
         cwd = cwd.slice(0, toIndex + 1);
+        // Phone root alone → This PC
+        if (cwd.length === 1 && cwd[0] === "Phone")
+            cwd = ["ThisPC"];
         selection = [];
-        statusText = isThisPC ? qsTr("此电脑") : Paths.shortenHome(cwdPath());
+        statusText = isThisPC ? qsTr("此电脑") : displayPath();
         bumpRefresh();
     }
 
@@ -183,11 +236,25 @@ QtObject {
             navigateToThisPC();
             return;
         }
+        // expand ~
+        if (path === "~")
+            path = Paths.home;
+        else if (path.startsWith("~/"))
+            path = Paths.home + path.slice(1);
         while (path.length > 1 && path.endsWith("/"))
             path = path.slice(0, -1);
 
         const home = Paths.home;
-        if (path === home) {
+        const gvfs = gvfsDir();
+        // MTP / gphoto fuse mounts: /run/user/UID/gvfs/mtp:host=...
+        if (gvfs && (path === gvfs || path.startsWith(gvfs + "/"))) {
+            if (path === gvfs) {
+                cwd = ["Phone"];
+            } else {
+                const rel = path.slice(gvfs.length + 1).split("/").filter(s => s.length > 0);
+                cwd = ["Phone"].concat(rel);
+            }
+        } else if (path === home) {
             cwd = ["Home"];
         } else if (path.startsWith(home + "/")) {
             const rel = path.slice(home.length + 1).split("/").filter(s => s.length > 0);
@@ -209,10 +276,11 @@ QtObject {
             else
                 cwd = [""].concat(path.split("/").filter(s => s.length > 0));
         } else {
-            cwd = ["Home"];
+            // relative or bare name → try under home
+            cwd = ["Home"].concat(path.split("/").filter(s => s.length > 0));
         }
         selection = [];
-        statusText = Paths.shortenHome(cwdPath() || "/");
+        statusText = displayPath();
         bumpRefresh();
     }
 

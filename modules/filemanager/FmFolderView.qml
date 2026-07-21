@@ -19,7 +19,21 @@ Item {
     required property var state
     required property var actions
 
-    readonly property int itemWidth: 103
+    // Min tile size; actual itemWidth grows so columns fill the view (no empty right column gap)
+    readonly property int minItemWidth: 103
+    readonly property int gridGap: Tokens.spacing.small
+    readonly property int gridColumns: {
+        const w = grid.width;
+        if (w <= 0)
+            return 1;
+        return Math.max(1, Math.floor((w + gridGap) / (minItemWidth + gridGap)));
+    }
+    readonly property real itemWidth: {
+        const w = grid.width;
+        if (w <= 0)
+            return minItemWidth;
+        return Math.max(minItemWidth, (w / gridColumns) - gridGap);
+    }
     readonly property bool isGrid: state.viewMode !== "list"
 
     signal contextMenuRequested(real x, real y, string path, bool isDir, string name)
@@ -207,7 +221,8 @@ Item {
         anchors.margins: Tokens.padding.extraSmall + Tokens.padding.medium
         visible: root.isGrid
         enabled: root.isGrid
-        cellWidth: root.itemWidth + Tokens.spacing.small
+        // Fill full width: cellWidth * columns ≈ available width
+        cellWidth: width > 0 ? width / root.gridColumns : (root.minItemWidth + root.gridGap)
         cellHeight: root.itemWidth + Tokens.spacing.large + Tokens.padding.medium * 2 + 1
         clip: true
         focus: root.isGrid
@@ -557,7 +572,9 @@ Item {
         readonly property bool isCut: modelData && root.state.clipboardMode === "cut" && root.state.clipboardPaths.indexOf(modelData.path) >= 0
         readonly property real nonAnimHeight: icon.implicitHeight + name.anchors.topMargin + name.implicitHeight + Tokens.padding.medium * 2
 
-        implicitWidth: root.itemWidth
+        // Slightly smaller than cell so adjacent tiles have breathing room
+        width: GridView.view ? Math.max(root.minItemWidth, GridView.view.cellWidth - root.gridGap) : root.itemWidth
+        implicitWidth: width
         implicitHeight: nonAnimHeight
         radius: Tokens.rounding.large
         opacity: isCut ? 0.42 : 1
