@@ -140,7 +140,12 @@ Item {
                         required property var modelData
 
                         Layout.alignment: Qt.AlignTop
-
+                        // Non-current panes must not inflate the dashboard height
+                        // (e.g. Media's fixed 320px leaving an empty strip under Performance).
+                        Layout.preferredHeight: index === view.currentIndex ? implicitHeight : 0
+                        Layout.maximumHeight: index === view.currentIndex ? -1 : 0
+                        opacity: index === view.currentIndex ? 1 : 0
+                        // Keep width for horizontal swipe geometry.
                         sourceComponent: modelData.component
 
                         Component.onCompleted: active = Qt.binding(() => {

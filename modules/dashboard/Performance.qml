@@ -132,15 +132,22 @@ Item {
         }
 
         WrappedLoader {
+            // Match main column height (original WE-style tank), do not overstretch.
             Layout.fillWidth: false
+            Layout.fillHeight: false
+            Layout.preferredHeight: mainColumn.implicitHeight
+            Layout.alignment: Qt.AlignTop
             active: UPower.displayDevice.isLaptopBattery && Config.dashboard.performance.showBattery
             sourceComponent: BatteryTank {}
         }
     }
 
+    // Cards keep natural height — fillHeight was stretching Storage/Memory to
+    // Network's 220px and left empty "extra" blocks at the bottom of the row.
     component WrappedLoader: Loader {
         Layout.fillWidth: true
-        Layout.fillHeight: true
+        Layout.fillHeight: false
+        Layout.alignment: Qt.AlignTop
         visible: active
     }
 }
