@@ -104,6 +104,7 @@ Item {
             { id: "copy", label: qsTr("复制") },
             { id: "cut", label: qsTr("剪切") },
             { id: "paste", label: qsTr("粘贴") },
+            { id: "rename", label: qsTr("重命名") },
             { id: "mkdir", label: qsTr("新建文件夹") }
         ];
         if (anchorIsDir && anchorPath.length) {
@@ -237,8 +238,15 @@ Item {
                                 root.actions.cut(t);
                             } else if (id === "paste") {
                                 root.actions.paste();
+                            } else if (id === "rename") {
+                                const p = root.anchorPath || (t.length === 1 ? t[0] : "");
+                                if (p && typeof root.actions.requestRename === "function")
+                                    root.actions.requestRename(p);
                             } else if (id === "mkdir") {
-                                root.actions.mkdir();
+                                if (typeof root.actions.requestMkdir === "function")
+                                    root.actions.requestMkdir();
+                                else
+                                    root.actions.mkdir("");
                             } else if (id === "pin") {
                                 root.state.pinPath(root.anchorPath, root.anchorName);
                             } else if (id === "unpin") {

@@ -19,6 +19,8 @@ Item {
     property var jobUi: null
     // Optional confirm: openTrash(paths) / openDelete(paths)
     property var confirmUi: null
+    // Optional name dialog: openRename(path) / openMkdir()
+    property var nameUi: null
 
     function requestTrash(paths: list<string>): void {
         if (!paths || !paths.length)
@@ -298,23 +300,59 @@ Item {
         onTriggered: root.state.bumpRefresh()
     }
 
-    function mkdir(): void {
-        const name = qsTr("新建文件夹");
-        const dest = root.state.cwdPath() + "/" + name;
+    function requestMkdir(): void {
+        if (nameUi && typeof nameUi.openMkdir === "function")
+            nameUi.openMkdir();
+        else
+            mkdir("");
+    }
+
+    function requestRename(path: string): void {
+        const p = path || (root.state.selection.length === 1 ? root.state.selection[0] : "");
+        if (!p)
+            return;
+        if (nameUi && typeof nameUi.openRename === "function")
+            nameUi.openRename(p);
+        else {
+            // fallback: no dialog
+            root.state.statusText = qsTr("无法打开重命名对话框");
+        }
+    }
+
+    function mkdir(name: string): void {
+        let n = (name || "").trim();
+        if (!n.length)
+            n = qsTr("新建文件夹");
+        if (n.indexOf("/") >= 0 || n === "." || n === "..") {
+            root.state.statusText = qsTr("无效的文件夹名称");
+            return;
+        }
+        const dest = root.state.cwdPath() + "/" + n;
         Quickshell.execDetached(["mkdir", "-p", dest]);
-        root.state.statusText = qsTr("已创建文件夹");
+        root.state.statusText = qsTr("已创建「%1」").arg(n);
         Qt.callLater(() => root.state.bumpRefresh());
+        refreshTimer.restart();
     }
 
     function rename(path: string, newName: string): void {
         if (!path || !newName)
             return;
+        const n = String(newName).trim();
+        if (!n.length || n.indexOf("/") >= 0 || n === "." || n === "..") {
+            root.state.statusText = qsTr("无效的名称");
+            return;
+        }
         const parent = path.split("/").slice(0, -1).join("/") || "/";
-        const dest = parent + "/" + newName;
+        const dest = parent + "/" + n;
+        if (dest === path) {
+            root.state.statusText = qsTr("名称未更改");
+            return;
+        }
         Quickshell.execDetached(["mv", path, dest]);
-        root.state.setSelection([]);
-        root.state.statusText = qsTr("已重命名");
+        root.state.setSelection([dest]);
+        root.state.statusText = qsTr("已重命名为「%1」").arg(n);
         Qt.callLater(() => root.state.bumpRefresh());
+        refreshTimer.restart();
     }
 
     function properties(path: string): void {

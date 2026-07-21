@@ -41,6 +41,7 @@ FloatingWindow {
         showProperties: path => props.openFor(path)
         jobUi: jobOverlay
         confirmUi: confirmDlg
+        nameUi: nameDlg
     }
 
     FmDevices {
@@ -85,6 +86,11 @@ FloatingWindow {
 
         Keys.onPressed: event => {
             if (event.key === Qt.Key_Escape) {
+                if (nameDlg.expanded) {
+                    nameDlg.close();
+                    event.accepted = true;
+                    return;
+                }
                 if (quickLook.expanded) {
                     quickLook.close();
                     event.accepted = true;
@@ -114,6 +120,15 @@ FloatingWindow {
                     event.accepted = true;
                     return;
                 }
+            }
+            if (event.key === Qt.Key_F2) {
+                let path = nState.selection.length === 1 ? nState.selection[0] : "";
+                if (!path && folder.visible)
+                    path = folder.currentPath();
+                if (path)
+                    nActions.requestRename(path);
+                event.accepted = true;
+                return;
             }
             if (event.key === Qt.Key_Delete) {
                 const paths = nState.selection;
@@ -163,7 +178,11 @@ FloatingWindow {
                 nActions.paste();
                 event.accepted = true;
             } else if ((event.modifiers & Qt.ShiftModifier) && event.key === Qt.Key_N) {
-                nActions.mkdir();
+                nActions.requestMkdir();
+                event.accepted = true;
+            } else if (event.key === Qt.Key_N) {
+                // New file manager window at same path
+                Quickshell.execDetached(["qs", "-c", "caelestia", "ipc", "call", "filemanager", "openNew", nState.cwdPath()]);
                 event.accepted = true;
             } else if (event.key === Qt.Key_H) {
                 nState.toggleShowHidden();
@@ -321,6 +340,17 @@ FloatingWindow {
                     nActions.deletePermanent(paths);
                 else
                     nActions.trash(paths);
+            }
+        }
+
+        FmNameDialog {
+            id: nameDlg
+            anchors.fill: parent
+            onAccepted: (mode, sourcePath, name) => {
+                if (mode === "rename")
+                    nActions.rename(sourcePath, name);
+                else if (mode === "mkdir")
+                    nActions.mkdir(name);
             }
         }
 

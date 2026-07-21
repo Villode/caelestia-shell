@@ -330,9 +330,17 @@ Item {
                 root.actions.paste();
                 event.accepted = true;
             } else if ((event.modifiers & Qt.ShiftModifier) && event.key === Qt.Key_N) {
-                root.actions.mkdir();
+                if (typeof root.actions.requestMkdir === "function")
+                    root.actions.requestMkdir();
+                else
+                    root.actions.mkdir("");
                 event.accepted = true;
             }
+        } else if (event.key === Qt.Key_F2) {
+            const p = root.state.selection.length === 1 ? root.state.selection[0] : currentPath();
+            if (p && typeof root.actions.requestRename === "function")
+                root.actions.requestRename(p);
+            event.accepted = true;
         } else if (event.key === Qt.Key_Delete) {
             const paths = root.state.selection.length ? root.state.selection : (currentPath() ? [currentPath()] : []);
             if (!paths.length) {
