@@ -6,7 +6,10 @@ This fork is the controlled Caelestia Shell base used by
 - `main` follows the upstream development branch.
 - `villode` is the tested integration branch.
 - `UPSTREAM_VERSION` records the stable upstream release currently adapted.
-- Simplified Chinese remains an optional patch and is not baked into the base shell.
+- Simplified Chinese is the Villode product default (`services.uiLanguage=zh_CN`).
+- Runtime catalog: `i18n/qml_zh_CN.qm` loaded by C++ `TranslationManager`.
+- Maintain catalogs with `scripts/i18n-sync.sh` (source of truth is shell `i18n/`; sync into `caelestia-zh-cn` when shipping).
+- Shell guard / `caelestia` wrapper must set `QML2_IMPORT_PATH=$HOME/.local/lib/qt6/qml` so the Villode plugin wins over the older system package.
 
 The controlled branch also disables runtime source watching and moves the unsupported `DefaultEnv`
 pragmas into the launcher wrapper. These are deliberate compatibility and idle-resource changes.

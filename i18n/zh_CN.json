@@ -516,5 +516,15 @@
     "Connecting…": "正在连接…",
     "Connect to %1": "连接到 %1",
     "Connecting...": "正在连接…",
-    "Wi-Fi password": "Wi-Fi 密码"
+    "Wi-Fi password": "Wi-Fi 密码",
+    "%1% · %2": "%1% · %2",
+    "%1 · %2%": "%1 · %2%",
+    "%1%": "%1%",
+    "…": "…",
+    "Checking translation…": "正在检查翻译…",
+    "Translation status": "翻译状态",
+    "Loaded · %1": "已加载 · %1",
+    "Plugin OK, catalog not loaded · %1": "插件正常，目录未加载 · %1",
+    "Catalog missing for %1 — run caelestia-zh-apply": "缺少 %1 的翻译目录 — 请运行 caelestia-zh-apply",
+    "Translation plugin missing — reinstall Shell with native modules": "翻译插件缺失 — 请用原生模块重装 Shell"
 }

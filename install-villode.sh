@@ -167,6 +167,45 @@ printf 'Villode Caelestia Shell\nUpstream: %s\nRevision: %s\n' \
     "$(git -C "$repo_dir" rev-parse HEAD 2>/dev/null || echo unknown)" \
     > "$config_dir/.villode-managed"
 
+# Ensure user config prefers Simplified Chinese (Villode product default).
+# Only fills missing/empty uiLanguage — never clobbers en_US / system.
+python3 - "$config_home/caelestia/shell.json" <<'PY'
+import json, os, sys, tempfile
+path = os.path.abspath(os.path.expanduser(sys.argv[1]))
+try:
+    with open(path, encoding="utf-8") as f:
+        cfg = json.load(f)
+except FileNotFoundError:
+    cfg = {}
+except (json.JSONDecodeError, OSError) as e:
+    print(f"警告：无法读取 {path}: {e}", file=sys.stderr)
+    raise SystemExit(0)
+services = cfg.setdefault("services", {})
+if not services.get("uiLanguage"):
+    services["uiLanguage"] = "zh_CN"
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    fd, tmp = tempfile.mkstemp(prefix=".shell.json.", dir=os.path.dirname(path), text=True)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(cfg, f, ensure_ascii=False, indent=4)
+            f.write("\n")
+            f.flush()
+            os.fsync(f.fileno())
+        os.chmod(tmp, 0o600)
+        os.replace(tmp, path)
+        print("已写入 services.uiLanguage=zh_CN")
+    finally:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+else:
+    print(f"界面语言：{services.get('uiLanguage')}")
+PY
+
+# Prefer Villode QML plugin for subsequent shell restarts from this installer.
+export QML2_IMPORT_PATH="${HOME}/.local/lib/qt6/qml${QML2_IMPORT_PATH:+:$QML2_IMPORT_PATH}"
+export CAELESTIA_LIB_DIR="${CAELESTIA_LIB_DIR:-$HOME/.local/lib/caelestia}"
+export PATH="${CAELESTIA_LIB_DIR}/bin:${PATH}"
+
 mkdir -p "$HOME/.local/bin"
 install -m755 "$repo_dir/bin/caelestia-villode" "$HOME/.local/bin/caelestia"
 install -Dm755 "$repo_dir/bin/qs-villode" "$HOME/.local/lib/caelestia/bin/qs"
@@ -216,6 +255,26 @@ fi
 
 printf '%s\n' "$(git -C "$repo_dir" rev-parse HEAD 2>/dev/null || echo unknown)" > "$state_home/revision"
 
+# --- i18n / plugin health -------------------------------------------------
+i18n_qm="$config_dir/i18n/qml_zh_CN.qm"
+plugin_qmltypes="${HOME}/.local/lib/qt6/qml/Caelestia/caelestia-core.qmltypes"
+if [[ ! -f "$i18n_qm" ]]; then
+    echo "警告：缺少翻译目录 $i18n_qm" >&2
+fi
+if $build_native; then
+    if [[ ! -f "$plugin_qmltypes" ]] || ! grep -q 'TranslationManager' "$plugin_qmltypes" 2>/dev/null; then
+        echo "错误：本地 Caelestia 插件未导出 TranslationManager。" >&2
+        echo "请不要使用 --no-native-build，或检查 cmake 安装前缀。" >&2
+        exit 70
+    fi
+    echo "原生插件检查通过：TranslationManager 可用。"
+else
+    if [[ ! -f "$plugin_qmltypes" ]] || ! grep -q 'TranslationManager' "$plugin_qmltypes" 2>/dev/null; then
+        echo "警告：--no-native-build 且本地插件无 TranslationManager；界面可能保持英文。" >&2
+        echo "系统插件路径：/usr/lib/qt6/qml/Caelestia （通常过旧）" >&2
+    fi
+fi
+
 if $restart; then
     # Keep the direct shell installer aligned with villode-caelestia: kill by the
     # real quickshell process, wait out races with -n, and verify a live process.
@@ -262,7 +321,10 @@ if $restart; then
     started=false
     for attempt in 1 2 3; do
         : >/tmp/villode-caelestia-shell.log
-        LANG="${LANG:-zh_CN.UTF-8}" LC_ALL="${LC_ALL:-$LANG}" \
+        # Force Chinese locale for C/en session environments (product default).
+        case "${LANG:-}" in ""|C|C.*|POSIX|en|en_*) export LANG=zh_CN.UTF-8 ;; esac
+        case "${LC_ALL:-}" in ""|C|C.*|POSIX|en|en_*) export LC_ALL="$LANG" ;; esac
+        LANG="$LANG" LC_ALL="$LC_ALL" QML2_IMPORT_PATH="${QML2_IMPORT_PATH}" \
             "$caelestia_bin" shell -d >/tmp/villode-caelestia-shell.log 2>&1 || true
         if grep -Fq 'An instance of this configuration is already running.' \
             /tmp/villode-caelestia-shell.log; then

@@ -26,7 +26,7 @@ PageBase {
 
     // Prefer Chinese labels when UI language is zh (qm can lag behind hot reloads).
     function trUi(en: string, zh: string): string {
-        const lang = (GlobalConfig.services.uiLanguage || "system");
+        const lang = (GlobalConfig.services.uiLanguage || "zh_CN");
         if (lang === "zh_CN" || lang === "zh" || (lang === "system" && Qt.locale().name.indexOf("zh") === 0))
             return zh;
         return qsTr(en);

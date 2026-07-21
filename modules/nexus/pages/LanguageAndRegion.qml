@@ -230,12 +230,65 @@ PageBase {
 
         SelectRow {
             first: true
-            last: true
+            last: false
             label: qsTr("Display language")
             subtext: qsTr("Change the Shell language immediately")
             menuItems: root.languageItems
-            active: root.languageItems[Math.max(0, root.languageValues.indexOf(GlobalConfig.services.uiLanguage))]
+            active: root.languageItems[Math.max(0, root.languageValues.indexOf(GlobalConfig.services.uiLanguage || "zh_CN"))]
             onSelected: item => GlobalConfig.services.uiLanguage = root.languageValues[root.languageItems.indexOf(item)]
+        }
+
+        ConnectedRect {
+            Layout.fillWidth: true
+            first: false
+            last: true
+            implicitHeight: i18nStatusCol.implicitHeight + Tokens.padding.large * 2
+
+            ColumnLayout {
+                id: i18nStatusCol
+                anchors.fill: parent
+                anchors.margins: Tokens.padding.large
+                spacing: Tokens.spacing.small / 2
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: Tokens.spacing.medium
+
+                    MaterialIcon {
+                        text: UiLanguage.translationLoaded ? "translate" : "warning"
+                        color: UiLanguage.translationLoaded ? Colours.palette.m3primary : Colours.palette.m3error
+                        fontStyle: Tokens.font.icon.large
+                    }
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 0
+
+                        StyledText {
+                            Layout.fillWidth: true
+                            text: qsTr("Translation status")
+                            font: Tokens.font.body.large
+                            elide: Text.ElideRight
+                        }
+
+                        StyledText {
+                            Layout.fillWidth: true
+                            text: UiLanguage.statusLine
+                            color: Colours.palette.m3outline
+                            font: Tokens.font.label.small
+                            elide: Text.ElideRight
+                            wrapMode: Text.WordWrap
+                        }
+                    }
+
+                    IconTextButton {
+                        icon: "refresh"
+                        text: qsTr("Refresh")
+                        type: IconTextButton.Tonal
+                        onClicked: UiLanguage.apply()
+                    }
+                }
+            }
         }
 
         // Date & time (system)

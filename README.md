@@ -211,8 +211,22 @@ values.
 
 Villode builds can switch the interface language immediately from **Settings → Language and region**.
 The choice is stored as `services.uiLanguage` in `shell.json`; supported values are `system`, `zh_CN`
-and `en_US`. Translations live in `i18n/qml_<locale>.ts` and are compiled to `.qm` catalogs with
-`scripts/update-translations.py`.
+and `en_US`. **Default is `zh_CN`** (Simplified Chinese).
+
+Translations live in `i18n/` (`.ts` / `.qm` / `zh_CN.json`). Maintain them with:
+
+```bash
+scripts/i18n-sync.sh          # extract + merge + lrelease
+scripts/i18n-sync.sh --check  # CI: unfinished / stale qm
+```
+
+Runtime load requires the Villode native plugin (`TranslationManager`) under
+`~/.local/lib/qt6/qml` — use `caelestia shell` or `villode-caelestia-shell-guard`, not a bare
+`qs` against the older system Caelestia package. Diagnose with:
+
+```bash
+qs -c caelestia ipc call uilanguage status
+```
 
 ### Keyboard shortcuts
 

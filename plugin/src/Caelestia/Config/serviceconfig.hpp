@@ -14,7 +14,7 @@ class ServiceConfig : public ConfigObject {
     QML_ANONYMOUS
 
     CONFIG_GLOBAL_PROPERTY(QString, weatherLocation)
-    CONFIG_GLOBAL_PROPERTY(QString, uiLanguage, u"system"_s)
+    CONFIG_GLOBAL_PROPERTY(QString, uiLanguage, u"zh_CN"_s)
     // Guess based on locale
     CONFIG_GLOBAL_PROPERTY(bool, useFahrenheit,
         QLocale().measurementSystem() == QLocale::ImperialUSSystem ||

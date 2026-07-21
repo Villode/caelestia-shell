@@ -62,16 +62,6 @@
             <source>Qt</source>
             <translation>Qt</translation>
         </message>
-        <message>
-            <location line="+6" />
-            <source>Plugins</source>
-            <translation>插件</translation>
-        </message>
-        <message>
-            <location line="+6" />
-            <source>Loaded plugins</source>
-            <translation>已加载插件</translation>
-        </message>
     </context>
     <context>
         <name>Actions</name>
@@ -112,7 +102,7 @@
         <message>
             <location line="+47" />
             <source>Launcher</source>
-            <translation>启动器</translation>
+            <translation>启动台</translation>
         </message>
         <message>
             <location line="+5" />
@@ -1835,6 +1825,905 @@
         </message>
     </context>
     <context>
+        <name>FmActions</name>
+        <message>
+            <location filename="../modules/filemanager/FmActions.qml" line="+66" />
+            <source>已打开 %1 项</source>
+            <translation>已打开 %1 项</translation>
+        </message>
+        <message>
+            <location line="+15" />
+            <location line="+130" />
+            <source>已复制 %1 项</source>
+            <translation>已复制 %1 项</translation>
+        </message>
+        <message>
+            <location line="-122" />
+            <source>已剪切 %1 项 · 粘贴后移走</source>
+            <translation>已剪切 %1 项 · 粘贴后移走</translation>
+        </message>
+        <message>
+            <location line="+7" />
+            <source>剪贴板为空</source>
+            <translation>剪贴板为空</translation>
+        </message>
+        <message>
+            <location line="+70" />
+            <source>无法放置</source>
+            <translation>无法放置</translation>
+        </message>
+        <message>
+            <location line="+4" />
+            <source>请先进入文件夹再放置</source>
+            <translation>请先进入文件夹再放置</translation>
+        </message>
+        <message>
+            <location line="+27" />
+            <source>没有可放置的项</source>
+            <translation>没有可放置的项</translation>
+        </message>
+        <message>
+            <location line="+13" />
+            <source>已移动 %1 项</source>
+            <translation>已移动 %1 项</translation>
+        </message>
+        <message>
+            <location line="+11" />
+            <source>拖放内容无法识别</source>
+            <translation>拖放内容无法识别</translation>
+        </message>
+        <message>
+            <location line="+31" />
+            <source>已移到回收站 %1 项</source>
+            <translation>已移到回收站 %1 项</translation>
+        </message>
+        <message>
+            <location line="+15" />
+            <source>已永久删除 %1 项</source>
+            <translation>已永久删除 %1 项</translation>
+        </message>
+        <message>
+            <location line="+23" />
+            <source>回收站已清空</source>
+            <translation>回收站已清空</translation>
+        </message>
+        <message>
+            <location line="+28" />
+            <source>无法打开重命名对话框</source>
+            <translation>无法打开重命名对话框</translation>
+        </message>
+        <message>
+            <location line="+7" />
+            <source>新建文件夹</source>
+            <translation>新建文件夹</translation>
+        </message>
+        <message>
+            <location line="+2" />
+            <source>无效的文件夹名称</source>
+            <translation>无效的文件夹名称</translation>
+        </message>
+        <message>
+            <location line="+5" />
+            <source>已创建「%1」</source>
+            <translation>已创建「%1」</translation>
+        </message>
+        <message>
+            <location line="+10" />
+            <source>无效的名称</source>
+            <translation>无效的名称</translation>
+        </message>
+        <message>
+            <location line="+6" />
+            <source>名称未更改</source>
+            <translation>名称未更改</translation>
+        </message>
+        <message>
+            <location line="+5" />
+            <source>已重命名为「%1」</source>
+            <translation>已重命名为「%1」</translation>
+        </message>
+        <message>
+            <location line="+12" />
+            <source>属性：%1</source>
+            <translation>属性：%1</translation>
+        </message>
+        <message>
+            <location line="+38" />
+            <source>压缩包</source>
+            <translation>压缩包</translation>
+        </message>
+        <message>
+            <location line="+20" />
+            <source>%1% · %2</source>
+            <translation>%1% · %2</translation>
+        </message>
+        <message>
+            <location line="+57" />
+            <location line="+21" />
+            <source>已有压缩/解压任务进行中</source>
+            <translation>已有压缩/解压任务进行中</translation>
+        </message>
+        <message>
+            <location line="+20" />
+            <source>当前目录不可写</source>
+            <translation>当前目录不可写</translation>
+        </message>
+        <message>
+            <location line="+5" />
+            <source>正在压缩…</source>
+            <translation>正在压缩…</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>格式：%1 · %2 项</source>
+            <translation>格式：%1 · %2 项</translation>
+        </message>
+        <message>
+            <location line="+38" />
+            <source>不支持的格式：%1</source>
+            <translation>不支持的格式：%1</translation>
+        </message>
+        <message>
+            <location line="+14" />
+            <source>请选择压缩包</source>
+            <translation>请选择压缩包</translation>
+        </message>
+        <message>
+            <location line="+4" />
+            <source>正在解压到新文件夹…</source>
+            <translation>正在解压到新文件夹…</translation>
+        </message>
+        <message>
+            <location line="+0" />
+            <source>正在解压…</source>
+            <translation>正在解压…</translation>
+        </message>
+        <message>
+            <location line="+76" />
+            <source>%1 · %2%</source>
+            <translation>%1 · %2%</translation>
+        </message>
+        <message>
+            <location line="+0" />
+            <source>%1%</source>
+            <translation>%1%</translation>
+        </message>
+        <message>
+            <location line="+8" />
+            <source>正在处理：%1</source>
+            <translation>正在处理：%1</translation>
+        </message>
+        <message>
+            <location line="+21" />
+            <source>已压缩：%1</source>
+            <translation>已压缩：%1</translation>
+        </message>
+        <message>
+            <location line="+0" />
+            <source>压缩完成</source>
+            <translation>压缩完成</translation>
+        </message>
+        <message>
+            <location line="+0" />
+            <source>解压完成</source>
+            <translation>解压完成</translation>
+        </message>
+        <message>
+            <location line="+6" />
+            <source>失败：%1</source>
+            <translation>失败：%1</translation>
+        </message>
+        <message>
+            <location line="+0" />
+            <source>压缩/解压失败</source>
+            <translation>压缩/解压失败</translation>
+        </message>
+    </context>
+    <context>
+        <name>FmConfirmDialog</name>
+        <message>
+            <location filename="../modules/filemanager/FmConfirmDialog.qml" line="+16" />
+            <source>确定</source>
+            <translation>确定</translation>
+        </message>
+        <message>
+            <location line="+20" />
+            <location line="+4" />
+            <source>移到回收站</source>
+            <translation>移到回收站</translation>
+        </message>
+        <message>
+            <location line="-2" />
+            <source>确定将「%1」移到回收站？</source>
+            <translation>确定将「%1」移到回收站？</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>确定将 %1 项移到回收站？</source>
+            <translation>确定将 %1 项移到回收站？</translation>
+        </message>
+        <message>
+            <location line="+12" />
+            <location line="+4" />
+            <source>永久删除</source>
+            <translation>永久删除</translation>
+        </message>
+        <message>
+            <location line="-2" />
+            <source>确定永久删除「%1」？此操作无法撤销。</source>
+            <translation>确定永久删除「%1」？此操作无法撤销。</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>确定永久删除 %1 项？此操作无法撤销。</source>
+            <translation>确定永久删除 %1 项？此操作无法撤销。</translation>
+        </message>
+        <message>
+            <location line="+9" />
+            <location line="+2" />
+            <source>清空回收站</source>
+            <translation>清空回收站</translation>
+        </message>
+        <message>
+            <location line="-1" />
+            <source>确定清空回收站？所有项目将被永久删除，此操作无法撤销。</source>
+            <translation>确定清空回收站？所有项目将被永久删除，此操作无法撤销。</translation>
+        </message>
+        <message>
+            <location line="+95" />
+            <source>取消</source>
+            <translation>取消</translation>
+        </message>
+    </context>
+    <context>
+        <name>FmContextMenu</name>
+        <message>
+            <location filename="../modules/filemanager/FmContextMenu.qml" line="+138" />
+            <source>打开</source>
+            <translation>打开</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>刷新</source>
+            <translation>刷新</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>排序</source>
+            <translation>排序</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>复制</source>
+            <translation>复制</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>剪切</source>
+            <translation>剪切</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>粘贴</source>
+            <translation>粘贴</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>重命名</source>
+            <translation>重命名</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>新建文件夹</source>
+            <translation>新建文件夹</translation>
+        </message>
+        <message>
+            <location line="+4" />
+            <source>取消侧栏固定</source>
+            <translation>取消侧栏固定</translation>
+        </message>
+        <message>
+            <location line="+2" />
+            <source>固定到侧栏</source>
+            <translation>固定到侧栏</translation>
+        </message>
+        <message>
+            <location line="+4" />
+            <source>压缩为</source>
+            <translation>压缩为</translation>
+        </message>
+        <message>
+            <location line="+3" />
+            <source>解压到此处</source>
+            <translation>解压到此处</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>解压到新文件夹</source>
+            <translation>解压到新文件夹</translation>
+        </message>
+        <message>
+            <location line="+5" />
+            <location line="+5" />
+            <source>永久删除</source>
+            <translation>永久删除</translation>
+        </message>
+        <message>
+            <location line="-4" />
+            <source>清空回收站</source>
+            <translation>清空回收站</translation>
+        </message>
+        <message>
+            <location line="+2" />
+            <source>移到回收站</source>
+            <translation>移到回收站</translation>
+        </message>
+        <message>
+            <location line="+4" />
+            <source>属性</source>
+            <translation>属性</translation>
+        </message>
+        <message>
+            <location line="+6" />
+            <source>名称</source>
+            <translation>名称</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>大小</source>
+            <translation>大小</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>类型</source>
+            <translation>类型</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>修改时间</source>
+            <translation>修改时间</translation>
+        </message>
+        <message>
+            <location line="+2" />
+            <source>升序</source>
+            <translation>升序</translation>
+        </message>
+        <message>
+            <location line="+0" />
+            <source>降序</source>
+            <translation>降序</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>文件夹优先</source>
+            <translation>文件夹优先</translation>
+        </message>
+        <message>
+            <location line="+23" />
+            <source>已刷新</source>
+            <translation>已刷新</translation>
+        </message>
+    </context>
+    <context>
+        <name>FmDevices</name>
+        <message>
+            <location filename="../modules/filemanager/FmDevices.qml" line="+43" />
+            <source>正在挂载…</source>
+            <translation>正在挂载…</translation>
+        </message>
+        <message>
+            <location line="+17" />
+            <source>等待系统授权…</source>
+            <translation>等待系统授权…</translation>
+        </message>
+        <message>
+            <location line="+104" />
+            <source>本地磁盘 (系统)</source>
+            <translation>本地磁盘 (系统)</translation>
+        </message>
+        <message>
+            <location line="+2" />
+            <source>主目录卷</source>
+            <translation>主目录卷</translation>
+        </message>
+        <message>
+            <location line="+19" />
+            <source>%1 可用，共 %2</source>
+            <translation>%1 可用，共 %2</translation>
+        </message>
+        <message>
+            <location line="+2" />
+            <location line="+2" />
+            <source>未挂载</source>
+            <translation>未挂载</translation>
+        </message>
+        <message>
+            <location line="+116" />
+            <source>手机 · MTP（已连接）</source>
+            <translation>手机 · MTP（已连接）</translation>
+        </message>
+        <message>
+            <location line="+0" />
+            <source>网络位置</source>
+            <translation>网络位置</translation>
+        </message>
+        <message>
+            <location line="+58" />
+            <source>移动设备</source>
+            <translation>移动设备</translation>
+        </message>
+        <message>
+            <location line="+2" />
+            <source>已连接</source>
+            <translation>已连接</translation>
+        </message>
+        <message>
+            <location line="+0" />
+            <source>未挂载 · 点击挂载</source>
+            <translation>未挂载 · 点击挂载</translation>
+        </message>
+        <message>
+            <location line="+94" />
+            <location line="+29" />
+            <source>已挂载：%1</source>
+            <translation>已挂载：%1</translation>
+        </message>
+        <message>
+            <location line="-21" />
+            <source>需要管理员权限</source>
+            <translation>需要管理员权限</translation>
+        </message>
+        <message>
+            <location line="+3" />
+            <source>挂载失败（请确认手机已选「文件传输/MTP」）</source>
+            <translation>挂载失败（请确认手机已选「文件传输/MTP」）</translation>
+        </message>
+        <message>
+            <location line="+23" />
+            <source>挂载失败或已取消</source>
+            <translation>挂载失败或已取消</translation>
+        </message>
+    </context>
+    <context>
+        <name>FmFolderView</name>
+        <message>
+            <location filename="../modules/filemanager/FmFolderView.qml" line="+400" />
+            <source>无搜索结果「%1」</source>
+            <translation>无搜索结果「%1」</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>此文件夹为空</source>
+            <translation>此文件夹为空</translation>
+        </message>
+        <message>
+            <location line="+95" />
+            <source>已刷新</source>
+            <translation>已刷新</translation>
+        </message>
+        <message>
+            <location line="+104" />
+            <source>%1 项</source>
+            <translation>%1 项</translation>
+        </message>
+        <message>
+            <location line="+93" />
+            <source>已选中 %1 项</source>
+            <translation>已选中 %1 项</translation>
+        </message>
+        <message>
+            <location line="+121" />
+            <source>拖动 %1 项…</source>
+            <translation>拖动 %1 项…</translation>
+        </message>
+        <message>
+            <location line="+2" />
+            <source>拖到文件夹放置，或拖到侧栏固定：%1</source>
+            <translation>拖到文件夹放置，或拖到侧栏固定：%1</translation>
+        </message>
+        <message>
+            <location line="+2" />
+            <source>拖动：%1</source>
+            <translation>拖动：%1</translation>
+        </message>
+        <message>
+            <location line="+39" />
+            <source>已取消（放到原目录）</source>
+            <translation>已取消（放到原目录）</translation>
+        </message>
+        <message>
+            <location line="+211" />
+            <location line="+168" />
+            <source>剪切</source>
+            <translation>剪切</translation>
+        </message>
+        <message>
+            <location line="-15" />
+            <source>文件夹</source>
+            <translation>文件夹</translation>
+        </message>
+    </context>
+    <context>
+        <name>FmJobOverlay</name>
+        <message>
+            <location filename="../modules/filemanager/FmJobOverlay.qml" line="+15" />
+            <location line="+12" />
+            <source>处理中…</source>
+            <translation>处理中…</translation>
+        </message>
+        <message>
+            <location line="+120" />
+            <source>已完成 %1%</source>
+            <translation>已完成 %1%</translation>
+        </message>
+        <message>
+            <location line="+0" />
+            <source>请稍候…</source>
+            <translation>请稍候…</translation>
+        </message>
+        <message>
+            <location line="+26" />
+            <source>%1%</source>
+            <translation>%1%</translation>
+        </message>
+    </context>
+    <context>
+        <name>FmMountDialog</name>
+        <message>
+            <location filename="../modules/filemanager/FmMountDialog.qml" line="+88" />
+            <source>需要挂载磁盘</source>
+            <translation>需要挂载磁盘</translation>
+        </message>
+        <message>
+            <location line="+8" />
+            <source>「%1」尚未挂载，需要管理员权限才能访问。</source>
+            <translation>「%1」尚未挂载，需要管理员权限才能访问。</translation>
+        </message>
+        <message>
+            <location line="+9" />
+            <source>设备：%1</source>
+            <translation>设备：%1</translation>
+        </message>
+        <message>
+            <location line="+19" />
+            <source>点击「挂载」后将弹出系统密码窗口（polkit）。输入本机用户密码即可。</source>
+            <translation>点击「挂载」后将弹出系统密码窗口（polkit）。输入本机用户密码即可。</translation>
+        </message>
+        <message>
+            <location line="+29" />
+            <source>取消</source>
+            <translation>取消</translation>
+        </message>
+        <message>
+            <location line="+24" />
+            <source>挂载中…</source>
+            <translation>挂载中…</translation>
+        </message>
+        <message>
+            <location line="+0" />
+            <source>挂载</source>
+            <translation>挂载</translation>
+        </message>
+    </context>
+    <context>
+        <name>FmNameDialog</name>
+        <message>
+            <location filename="../modules/filemanager/FmNameDialog.qml" line="+37" />
+            <source>重命名</source>
+            <translation>重命名</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>新名称</source>
+            <translation>新名称</translation>
+        </message>
+        <message>
+            <location line="+17" />
+            <location line="+1" />
+            <source>新建文件夹</source>
+            <translation>新建文件夹</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>文件夹名称</source>
+            <translation>文件夹名称</translation>
+        </message>
+        <message>
+            <location line="+125" />
+            <source>取消</source>
+            <translation>取消</translation>
+        </message>
+        <message>
+            <location line="+19" />
+            <source>确定</source>
+            <translation>确定</translation>
+        </message>
+    </context>
+    <context>
+        <name>FmProperties</name>
+        <message>
+            <location filename="../modules/filemanager/FmProperties.qml" line="+19" />
+            <location line="+1" />
+            <location line="+15" />
+            <location line="+1" />
+            <source>…</source>
+            <translation>…</translation>
+        </message>
+        <message>
+            <location line="+2" />
+            <location line="+47" />
+            <source>文件</source>
+            <translation>文件</translation>
+        </message>
+        <message>
+            <location line="-4" />
+            <location line="+59" />
+            <source>文件夹</source>
+            <translation>文件夹</translation>
+        </message>
+        <message>
+            <location line="-57" />
+            <source>符号链接</source>
+            <translation>符号链接</translation>
+        </message>
+        <message>
+            <location line="+96" />
+            <source>位置</source>
+            <translation>位置</translation>
+        </message>
+        <message>
+            <location line="+16" />
+            <source>大小</source>
+            <translation>大小</translation>
+        </message>
+        <message>
+            <location line="+15" />
+            <source>修改时间</source>
+            <translation>修改时间</translation>
+        </message>
+        <message>
+            <location line="+16" />
+            <source>权限</source>
+            <translation>权限</translation>
+        </message>
+        <message>
+            <location line="+32" />
+            <source>复制路径</source>
+            <translation>复制路径</translation>
+        </message>
+        <message>
+            <location line="+21" />
+            <source>完成</source>
+            <translation>完成</translation>
+        </message>
+    </context>
+    <context>
+        <name>FmQuickLook</name>
+        <message>
+            <location filename="../modules/filemanager/FmQuickLook.qml" line="+55" />
+            <source>文件夹</source>
+            <translation>文件夹</translation>
+        </message>
+        <message>
+            <location line="+3" />
+            <source>图片预览</source>
+            <translation>图片预览</translation>
+        </message>
+        <message>
+            <location line="+5" />
+            <source>文本预览</source>
+            <translation>文本预览</translation>
+        </message>
+        <message>
+            <location line="+5" />
+            <source>按 Enter 用默认应用打开</source>
+            <translation>按 Enter 用默认应用打开</translation>
+        </message>
+        <message>
+            <location line="+31" />
+            <source>（无法读取文件）</source>
+            <translation>（无法读取文件）</translation>
+        </message>
+        <message>
+            <location line="+111" />
+            <source>加载中…</source>
+            <translation>加载中…</translation>
+        </message>
+        <message>
+            <location line="+22" />
+            <source>文件夹 — Space 关闭，Enter 进入</source>
+            <translation>文件夹 — Space 关闭，Enter 进入</translation>
+        </message>
+        <message>
+            <location line="+0" />
+            <source>无内嵌预览</source>
+            <translation>无内嵌预览</translation>
+        </message>
+        <message>
+            <location line="+27" />
+            <source>打开</source>
+            <translation>打开</translation>
+        </message>
+        <message>
+            <location line="+17" />
+            <source>关闭 (Esc / Space)</source>
+            <translation>关闭 (Esc / Space)</translation>
+        </message>
+    </context>
+    <context>
+        <name>FmSearchResults</name>
+        <message>
+            <location filename="../modules/filemanager/FmSearchResults.qml" line="+211" />
+            <source>正在主目录中搜索「%1」…</source>
+            <translation>正在主目录中搜索「%1」…</translation>
+        </message>
+        <message>
+            <location line="+2" />
+            <source>输入关键词，在主目录中全局搜索</source>
+            <translation>输入关键词，在主目录中全局搜索</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>「%1」· %2 个结果（最多 400）</source>
+            <translation>「%1」· %2 个结果（最多 400）</translation>
+        </message>
+        <message>
+            <location line="+7" />
+            <source>主目录</source>
+            <translation>主目录</translation>
+        </message>
+        <message>
+            <location line="+19" />
+            <source>无全局结果「%1」</source>
+            <translation>无全局结果「%1」</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>全局搜索主目录下的文件与文件夹</source>
+            <translation>全局搜索主目录下的文件与文件夹</translation>
+        </message>
+    </context>
+    <context>
+        <name>FmSidebar</name>
+        <message>
+            <location filename="../modules/filemanager/FmSidebar.qml" line="+67" />
+            <source>拖放到此以固定快捷</source>
+            <translation>拖放到此以固定快捷</translation>
+        </message>
+        <message>
+            <location line="+24" />
+            <source>文件</source>
+            <translation>文件</translation>
+        </message>
+        <message>
+            <location line="+46" />
+            <source>全局搜索…</source>
+            <translation>全局搜索…</translation>
+        </message>
+        <message>
+            <location line="+77" />
+            <source>此电脑</source>
+            <translation>此电脑</translation>
+        </message>
+        <message>
+            <location line="+8" />
+            <source>主目录</source>
+            <translation>主目录</translation>
+        </message>
+        <message>
+            <location line="+8" />
+            <source>回收站</source>
+            <translation>回收站</translation>
+        </message>
+        <message>
+            <location line="+7" />
+            <source>常用</source>
+            <translation>常用</translation>
+        </message>
+        <message>
+            <location line="+25" />
+            <source>快捷访问</source>
+            <translation>快捷访问</translation>
+        </message>
+        <message>
+            <location line="+7" />
+            <source>拖入文件夹，或右键「固定到侧栏」</source>
+            <translation>拖入文件夹，或右键「固定到侧栏」</translation>
+        </message>
+    </context>
+    <context>
+        <name>FmThisPC</name>
+        <message>
+            <location filename="../modules/filemanager/FmThisPC.qml" line="+57" />
+            <source>设备和驱动器</source>
+            <translation>设备和驱动器</translation>
+        </message>
+        <message>
+            <location line="+25" />
+            <source>未检测到磁盘设备</source>
+            <translation>未检测到磁盘设备</translation>
+        </message>
+        <message>
+            <location line="+10" />
+            <source>网络</source>
+            <translation>网络</translation>
+        </message>
+        <message>
+            <location line="+19" />
+            <source>未挂载磁盘点击后会尝试挂载；需要权限时弹出系统密码对话框。</source>
+            <translation>未挂载磁盘点击后会尝试挂载；需要权限时弹出系统密码对话框。</translation>
+        </message>
+        <message>
+            <location line="+75" />
+            <source>未挂载</source>
+            <translation>未挂载</translation>
+        </message>
+    </context>
+    <context>
+        <name>FmToolbar</name>
+        <message>
+            <location filename="../modules/filemanager/FmToolbar.qml" line="+59" />
+            <source>图标视图</source>
+            <translation>图标视图</translation>
+        </message>
+        <message>
+            <location line="+6" />
+            <source>列表视图</source>
+            <translation>列表视图</translation>
+        </message>
+        <message>
+            <location line="+13" />
+            <source>隐藏扩展名</source>
+            <translation>隐藏扩展名</translation>
+        </message>
+        <message>
+            <location line="+0" />
+            <source>显示扩展名</source>
+            <translation>显示扩展名</translation>
+        </message>
+        <message>
+            <location line="+6" />
+            <source>不显示隐藏文件</source>
+            <translation>不显示隐藏文件</translation>
+        </message>
+        <message>
+            <location line="+0" />
+            <source>显示隐藏文件</source>
+            <translation>显示隐藏文件</translation>
+        </message>
+        <message>
+            <location line="+7" />
+            <source>刷新</source>
+            <translation>刷新</translation>
+        </message>
+        <message>
+            <location line="+4" />
+            <source>已刷新</source>
+            <translation>已刷新</translation>
+        </message>
+        <message>
+            <location line="+46" />
+            <source>固定当前文件夹到侧栏</source>
+            <translation>固定当前文件夹到侧栏</translation>
+        </message>
+        <message>
+            <location line="+13" />
+            <location line="+126" />
+            <source>清空回收站</source>
+            <translation>清空回收站</translation>
+        </message>
+        <message>
+            <location line="-112" />
+            <source>搜索当前文件夹 (Ctrl+F)</source>
+            <translation>搜索当前文件夹 (Ctrl+F)</translation>
+        </message>
+        <message>
+            <location line="+29" />
+            <source>搜索当前文件夹…</source>
+            <translation>搜索当前文件夹…</translation>
+        </message>
+    </context>
+    <context>
         <name>FolderContents</name>
         <message>
             <location filename="../components/filedialog/FolderContents.qml" line="+63" />
@@ -2028,58 +2917,72 @@
             <translation>已检测鼠标：%1</translation>
         </message>
         <message>
+            <location line="+9" />
             <source>Pointer magnifier</source>
             <translation>指针放大</translation>
         </message>
         <message>
+            <location line="+5" />
             <source>Shake to enlarge pointer</source>
             <translation>晃动放大指针</translation>
         </message>
         <message>
+            <location line="+1" />
             <source>Shake the mouse vigorously to temporarily magnify the cursor (macOS-style)</source>
             <translation>用力快速晃动鼠标，可暂时放大指针（类似 macOS 查找指针）</translation>
         </message>
         <message>
+            <location line="+9" />
             <source>Shake sensitivity</source>
             <translation>晃动灵敏度</translation>
         </message>
         <message>
+            <location line="+4" />
             <source>Low · %1</source>
             <translation>低 · %1</translation>
         </message>
         <message>
+            <location line="+2" />
             <source>High · %1</source>
             <translation>高 · %1</translation>
         </message>
         <message>
+            <location line="+1" />
             <source>Medium · %1</source>
             <translation>中 · %1</translation>
         </message>
         <message>
+            <location line="+21" />
             <source>Manual pulse: Super+Shift+C. Lower sensitivity needs a stronger shake.</source>
             <translation>手动触发：Super+Shift+C。灵敏度越低，需要晃得越用力。</translation>
         </message>
         <message>
+            <location line="+9" />
             <source>Click &amp; long-press</source>
             <translation>点击与长按</translation>
         </message>
         <message>
+            <location line="+6" />
             <source>Double-click interval</source>
             <translation>双击间隔</translation>
         </message>
         <message>
+            <location line="+9" />
             <source>Long-press threshold</source>
             <translation>长按阈值</translation>
         </message>
         <message>
+            <location line="+9" />
             <source>Click cooldown (anti-bounce)</source>
             <translation>点击冷却（防连点）</translation>
         </message>
         <message>
+            <location line="+10" />
             <source>Drag start distance</source>
             <translation>拖动启动距离</translation>
         </message>
         <message>
+            <location line="+21" />
             <source>Double-click interval applies to GTK/Qt apps. Long-press, cooldown and drag distance apply to Dock and Launcher.</source>
             <translation>双击间隔作用于 GTK/Qt 应用。长按、点击冷却与拖动距离作用于 Dock 和启动台。</translation>
         </message>
@@ -2195,7 +3098,7 @@ Middle-button scrolling: hold the middle button and move the mouse. Side buttons
     <context>
         <name>LanguageAndRegion</name>
         <message>
-            <location filename="../modules/nexus/pages/LanguageAndRegion.qml" line="+16" />
+            <location filename="../modules/nexus/pages/LanguageAndRegion.qml" line="+17" />
             <source>Follow system</source>
             <translation>跟随系统</translation>
         </message>
@@ -2210,7 +3113,7 @@ Middle-button scrolling: hold the middle button and move the mouse. Side buttons
             <translation>English</translation>
         </message>
         <message>
-            <location line="+17" />
+            <location line="+15" />
             <source>24-hour</source>
             <translation>24 小时</translation>
         </message>
@@ -2220,12 +3123,12 @@ Middle-button scrolling: hold the middle button and move the mouse. Side buttons
             <translation>12 小时</translation>
         </message>
         <message>
-            <location line="+4" />
+            <location line="+38" />
             <source>Language and region</source>
             <translation>语言和地区</translation>
         </message>
         <message>
-            <location line="+30" />
+            <location line="+149" />
             <source>Language</source>
             <translation>语言</translation>
         </message>
@@ -2240,7 +3143,17 @@ Middle-button scrolling: hold the middle button and move the mouse. Side buttons
             <translation>立即切换 Shell 的界面语言</translation>
         </message>
         <message>
-            <location line="+8" />
+            <location line="+34" />
+            <source>Translation status</source>
+            <translation>翻译状态</translation>
+        </message>
+        <message>
+            <location line="+265" />
+            <source>Apply</source>
+            <translation>应用</translation>
+        </message>
+        <message>
+            <location line="+11" />
             <source>Weather</source>
             <translation>天气</translation>
         </message>
@@ -2295,12 +3208,7 @@ Middle-button scrolling: hold the middle button and move the mouse. Side buttons
             <translation>CPU 和 GPU 使用的温度单位</translation>
         </message>
         <message>
-            <location line="+8" />
-            <source>Time and date</source>
-            <translation>时间和日期</translation>
-        </message>
-        <message>
-            <location line="+6" />
+            <location line="+14" />
             <source>Clock format</source>
             <translation>时钟格式</translation>
         </message>
@@ -2309,13 +3217,110 @@ Middle-button scrolling: hold the middle button and move the mouse. Side buttons
             <source>How time is displayed in the Shell</source>
             <translation>Shell 中时间的显示方式</translation>
         </message>
+        <message>
+            <location line="-335" />
+            <location line="+215" />
+            <source>Date and time</source>
+            <translation>日期和时间</translation>
+        </message>
+        <message>
+            <location line="-184" />
+            <source>Reading system time…</source>
+            <translation>正在读取系统时间…</translation>
+        </message>
+        <message>
+            <location line="+10" />
+            <source>Network time on · synced</source>
+            <translation>网络对时已开启 · 已同步</translation>
+        </message>
+        <message>
+            <location line="+0" />
+            <source>Network time on · syncing…</source>
+            <translation>网络对时已开启 · 同步中…</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>Network time off · manual</source>
+            <translation>网络对时已关闭 · 手动</translation>
+        </message>
+        <message>
+            <location line="-52" />
+            <location line="+63" />
+            <source>Refresh</source>
+            <translation>刷新</translation>
+        </message>
+        <message>
+            <location line="+18" />
+            <source>UTC %1</source>
+            <translation>UTC %1</translation>
+        </message>
+        <message>
+            <location line="-255" />
+            <source>Could not read system time settings.</source>
+            <translation>无法读取系统时间设置。</translation>
+        </message>
+        <message>
+            <location line="+50" />
+            <source>Could not parse time status.</source>
+            <translation>无法解析时间状态。</translation>
+        </message>
+        <message>
+            <location line="+214" />
+            <source>Set time automatically</source>
+            <translation>自动设置时间</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>Use network time (NTP). Recommended.</source>
+            <translation>使用网络时间（NTP）。推荐开启。</translation>
+        </message>
+        <message>
+            <location line="+19" />
+            <source>Time zone</source>
+            <translation>时区</translation>
+        </message>
+        <message>
+            <location line="+6" />
+            <source>Current: %1</source>
+            <translation>当前：%1</translation>
+        </message>
+        <message>
+            <location line="+26" />
+            <source>Search time zone</source>
+            <translation>搜索时区</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>e.g. Shanghai, Tokyo, New_York</source>
+            <translation>例如 Shanghai、Tokyo、New_York</translation>
+        </message>
+        <message>
+            <location line="+67" />
+            <source>Set date and time manually</source>
+            <translation>手动设置日期和时间</translation>
+        </message>
+        <message>
+            <location line="+6" />
+            <source>Turns off network time. Format: YYYY-MM-DD HH:MM:SS</source>
+            <translation>会关闭网络对时。格式：YYYY-MM-DD HH:MM:SS</translation>
+        </message>
+        <message>
+            <location line="+25" />
+            <source>Use now</source>
+            <translation>填入当前时间</translation>
+        </message>
+        <message>
+            <location line="+97" />
+            <source>Clock display</source>
+            <translation>时钟显示</translation>
+        </message>
     </context>
     <context>
         <name>LauncherPanel</name>
         <message>
             <location filename="../modules/nexus/pages/panels/LauncherPanel.qml" line="+11" />
             <source>Launcher</source>
-            <translation>启动器</translation>
+            <translation>启动台</translation>
         </message>
         <message>
             <location line="+12" />
@@ -2575,6 +3580,277 @@ Middle-button scrolling: hold the middle button and move the mouse. Side buttons
         </message>
     </context>
     <context>
+        <name>ManagerState</name>
+        <message>
+            <location filename="../modules/filemanager/ManagerState.qml" line="+15" />
+            <location line="+416" />
+            <location line="+41" />
+            <location line="+26" />
+            <source>就绪</source>
+            <translation>就绪</translation>
+        </message>
+        <message>
+            <location line="-422" />
+            <location line="+67" />
+            <location line="+11" />
+            <location line="+43" />
+            <location line="+54" />
+            <location line="+13" />
+            <source>此电脑</source>
+            <translation>此电脑</translation>
+        </message>
+        <message>
+            <location line="-187" />
+            <source>主目录</source>
+            <translation>主目录</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <location line="+73" />
+            <location line="+74" />
+            <source>回收站</source>
+            <translation>回收站</translation>
+        </message>
+        <message>
+            <location line="-146" />
+            <location line="+45" />
+            <source>手机</source>
+            <translation>手机</translation>
+        </message>
+        <message>
+            <location line="-44" />
+            <source>下载</source>
+            <translation>下载</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>桌面</source>
+            <translation>桌面</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>文档</source>
+            <translation>文档</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>音乐</source>
+            <translation>音乐</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>图片</source>
+            <translation>图片</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>视频</source>
+            <translation>视频</translation>
+        </message>
+        <message>
+            <location line="+240" />
+            <source>%1 · 已取消选择</source>
+            <translation>%1 · 已取消选择</translation>
+        </message>
+        <message>
+            <location line="+2" />
+            <source>已选 1 项</source>
+            <translation>已选 1 项</translation>
+        </message>
+        <message>
+            <location line="+2" />
+            <source>已选 %1 项</source>
+            <translation>已选 %1 项</translation>
+        </message>
+        <message>
+            <location line="+49" />
+            <source>已在侧栏快捷中</source>
+            <translation>已在侧栏快捷中</translation>
+        </message>
+        <message>
+            <location line="+8" />
+            <source>已固定：%1</source>
+            <translation>已固定：%1</translation>
+        </message>
+        <message>
+            <location line="+6" />
+            <source>已取消固定</source>
+            <translation>已取消固定</translation>
+        </message>
+        <message>
+            <location line="+37" />
+            <location line="+41" />
+            <source>搜索：%1</source>
+            <translation>搜索：%1</translation>
+        </message>
+        <message>
+            <location line="-35" />
+            <location line="+17" />
+            <location line="+13" />
+            <location line="+30" />
+            <source>全局搜索</source>
+            <translation>全局搜索</translation>
+        </message>
+        <message>
+            <location line="-47" />
+            <source>正在全局搜索…</source>
+            <translation>正在全局搜索…</translation>
+        </message>
+        <message>
+            <location line="+2" />
+            <source>全局：%1 · %2 项</source>
+            <translation>全局：%1 · %2 项</translation>
+        </message>
+        <message>
+            <location line="+54" />
+            <source>显示隐藏文件</source>
+            <translation>显示隐藏文件</translation>
+        </message>
+        <message>
+            <location line="+0" />
+            <source>隐藏点文件</source>
+            <translation>隐藏点文件</translation>
+        </message>
+        <message>
+            <location line="+7" />
+            <source>显示扩展名</source>
+            <translation>显示扩展名</translation>
+        </message>
+        <message>
+            <location line="+0" />
+            <source>隐藏扩展名</source>
+            <translation>隐藏扩展名</translation>
+        </message>
+        <message>
+            <location line="+31" />
+            <source>文件夹优先</source>
+            <translation>文件夹优先</translation>
+        </message>
+        <message>
+            <location line="+0" />
+            <source>不优先文件夹</source>
+            <translation>不优先文件夹</translation>
+        </message>
+        <message>
+            <location line="+9" />
+            <source>名称</source>
+            <translation>名称</translation>
+        </message>
+        <message>
+            <location line="+2" />
+            <source>大小</source>
+            <translation>大小</translation>
+        </message>
+        <message>
+            <location line="+2" />
+            <source>类型</source>
+            <translation>类型</translation>
+        </message>
+        <message>
+            <location line="+2" />
+            <source>修改时间</source>
+            <translation>修改时间</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>降序</source>
+            <translation>降序</translation>
+        </message>
+        <message>
+            <location line="+0" />
+            <source>升序</source>
+            <translation>升序</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>排序：%1 · %2</source>
+            <translation>排序：%1 · %2</translation>
+        </message>
+    </context>
+    <context>
+        <name>ManagerWindow</name>
+        <message>
+            <location filename="../modules/filemanager/ManagerWindow.qml" line="+22" />
+            <source>文件</source>
+            <translation>文件</translation>
+        </message>
+        <message>
+            <location line="+31" />
+            <source>挂载成功</source>
+            <translation>挂载成功</translation>
+        </message>
+        <message>
+            <location line="+7" />
+            <source>挂载失败</source>
+            <translation>挂载失败</translation>
+        </message>
+        <message>
+            <location line="+2" />
+            <source>挂载失败或已取消</source>
+            <translation>挂载失败或已取消</translation>
+        </message>
+        <message>
+            <location line="+80" />
+            <source>已刷新</source>
+            <translation>已刷新</translation>
+        </message>
+        <message>
+            <location line="+144" />
+            <source>尝试挂载 %1…</source>
+            <translation>尝试挂载 %1…</translation>
+        </message>
+        <message>
+            <location line="+48" />
+            <source>剪切板 · 移走 %1</source>
+            <translation>剪切板 · 移走 %1</translation>
+        </message>
+        <message>
+            <location line="+6" />
+            <source>剪切板 · 复制 %1</source>
+            <translation>剪切板 · 复制 %1</translation>
+        </message>
+        <message>
+            <location line="+80" />
+            <source>名称</source>
+            <translation>名称</translation>
+        </message>
+        <message>
+            <location line="+4" />
+            <source>大小</source>
+            <translation>大小</translation>
+        </message>
+        <message>
+            <location line="+4" />
+            <source>类型</source>
+            <translation>类型</translation>
+        </message>
+        <message>
+            <location line="+4" />
+            <source>修改时间</source>
+            <translation>修改时间</translation>
+        </message>
+        <message>
+            <location line="+13" />
+            <source>升序</source>
+            <translation>升序</translation>
+        </message>
+        <message>
+            <location line="+0" />
+            <source>降序</source>
+            <translation>降序</translation>
+        </message>
+        <message>
+            <location line="+5" />
+            <source>文件夹优先</source>
+            <translation>文件夹优先</translation>
+        </message>
+        <message>
+            <location line="+84" />
+            <source>已取消挂载</source>
+            <translation>已取消挂载</translation>
+        </message>
+    </context>
+    <context>
         <name>Media</name>
         <message>
             <location filename="../modules/dashboard/Media.qml" line="+117" />
@@ -2703,17 +3979,17 @@ Middle-button scrolling: hold the middle button and move the mouse. Side buttons
     <context>
         <name>NetworkPage</name>
         <message>
-            <location filename="../modules/nexus/pages/NetworkPage.qml" line="+18" />
+            <location filename="../modules/nexus/pages/NetworkPage.qml" line="+25" />
             <source>Network</source>
             <translation>网络</translation>
         </message>
         <message>
-            <location line="+56" />
+            <location line="+101" />
             <source>Wireless</source>
             <translation>无线网络</translation>
         </message>
         <message>
-            <location line="+12" />
+            <location line="+13" />
             <source>No networks found</source>
             <translation>未找到网络</translation>
         </message>
@@ -2723,18 +3999,18 @@ Middle-button scrolling: hold the middle button and move the mouse. Side buttons
             <translation>无线网络已关闭</translation>
         </message>
         <message>
-            <location line="+94" />
+            <location line="+89" />
             <source>Open</source>
             <translation>开放</translation>
         </message>
         <message>
             <location line="+2" />
-            <location line="+174" />
+            <location line="+266" />
             <source>%1 · Connected</source>
             <translation>%1 · 已连接</translation>
         </message>
         <message>
-            <location line="-172" />
+            <location line="-264" />
             <source>%1 · Saved</source>
             <translation>%1 · 已保存</translation>
         </message>
@@ -2744,7 +4020,7 @@ Middle-button scrolling: hold the middle button and move the mouse. Side buttons
             <translation>安全性：%1</translation>
         </message>
         <message>
-            <location line="+62" />
+            <location line="+154" />
             <location line="+31" />
             <source>VPN</source>
             <translation>VPN</translation>
@@ -2793,6 +4069,11 @@ Middle-button scrolling: hold the middle button and move the mouse. Side buttons
             <location line="+40" />
             <source>Rescan wireless networks</source>
             <translation>重新扫描无线网络</translation>
+        </message>
+        <message>
+            <location line="-512" />
+            <source>Connection failed. Check the password and try again.</source>
+            <translation>连接失败，请检查密码后重试。</translation>
         </message>
     </context>
     <context>
@@ -3024,7 +4305,7 @@ Middle-button scrolling: hold the middle button and move the mouse. Side buttons
     <context>
         <name>PageCompRegistry</name>
         <message>
-            <location filename="../modules/nexus/PageCompRegistry.qml" line="+229" />
+            <location filename="../modules/nexus/PageCompRegistry.qml" line="+232" />
             <source>Page under construction</source>
             <translation>页面正在建设中</translation>
         </message>
@@ -3037,7 +4318,7 @@ Middle-button scrolling: hold the middle button and move the mouse. Side buttons
     <context>
         <name>PageRegistry</name>
         <message>
-            <location filename="../modules/nexus/PageRegistry.qml" line="+11" />
+            <location filename="../modules/nexus/PageRegistry.qml" line="+14" />
             <source>Wallpaper &amp; style</source>
             <translation>壁纸和样式</translation>
         </message>
@@ -3047,7 +4328,7 @@ Middle-button scrolling: hold the middle button and move the mouse. Side buttons
             <translation>壁纸、字体、颜色</translation>
         </message>
         <message>
-            <location line="+6" />
+            <location line="+7" />
             <source>Display</source>
             <translation>显示</translation>
         </message>
@@ -3057,7 +4338,7 @@ Middle-button scrolling: hold the middle button and move the mouse. Side buttons
             <translation>分辨率、界面缩放、显示缩放</translation>
         </message>
         <message>
-            <location line="+4" />
+            <location line="+5" />
             <source>Mouse &amp; touchpad</source>
             <translation>鼠标和触摸板</translation>
         </message>
@@ -3067,7 +4348,7 @@ Middle-button scrolling: hold the middle button and move the mouse. Side buttons
             <translation>触摸板和指针控制</translation>
         </message>
         <message>
-            <location line="+4" />
+            <location line="+5" />
             <source>Network</source>
             <translation>网络</translation>
         </message>
@@ -3077,7 +4358,7 @@ Middle-button scrolling: hold the middle button and move the mouse. Side buttons
             <translation>无线网络、有线网络</translation>
         </message>
         <message>
-            <location line="+4" />
+            <location line="+5" />
             <source>Connected devices</source>
             <translation>已连接设备</translation>
         </message>
@@ -3087,7 +4368,7 @@ Middle-button scrolling: hold the middle button and move the mouse. Side buttons
             <translation>蓝牙、配对</translation>
         </message>
         <message>
-            <location line="+5" />
+            <location line="+6" />
             <source>Audio</source>
             <translation>音频</translation>
         </message>
@@ -3097,7 +4378,7 @@ Middle-button scrolling: hold the middle button and move the mouse. Side buttons
             <translation>应用音量、声音设备</translation>
         </message>
         <message>
-            <location line="+6" />
+            <location line="+7" />
             <source>Villode updates</source>
             <translation>Villode 更新</translation>
         </message>
@@ -3107,7 +4388,7 @@ Middle-button scrolling: hold the middle button and move the mouse. Side buttons
             <translation>同步 Shell、翻译与桌面组件</translation>
         </message>
         <message>
-            <location line="+4" />
+            <location line="+5" />
             <source>Lock screen &amp; power</source>
             <translation>锁屏与电源</translation>
         </message>
@@ -3117,7 +4398,7 @@ Middle-button scrolling: hold the middle button and move the mouse. Side buttons
             <translation>锁屏、关屏、睡眠与空闲超时</translation>
         </message>
         <message>
-            <location line="+4" />
+            <location line="+5" />
             <source>Keyboard shortcuts</source>
             <translation>快捷键</translation>
         </message>
@@ -3127,17 +4408,12 @@ Middle-button scrolling: hold the middle button and move the mouse. Side buttons
             <translation>为应用、Shell 和窗口录制快捷键</translation>
         </message>
         <message>
-            <location line="+4" />
-            <source>Plugins</source>
-            <translation>插件</translation>
+            <location line="+38" />
+            <source>Language, time zone, date and time, weather</source>
+            <translation>语言、时区、日期时间、天气</translation>
         </message>
         <message>
-            <location line="+2" />
-            <source>Manage plugins</source>
-            <translation>管理插件</translation>
-        </message>
-        <message>
-            <location line="+6" />
+            <location line="-23" />
             <source>Panels</source>
             <translation>面板</translation>
         </message>
@@ -3147,7 +4423,7 @@ Middle-button scrolling: hold the middle button and move the mouse. Side buttons
             <translation>仪表盘、任务栏、启动器、侧边栏</translation>
         </message>
         <message>
-            <location line="+4" />
+            <location line="+5" />
             <source>Apps</source>
             <translation>应用</translation>
         </message>
@@ -3157,7 +4433,7 @@ Middle-button scrolling: hold the middle button and move the mouse. Side buttons
             <translation>默认应用、收藏、隐藏应用</translation>
         </message>
         <message>
-            <location line="+4" />
+            <location line="+5" />
             <source>Services</source>
             <translation>服务</translation>
         </message>
@@ -3167,17 +4443,12 @@ Middle-button scrolling: hold the middle button and move the mouse. Side buttons
             <translation>轮询间隔、歌词后端</translation>
         </message>
         <message>
-            <location line="+4" />
+            <location line="+5" />
             <source>Language &amp; region</source>
             <translation>语言和地区</translation>
         </message>
         <message>
-            <location line="+2" />
-            <source>UI language, weather location, display units</source>
-            <translation>界面语言、天气位置、显示单位</translation>
-        </message>
-        <message>
-            <location line="+6" />
+            <location line="+9" />
             <source>About</source>
             <translation>关于</translation>
         </message>
@@ -3236,7 +4507,7 @@ Middle-button scrolling: hold the middle button and move the mouse. Side buttons
         <message>
             <location line="+6" />
             <source>Launcher</source>
-            <translation>启动器</translation>
+            <translation>启动台</translation>
         </message>
         <message>
             <location line="+8" />
@@ -3268,6 +4539,19 @@ Middle-button scrolling: hold the middle button and move the mouse. Side buttons
         </message>
     </context>
     <context>
+        <name>Picker</name>
+        <message>
+            <location filename="../modules/areapicker/Picker.qml" line="+788" />
+            <source>取消</source>
+            <translation>取消</translation>
+        </message>
+        <message>
+            <location line="+24" />
+            <source>完成</source>
+            <translation>完成</translation>
+        </message>
+    </context>
+    <context>
         <name>Players</name>
         <message>
             <location filename="../services/Players.qml" line="+46" />
@@ -3283,7 +4567,7 @@ Middle-button scrolling: hold the middle button and move the mouse. Side buttons
     <context>
         <name>PointerDevices</name>
         <message>
-            <location filename="../services/PointerDevices.qml" line="+56" />
+            <location filename="../services/PointerDevices.qml" line="+74" />
             <source>System default (pass through to applications)</source>
             <translation>系统默认（透传给应用）</translation>
         </message>
@@ -3353,12 +4637,12 @@ Middle-button scrolling: hold the middle button and move the mouse. Side buttons
             <translation>测试通知（验证按键）</translation>
         </message>
         <message>
-            <location line="+35" />
+            <location line="+37" />
             <source>No touchpad detected.</source>
             <translation>未检测到触摸板。</translation>
         </message>
         <message>
-            <location line="+70" />
+            <location line="+184" />
             <source>System default</source>
             <translation>系统默认</translation>
         </message>
@@ -3448,17 +4732,17 @@ Middle-button scrolling: hold the middle button and move the mouse. Side buttons
             <translation>无法绑定该按键：%1</translation>
         </message>
         <message>
-            <location line="+209" />
+            <location line="+221" />
             <source>Mouse settings saved.</source>
             <translation>鼠标设置已保存。</translation>
         </message>
         <message>
-            <location line="+33" />
+            <location line="+36" />
             <source>Could not read pointer device list.</source>
             <translation>无法读取指针设备列表。</translation>
         </message>
         <message>
-            <location line="+163" />
+            <location line="+227" />
             <source>Touchpad enabled.</source>
             <translation>触摸板已启用。</translation>
         </message>
@@ -3496,6 +4780,78 @@ Middle-button scrolling: hold the middle button and move the mouse. Side buttons
             <location line="+56" />
             <source>Could not create configuration directory.</source>
             <translation>无法创建配置目录。</translation>
+        </message>
+    </context>
+    <context>
+        <name>PortalPicker</name>
+        <message>
+            <location filename="../modules/filemanager/PortalPicker.qml" line="+28" />
+            <location line="+23" />
+            <location line="+379" />
+            <source>选择文件</source>
+            <translation>选择文件</translation>
+        </message>
+        <message>
+            <location line="-400" />
+            <location line="+23" />
+            <source>所有文件</source>
+            <translation>所有文件</translation>
+        </message>
+        <message>
+            <location line="+163" />
+            <source>挂载失败</source>
+            <translation>挂载失败</translation>
+        </message>
+        <message>
+            <location line="+94" />
+            <source>文件名：</source>
+            <translation>文件名：</translation>
+        </message>
+        <message>
+            <location line="+41" />
+            <source>选择目录并输入文件名</source>
+            <translation>选择目录并输入文件名</translation>
+        </message>
+        <message>
+            <location line="+2" />
+            <source>选择文件夹，或进入目录后点「选择文件夹」</source>
+            <translation>选择文件夹，或进入目录后点「选择文件夹」</translation>
+        </message>
+        <message>
+            <location line="+3" />
+            <source>已选 %1 项 · %2</source>
+            <translation>已选 %1 项 · %2</translation>
+        </message>
+        <message>
+            <location line="+24" />
+            <source>保存</source>
+            <translation>保存</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <location line="+112" />
+            <source>选择文件夹</source>
+            <translation>选择文件夹</translation>
+        </message>
+        <message>
+            <location line="-112" />
+            <source>打开</source>
+            <translation>打开</translation>
+        </message>
+        <message>
+            <location line="+21" />
+            <source>取消</source>
+            <translation>取消</translation>
+        </message>
+        <message>
+            <location line="+62" />
+            <source>打开文件</source>
+            <translation>打开文件</translation>
+        </message>
+        <message>
+            <location line="+16" />
+            <source>保存文件</source>
+            <translation>保存文件</translation>
         </message>
     </context>
     <context>
@@ -3793,7 +5149,7 @@ Turning off displays does not end the session; sleep suspends the system. Use Ke
     <context>
         <name>Screenshot</name>
         <message>
-            <location filename="../modules/utilities/cards/Screenshot.qml" line="+63" />
+            <location filename="../modules/utilities/cards/Screenshot.qml" line="+60" />
             <source>Screenshot</source>
             <translation>屏幕截图</translation>
         </message>
@@ -4016,12 +5372,12 @@ Turning off displays does not end the session; sleep suspends the system. Use Ke
         <name>ShortcutsPage</name>
         <message>
             <location filename="../modules/nexus/pages/ShortcutsPage.qml" line="+76" />
-            <location line="+811" />
+            <location line="+835" />
             <source>Keyboard shortcuts</source>
             <translation>快捷键</translation>
         </message>
         <message>
-            <location line="-523" />
+            <location line="-547" />
             <source>Open terminal</source>
             <translation>打开终端</translation>
         </message>
@@ -4086,7 +5442,7 @@ Turning off displays does not end the session; sleep suspends the system. Use Ke
             <translation>切换窗口浮动</translation>
         </message>
         <message>
-            <location line="+151" />
+            <location line="+175" />
             <location line="+7" />
             <source>Cancelled; original shortcut kept</source>
             <translation>已取消，保留原来的快捷键</translation>
@@ -4449,214 +5805,353 @@ Keyboard layout: %1</source>
         </message>
     </context>
     <context>
+        <name>UiLanguage</name>
+        <message>
+            <location filename="../services/UiLanguage.qml" line="+25" />
+            <source>Checking translation…</source>
+            <translation>正在检查翻译…</translation>
+        </message>
+        <message>
+            <location line="+16" />
+            <source>Translation plugin missing — reinstall Shell with native modules</source>
+            <translation>翻译插件缺失 — 请用原生模块重装 Shell</translation>
+        </message>
+        <message>
+            <location line="+4" />
+            <source>Catalog missing for %1 — run caelestia-zh-apply</source>
+            <translation>缺少 %1 的翻译目录 — 请运行 caelestia-zh-apply</translation>
+        </message>
+        <message>
+            <location line="+4" />
+            <source>Loaded · %1</source>
+            <translation>已加载 · %1</translation>
+        </message>
+        <message>
+            <location line="+2" />
+            <source>Plugin OK, catalog not loaded · %1</source>
+            <translation>插件正常，目录未加载 · %1</translation>
+        </message>
+    </context>
+    <context>
         <name>UpdatesPage</name>
         <message>
-            <location filename="../modules/nexus/pages/UpdatesPage.qml" line="+24" />
-            <source>Villode updates</source>
-            <translation>Villode 更新</translation>
-        </message>
-        <message>
-            <location line="+17" />
-            <source>Could not check for updates. Check your network connection.</source>
-            <translation>检查更新失败，请确认网络连接。</translation>
-        </message>
-        <message>
-            <source>Update check timed out. GitHub may be slow or unreachable; try again later or configure a mirror (VILLODE_GITHUB_MIRRORS).</source>
-            <translation>检查更新超时。GitHub 可能较慢或不可达；请稍后重试，或配置镜像（VILLODE_GITHUB_MIRRORS）。</translation>
-        </message>
-        <message>
-            <source>Could not check for updates. Check your network connection, or set VILLODE_GITHUB_MIRRORS / use offline mode.</source>
-            <translation>检查更新失败。请确认网络，或设置 VILLODE_GITHUB_MIRRORS / 使用离线模式。</translation>
-        </message>
-        <message>
-            <location line="+24" />
+            <location filename="../modules/nexus/pages/UpdatesPage.qml" line="+227" />
             <source>Component</source>
             <translation>组件</translation>
         </message>
         <message>
-            <location line="+5" />
+            <location line="-58" />
             <source>Unknown</source>
             <translation>未知</translation>
         </message>
         <message>
-            <location line="+57" />
+            <location line="+77" />
             <source>Update available</source>
             <translation>有更新</translation>
         </message>
         <message>
-            <location line="+2" />
-            <source>Repair required</source>
-            <translation>需要修复</translation>
-        </message>
-        <message>
-            <location line="+2" />
-            <location line="+202" />
+            <location line="+4" />
+            <location line="+45" />
             <source>Not installed</source>
-            <translation>尚未安装</translation>
+            <translation>未安装</translation>
         </message>
         <message>
-            <location line="-200" />
+            <location line="-43" />
             <source>Up to date</source>
             <translation>已是最新</translation>
         </message>
         <message>
-            <location line="+17" />
-            <source>Update</source>
-            <translation>更新</translation>
-        </message>
-        <message>
-            <location line="+4" />
-            <source>Install / update (%1)</source>
-            <translation>安装/更新 (%1)</translation>
-        </message>
-        <message>
-            <location line="+2" />
-            <source>Install (%1)</source>
-            <translation>安装 (%1)</translation>
-        </message>
-        <message>
-            <location line="+1" />
-            <source>Update (%1)</source>
-            <translation>更新 (%1)</translation>
-        </message>
-        <message>
-            <location line="+70" />
-            <source>Checking for updates...</source>
-            <translation>正在检查更新…</translation>
-        </message>
-        <message>
-            <location line="+2" />
-            <source>Update check failed</source>
-            <translation>检查失败</translation>
-        </message>
-        <message>
-            <location line="+2" />
-            <source>%1 components can be installed or updated</source>
-            <translation>有 %1 个组件可安装或更新</translation>
-        </message>
-        <message>
-            <location line="+1" />
-            <source>Everything is up to date</source>
-            <translation>全部为最新版本</translation>
-        </message>
-        <message>
-            <location line="+7" />
+            <location line="+37" />
             <source>Last checked %1</source>
             <translation>上次检查 %1</translation>
         </message>
         <message>
-            <source>Last checked %1 · %2</source>
-            <translation>上次检查 %1 · %2</translation>
-        </message>
-        <message>
-            <source>Last checked %1 · source %2</source>
-            <translation>上次检查 %1 · 来源 %2</translation>
-        </message>
-        <message>
-            <source>Shell and cursor share one pin — one update covers both</source>
-            <translation>Shell 与指针放大共用同一锁定版本，一次更新即可</translation>
-        </message>
-        <message>
-            <source>%1 (ships with Shell)</source>
-            <translation>%1（随 Shell 提供）</translation>
-        </message>
-        <message>
-            <source>No detailed changelog offline; version pin will update from %1 to %2</source>
-            <translation>离线暂无详细变更说明；版本将从 %1 更新到 %2</translation>
-        </message>
-        <message>
+            <location line="+21" />
             <source>Not installed yet</source>
             <translation>尚未安装</translation>
         </message>
         <message>
-            <location line="+0" />
-            <source>Villode release channel</source>
-            <translation>来自 Villode 发布通道</translation>
-        </message>
-        <message>
-            <source>GitHub</source>
-            <translation>GitHub</translation>
-        </message>
-        <message>
-            <source>GitHub mirror</source>
-            <translation>GitHub 镜像</translation>
-        </message>
-        <message>
-            <source>Local cache (GitHub unreachable)</source>
-            <translation>本地缓存（GitHub 不可达）</translation>
-        </message>
-        <message>
+            <location line="-161" />
             <source>Offline cache</source>
             <translation>离线缓存</translation>
         </message>
         <message>
-            <source>Installed release channel</source>
-            <translation>已安装的发布通道</translation>
-        </message>
-        <message>
-            <location line="+9" />
-            <source>Checking</source>
-            <translation>检查中</translation>
-        </message>
-        <message>
-            <location line="+0" />
+            <location line="+250" />
+            <location line="+263" />
             <source>Check</source>
             <translation>检查</translation>
         </message>
         <message>
-            <location line="+17" />
-            <source>Components</source>
-            <translation>组件</translation>
-        </message>
-        <message>
-            <location line="+67" />
+            <location line="-367" />
             <source>Available %1</source>
             <translation>可安装 %1</translation>
         </message>
         <message>
-            <location line="+3" />
+            <location line="+2" />
             <source>Version %1</source>
             <translation>版本 %1</translation>
         </message>
         <message>
-            <location line="+40" />
-            <source>Last updated</source>
-            <translation>上次更新</translation>
+            <location line="+320" />
+            <source>System packages</source>
+            <translation>系统软件包</translation>
         </message>
         <message>
-            <location line="+18" />
-            <source>Latest release</source>
-            <translation>最新发布</translation>
+            <location line="-481" />
+            <source>Could not parse system package list.</source>
+            <translation>无法解析系统软件包列表。</translation>
         </message>
         <message>
-            <location line="+26" />
-            <source>Component information</source>
-            <translation>组件说明</translation>
+            <location line="-97" />
+            <source>Software update</source>
+            <translation>软件更新</translation>
+        </message>
+        <message>
+            <location line="+16" />
+            <source>Check timed out. Network may be slow.</source>
+            <translation>检查超时，网络可能较慢。</translation>
+        </message>
+        <message>
+            <location line="+4" />
+            <source>Could not check for updates.</source>
+            <translation>无法检查更新。</translation>
+        </message>
+        <message>
+            <location line="+21" />
+            <source>System check timed out.</source>
+            <translation>系统检查超时。</translation>
+        </message>
+        <message>
+            <location line="+2" />
+            <source>Could not check system packages.</source>
+            <translation>无法检查系统软件包。</translation>
+        </message>
+        <message>
+            <location line="+61" />
+            <source>Online</source>
+            <translation>在线</translation>
+        </message>
+        <message>
+            <location line="+2" />
+            <source>Mirror</source>
+            <translation>镜像</translation>
+        </message>
+        <message>
+            <location line="+2" />
+            <source>Cached (offline)</source>
+            <translation>缓存（离线）</translation>
+        </message>
+        <message>
+            <location line="+4" />
+            <source>Installed channel</source>
+            <translation>已安装渠道</translation>
+        </message>
+        <message>
+            <location line="+2" />
+            <source>Release channel</source>
+            <translation>发布渠道</translation>
+        </message>
+        <message>
+            <location line="+62" />
+            <source>Desktop shell</source>
+            <translation>桌面 Shell</translation>
+        </message>
+        <message>
+            <location line="+2" />
+            <source>Chinese language pack</source>
+            <translation>中文语言包</translation>
+        </message>
+        <message>
+            <location line="+2" />
+            <source>Dock</source>
+            <translation>Dock</translation>
+        </message>
+        <message>
+            <location line="+2" />
+            <source>Desktop</source>
+            <translation>桌面</translation>
+        </message>
+        <message>
+            <location line="+2" />
+            <source>Launcher</source>
+            <translation>启动台</translation>
+        </message>
+        <message>
+            <location line="+2" />
+            <source>Pointer zoom</source>
+            <translation>指针放大</translation>
+        </message>
+        <message>
+            <location line="+23" />
+            <source>Needs repair</source>
+            <translation>需要修复</translation>
+        </message>
+        <message>
+            <location line="+20" />
+            <source>Checking for updates…</source>
+            <translation>正在检查更新…</translation>
+        </message>
+        <message>
+            <location line="+2" />
+            <source>Could not check</source>
+            <translation>无法检查</translation>
+        </message>
+        <message>
+            <location line="+2" />
+            <source>%1 updates available</source>
+            <translation>有 %1 项可更新</translation>
         </message>
         <message>
             <location line="+1" />
-            <source>Changes in this update</source>
-            <translation>本次更新内容</translation>
+            <source>You're up to date</source>
+            <translation>已是最新</translation>
         </message>
         <message>
-            <location line="+0" />
-            <source>Recent changes</source>
-            <translation>最近变更</translation>
+            <location line="+5" />
+            <source>Please wait</source>
+            <translation>请稍候</translation>
         </message>
         <message>
-            <location line="+32" />
-            <source>No change notes</source>
-            <translation>暂无变更说明</translation>
+            <location line="+5" />
+            <source>%1 Villode</source>
+            <translation>Villode %1 项</translation>
         </message>
         <message>
-            <location line="+13" />
-            <source>No installed Villode components were detected.</source>
-            <translation>没有检测到已安装的 Villode 组件。</translation>
+            <location line="+2" />
+            <source>%1 system</source>
+            <translation>系统 %1 项</translation>
+        </message>
+        <message>
+            <location line="+5" />
+            <source>Pull to refresh is not available — use Check</source>
+            <translation>请使用「检查」刷新</translation>
         </message>
         <message>
             <location line="+9" />
-            <source>Install missing components or update installed ones. Only versions locked by the release manifest are used, and user configuration is preserved. Select a component for details.</source>
-            <translation>可安装尚未安装的组件，或更新已有组件。仅使用发布清单锁定版本，不会清除用户配置。点击组件可展开详情。</translation>
+            <source>%1 → %2 · with shell</source>
+            <translation>%1 → %2 · 随 Shell</translation>
+        </message>
+        <message>
+            <location line="+9" />
+            <source>Updates to version %1</source>
+            <translation>将更新到版本 %1</translation>
+        </message>
+        <message>
+            <location line="+3" />
+            <source>No details</source>
+            <translation>暂无说明</translation>
+        </message>
+        <message>
+            <location line="+97" />
+            <source>Update Villode</source>
+            <translation>更新 Villode</translation>
+        </message>
+        <message>
+            <location line="+11" />
+            <source>Villode</source>
+            <translation>Villode</translation>
+        </message>
+        <message>
+            <location line="+29" />
+            <source>Desktop components</source>
+            <translation>桌面组件</translation>
+        </message>
+        <message>
+            <location line="+8" />
+            <source>%1 items · safe component update</source>
+            <translation>%1 项 · 仅更新组件</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>Shell, dock, launcher and more</source>
+            <translation>Shell、Dock、启动台等</translation>
+        </message>
+        <message>
+            <location line="+8" />
+            <source>%1 new</source>
+            <translation>%1 项新版本</translation>
+        </message>
+        <message>
+            <location line="+0" />
+            <source>OK</source>
+            <translation>正常</translation>
+        </message>
+        <message>
+            <location line="+107" />
+            <source>System</source>
+            <translation>系统</translation>
+        </message>
+        <message>
+            <location line="+53" />
+            <source>Checking…</source>
+            <translation>检查中…</translation>
+        </message>
+        <message>
+            <location line="+4" />
+            <source>%1 packages · full system upgrade</source>
+            <translation>%1 个软件包 · 完整系统升级</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>No system upgrades found</source>
+            <translation>未发现系统升级</translation>
+        </message>
+        <message>
+            <location line="+11" />
+            <source>May include kernel, drivers and libraries. Confirm carefully in the terminal.</source>
+            <translation>可能包含内核、驱动与基础库，请在终端中仔细确认。</translation>
+        </message>
+        <message>
+            <location line="+9" />
+            <source>Includes: %1</source>
+            <translation>包含：%1</translation>
+        </message>
+        <message>
+            <location line="+20" />
+            <location line="+0" />
+            <source>Upgrade system</source>
+            <translation>升级系统</translation>
+        </message>
+        <message>
+            <location line="+13" />
+            <source>Hide</source>
+            <translation>收起</translation>
+        </message>
+        <message>
+            <location line="+0" />
+            <source>List</source>
+            <translation>列表</translation>
+        </message>
+        <message>
+            <location line="+44" />
+            <source>More packages will be shown in the terminal.</source>
+            <translation>更多软件包将在终端中显示。</translation>
+        </message>
+        <message>
+            <location line="+12" />
+            <source>Villode updates only your desktop components. System upgrade is optional and separate.</source>
+            <translation>Villode 只更新桌面组件；系统升级为可选项，两者相互独立。</translation>
+        </message>
+        <message>
+            <location line="-630" />
+            <source>Villode components only — not a full system upgrade.</source>
+            <translation>仅更新 Villode 组件，不是完整系统升级。</translation>
+        </message>
+        <message>
+            <location line="+1" />
+            <source>Done.</source>
+            <translation>完成。</translation>
+        </message>
+        <message>
+            <location line="+0" />
+            <source>Failed.</source>
+            <translation>失败。</translation>
+        </message>
+        <message>
+            <location line="+0" />
+            <location line="+5" />
+            <source>Press Enter to close…</source>
+            <translation>按回车键关闭…</translation>
         </message>
     </context>
     <context>
@@ -4730,12 +6225,12 @@ Keyboard layout: %1</source>
         </message>
         <message>
             <location line="+1" />
-            <location line="+360" />
+            <location line="+366" />
             <source>Video files</source>
             <translation>视频文件</translation>
         </message>
         <message>
-            <location line="-349" />
+            <location line="-355" />
             <source>Choose web file</source>
             <translation>选择网页文件</translation>
         </message>
@@ -4781,7 +6276,7 @@ Keyboard layout: %1</source>
             <translation>应用失败，请检查来源和依赖。</translation>
         </message>
         <message>
-            <location line="+10" />
+            <location line="+16" />
             <source>Dynamic wallpaper stopped; static wallpaper remains active.</source>
             <translation>已停止动态壁纸，继续使用静态壁纸。</translation>
         </message>
@@ -5195,7 +6690,7 @@ Keyboard layout: %1</source>
             <translation>操作</translation>
         </message>
         <message>
-            <location line="+41" />
+            <location line="+48" />
             <source>Disconnect</source>
             <translation>断开连接</translation>
         </message>
@@ -5210,7 +6705,7 @@ Keyboard layout: %1</source>
             <translation>忘记此网络</translation>
         </message>
         <message>
-            <location line="-262" />
+            <location line="-269" />
             <source>DNS</source>
             <translation>DNS</translation>
         </message>
@@ -5280,7 +6775,7 @@ Keyboard layout: %1</source>
             <location line="+3" />
             <location line="+267" />
             <source>Connecting...</source>
-            <translation>正在连接...</translation>
+            <translation>正在连接…</translation>
         </message>
         <message>
             <location line="-139" />
@@ -5304,425 +6799,6 @@ Keyboard layout: %1</source>
             <location line="+1" />
             <source>Image files</source>
             <translation>图片文件</translation>
-        </message>
-    </context>
-    <context>
-        <name>UpdatesPage</name>
-        <message>
-            <source>Already used</source>
-            <translation>已被使用</translation>
-        </message>
-        <message>
-            <source>Press shortcut</source>
-            <translation>请按快捷键</translation>
-        </message>
-        <message>
-            <source>Press the new key combination; Backspace clears it</source>
-            <translation>请按新的组合键；按退格键可清除</translation>
-        </message>
-        <message>
-            <source>Apps and Shell</source>
-            <translation>应用与 Shell</translation>
-        </message>
-        <message>
-            <source>Click a shortcut to record a new key combination</source>
-            <translation>点击快捷键即可录制新的组合键</translation>
-        </message>
-        <message>
-            <source>Changes apply immediately. Backspace or Delete removes a shortcut.</source>
-            <translation>修改会立即生效；按退格键或删除键可移除快捷键。</translation>
-        </message>
-        <message>
-            <source>Previewing %1</source>
-            <translation>正在预览：%1</translation>
-        </message>
-        <message>
-            <source>Highlighted keys: %1</source>
-            <translation>已高亮按键：%1</translation>
-        </message>
-        <message>
-            <source>Select a shortcut below to preview or change it. Changes apply immediately.</source>
-            <translation>选择下方快捷键即可在键盘上预览，修改会立即生效。</translation>
-        </message>
-        <message>
-            <source>Villode components</source>
-            <translation>Villode 组件</translation>
-        </message>
-        <message>
-            <source>Component updates only change Villode Shell / Dock / … to versions locked by the release channel. They do not run pacman -Syu.</source>
-            <translation>组件更新只会把 Villode Shell / Dock 等同步到发布渠道锁定的版本，不会执行 pacman -Syu。</translation>
-        </message>
-        <message>
-            <source>System packages</source>
-            <translation>系统软件包</translation>
-        </message>
-        <message>
-            <source>Checking system packages...</source>
-            <translation>正在检查系统软件包…</translation>
-        </message>
-        <message>
-            <source>System package check failed</source>
-            <translation>系统软件包检查失败</translation>
-        </message>
-        <message>
-            <source>%1 system packages can be upgraded</source>
-            <translation>有 %1 个系统软件包可升级</translation>
-        </message>
-        <message>
-            <source>System packages appear up to date</source>
-            <translation>系统软件包已是最新</translation>
-        </message>
-        <message>
-            <source>Arch rolling: pacman -Syu (separate from Villode components)</source>
-            <translation>Arch 滚动更新：pacman -Syu（与 Villode 组件无关）</translation>
-        </message>
-        <message>
-            <source>System upgrade (%1)</source>
-            <translation>系统更新 (%1)</translation>
-        </message>
-        <message>
-            <source>System upgrade</source>
-            <translation>系统更新</translation>
-        </message>
-        <message>
-            <source>Full system upgrade may include kernel, drivers and core libraries. Review the package list in the terminal before confirming.</source>
-            <translation>完整系统更新可能包含内核、驱动与基础库。请在终端中查看列表后再确认。</translation>
-        </message>
-        <message>
-            <source>Notable packages: %1</source>
-            <translation>需注意的包：%1</translation>
-        </message>
-        <message>
-            <source>Hide package list</source>
-            <translation>收起软件包列表</translation>
-        </message>
-        <message>
-            <source>Show package list (%1)</source>
-            <translation>显示软件包列表 (%1)</translation>
-        </message>
-        <message>
-            <source>List truncated in the UI; full list is shown in the terminal before upgrade.</source>
-            <translation>界面仅显示部分列表；完整列表会在终端升级前展示。</translation>
-        </message>
-        <message>
-            <source>System upgrade runs sudo pacman -Syu in a terminal and asks for confirmation. It is optional and independent of Villode component updates.</source>
-            <translation>系统更新会在终端运行 sudo pacman -Syu 并要求确认。可选，与 Villode 组件更新相互独立。</translation>
-        </message>
-        <message>
-            <source>System package check timed out. Network or package mirrors may be slow.</source>
-            <translation>系统软件包检查超时。网络或软件源可能较慢。</translation>
-        </message>
-        <message>
-            <source>Could not check system packages. Is pacman available?</source>
-            <translation>无法检查系统软件包。是否已安装 pacman？</translation>
-        </message>
-        <message>
-            <source>Could not parse system package list.</source>
-            <translation>无法解析系统软件包列表。</translation>
-        </message>
-        <message>
-            <source>Software update</source>
-            <translation>软件更新</translation>
-        </message>
-        <message>
-            <source>Check timed out. Network may be slow.</source>
-            <translation>检查超时，网络可能较慢。</translation>
-        </message>
-        <message>
-            <source>Could not check for updates.</source>
-            <translation>无法检查更新。</translation>
-        </message>
-        <message>
-            <source>System check timed out.</source>
-            <translation>系统检查超时。</translation>
-        </message>
-        <message>
-            <source>Could not check system packages.</source>
-            <translation>无法检查系统软件包。</translation>
-        </message>
-        <message>
-            <source>Online</source>
-            <translation>在线</translation>
-        </message>
-        <message>
-            <source>Cached (offline)</source>
-            <translation>缓存（离线）</translation>
-        </message>
-        <message>
-            <source>Installed channel</source>
-            <translation>已安装渠道</translation>
-        </message>
-        <message>
-            <source>Release channel</source>
-            <translation>发布渠道</translation>
-        </message>
-        <message>
-            <source>Desktop shell</source>
-            <translation>桌面 Shell</translation>
-        </message>
-        <message>
-            <source>Chinese language pack</source>
-            <translation>中文语言包</translation>
-        </message>
-        <message>
-            <source>Dock</source>
-            <translation>Dock</translation>
-        </message>
-        <message>
-            <source>Pointer zoom</source>
-            <translation>指针放大</translation>
-        </message>
-        <message>
-            <source>Needs repair</source>
-            <translation>需要修复</translation>
-        </message>
-        <message>
-            <source>Checking for updates…</source>
-            <translation>正在检查更新…</translation>
-        </message>
-        <message>
-            <source>Could not check</source>
-            <translation>无法检查</translation>
-        </message>
-        <message>
-            <source>%1 updates available</source>
-            <translation>有 %1 项可更新</translation>
-        </message>
-        <message>
-            <source>You're up to date</source>
-            <translation>已是最新</translation>
-        </message>
-        <message>
-            <source>Please wait</source>
-            <translation>请稍候</translation>
-        </message>
-        <message>
-            <source>%1 Villode</source>
-            <translation>Villode %1 项</translation>
-        </message>
-        <message>
-            <source>%1 system</source>
-            <translation>系统 %1 项</translation>
-        </message>
-        <message>
-            <source>Pull to refresh is not available — use Check</source>
-            <translation>请使用「检查」刷新</translation>
-        </message>
-        <message>
-            <source>%1 → %2 · with shell</source>
-            <translation>%1 → %2 · 随 Shell</translation>
-        </message>
-        <message>
-            <source>Updates to version %1</source>
-            <translation>将更新到版本 %1</translation>
-        </message>
-        <message>
-            <source>No details</source>
-            <translation>暂无说明</translation>
-        </message>
-        <message>
-            <source>Update Villode</source>
-            <translation>更新 Villode</translation>
-        </message>
-        <message>
-            <source>Villode</source>
-            <translation>Villode</translation>
-        </message>
-        <message>
-            <source>Desktop components</source>
-            <translation>桌面组件</translation>
-        </message>
-        <message>
-            <source>%1 items · safe component update</source>
-            <translation>%1 项 · 仅更新组件</translation>
-        </message>
-        <message>
-            <source>Shell, dock, launcher and more</source>
-            <translation>Shell、Dock、启动台等</translation>
-        </message>
-        <message>
-            <source>%1 new</source>
-            <translation>%1 项新版本</translation>
-        </message>
-        <message>
-            <source>OK</source>
-            <translation>正常</translation>
-        </message>
-        <message>
-            <source>Checking…</source>
-            <translation>检查中…</translation>
-        </message>
-        <message>
-            <source>%1 packages · full system upgrade</source>
-            <translation>%1 个软件包 · 完整系统升级</translation>
-        </message>
-        <message>
-            <source>No system upgrades found</source>
-            <translation>未发现系统升级</translation>
-        </message>
-        <message>
-            <source>May include kernel, drivers and libraries. Confirm carefully in the terminal.</source>
-            <translation>可能包含内核、驱动与基础库，请在终端中仔细确认。</translation>
-        </message>
-        <message>
-            <source>Includes: %1</source>
-            <translation>包含：%1</translation>
-        </message>
-        <message>
-            <source>Upgrade system</source>
-            <translation>升级系统</translation>
-        </message>
-        <message>
-            <source>Hide</source>
-            <translation>收起</translation>
-        </message>
-        <message>
-            <source>List</source>
-            <translation>列表</translation>
-        </message>
-        <message>
-            <source>More packages will be shown in the terminal.</source>
-            <translation>更多软件包将在终端中显示。</translation>
-        </message>
-        <message>
-            <source>Villode updates only your desktop components. System upgrade is optional and separate.</source>
-            <translation>Villode 只更新桌面组件；系统升级为可选项，两者相互独立。</translation>
-        </message>
-        <message>
-            <source>Villode components only — not a full system upgrade.</source>
-            <translation>仅更新 Villode 组件，不是完整系统升级。</translation>
-        </message>
-        <message>
-            <source>Done.</source>
-            <translation>完成。</translation>
-        </message>
-        <message>
-            <source>Failed.</source>
-            <translation>失败。</translation>
-        </message>
-        <message>
-            <source>Press Enter to close…</source>
-            <translation>按回车键关闭…</translation>
-        </message>
-    </context>
-    <context>
-        <name>LanguageAndRegion</name>
-        <message>
-            <source>Language, time zone, date and time, weather</source>
-            <translation>语言、时区、日期时间、天气</translation>
-        </message>
-        <message>
-            <source>Date and time</source>
-            <translation>日期和时间</translation>
-        </message>
-        <message>
-            <source>Reading system time…</source>
-            <translation>正在读取系统时间…</translation>
-        </message>
-        <message>
-            <source>Network time on · synced</source>
-            <translation>网络对时已开启 · 已同步</translation>
-        </message>
-        <message>
-            <source>Network time on · syncing…</source>
-            <translation>网络对时已开启 · 同步中…</translation>
-        </message>
-        <message>
-            <source>Network time off · manual</source>
-            <translation>网络对时已关闭 · 手动</translation>
-        </message>
-        <message>
-            <source>Refresh</source>
-            <translation>刷新</translation>
-        </message>
-        <message>
-            <source>UTC %1</source>
-            <translation>UTC %1</translation>
-        </message>
-        <message>
-            <source>Could not read system time settings.</source>
-            <translation>无法读取系统时间设置。</translation>
-        </message>
-        <message>
-            <source>Could not parse time status.</source>
-            <translation>无法解析时间状态。</translation>
-        </message>
-        <message>
-            <source>Set time automatically</source>
-            <translation>自动设置时间</translation>
-        </message>
-        <message>
-            <source>Use network time (NTP). Recommended.</source>
-            <translation>使用网络时间（NTP）。推荐开启。</translation>
-        </message>
-        <message>
-            <source>Time zone</source>
-            <translation>时区</translation>
-        </message>
-        <message>
-            <source>Current: %1</source>
-            <translation>当前：%1</translation>
-        </message>
-        <message>
-            <source>Search time zone</source>
-            <translation>搜索时区</translation>
-        </message>
-        <message>
-            <source>e.g. Shanghai, Tokyo, New_York</source>
-            <translation>例如 Shanghai、Tokyo、New_York</translation>
-        </message>
-        <message>
-            <source>Set date and time manually</source>
-            <translation>手动设置日期和时间</translation>
-        </message>
-        <message>
-            <source>Turns off network time. Format: YYYY-MM-DD HH:MM:SS</source>
-            <translation>会关闭网络对时。格式：YYYY-MM-DD HH:MM:SS</translation>
-        </message>
-        <message>
-            <source>Use now</source>
-            <translation>填入当前时间</translation>
-        </message>
-        <message>
-            <source>Clock display</source>
-            <translation>时钟显示</translation>
-        </message>
-    </context>
-    <context>
-        <name>NetworkPage</name>
-        <message>
-            <source>Connect to “%1”</source>
-            <translation>连接到“%1”</translation>
-        </message>
-        <message>
-            <source>Wi‑Fi password</source>
-            <translation>Wi‑Fi 密码</translation>
-        </message>
-        <message>
-            <source>Enter the network password. Your current connection stays up until this succeeds.</source>
-            <translation>请输入网络密码。当前网络在连接成功前保持不断开。</translation>
-        </message>
-        <message>
-            <source>Connection failed. Check the password and try again.</source>
-            <translation>连接失败，请检查密码后重试。</translation>
-        </message>
-        <message>
-            <source>Connecting…</source>
-            <translation>正在连接…</translation>
-        </message>
-    </context>
-    <context>
-        <name>NetworkPage</name>
-        <message>
-            <source>Connect to %1</source>
-            <translation>连接到 %1</translation>
-        </message>
-    </context>
-    <context>
-        <name>NetworkPage</name>
-        <message>
-            <source>Wi-Fi password</source>
-            <translation>Wi-Fi 密码</translation>
         </message>
     </context>
 </TS>
