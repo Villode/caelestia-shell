@@ -1022,7 +1022,7 @@ Item {
 
         readonly property bool isSelected: modelData ? root.state.selection.indexOf(modelData.path) >= 0 : false
         readonly property bool isCut: modelData && root.state.clipboardMode === "cut" && root.state.clipboardPaths.indexOf(modelData.path) >= 0
-        readonly property real nonAnimHeight: icon.implicitHeight + name.anchors.topMargin + name.implicitHeight + Tokens.padding.medium * 2
+        readonly property real nonAnimHeight: icon.implicitHeight + nameLabel.anchors.topMargin + nameLabel.implicitHeight + Tokens.padding.medium * 2
 
         // Slightly smaller than cell so adjacent tiles have breathing room
         width: GridView.view ? Math.max(root.minItemWidth, GridView.view.cellWidth - root.gridGap) : root.itemWidth
@@ -1087,14 +1087,27 @@ Item {
         }
 
         StyledText {
-            id: name
+            id: nameLabel
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: icon.bottom
             anchors.topMargin: Tokens.spacing.small
             anchors.margins: Tokens.padding.medium
             horizontalAlignment: Text.AlignHCenter
-            text: root.state.displayName(item.modelData)
+            text: {
+                // Prefer role properties (avoid id shadowing of "name")
+                const d = {
+                    path: item.path,
+                    name: item.name,
+                    isDir: item.isDir,
+                    isImage: item.isImage,
+                    size: item.size,
+                    mimeType: item.mimeType,
+                    suffix: item.suffix,
+                    baseName: item.baseName
+                };
+                return root.state.displayName(d);
+            }
             // Keep tile height stable: always elide; at most 2 lines when focused/selected
             wrapMode: (item.GridView.isCurrentItem || item.isSelected) ? Text.WrapAtWordBoundaryOrAnywhere : Text.NoWrap
             maximumLineCount: (item.GridView.isCurrentItem || item.isSelected) ? 2 : 1
@@ -1174,7 +1187,16 @@ Item {
 
             StyledText {
                 Layout.fillWidth: true
-                text: row.modelData ? root.state.displayName(row.modelData) : ""
+                text: root.state.displayName({
+                    path: row.path,
+                    name: row.name,
+                    isDir: row.isDir,
+                    isImage: row.isImage,
+                    size: row.size,
+                    mimeType: row.mimeType,
+                    suffix: row.suffix,
+                    baseName: row.baseName
+                })
                 color: Colours.palette.m3onSurface
                 font: Tokens.font.body.small
                 elide: Text.ElideMiddle
