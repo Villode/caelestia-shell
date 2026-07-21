@@ -13,6 +13,15 @@ StyledRect {
     required property var state
     property var actions: null
     property bool searchExpanded: false
+    property bool sortMenuOpen: false
+
+    // Request host (ManagerWindow) to show sort menu above folder view
+    signal sortMenuOpenRequested(real x, real y)
+    signal sortMenuCloseRequested()
+
+    function closeSortMenu(): void {
+        sortMenuCloseRequested();
+    }
 
     function focusSearch(): void {
         searchExpanded = true;
@@ -93,83 +102,30 @@ StyledRect {
             StyledRect {
                 anchors.fill: parent
                 radius: Tokens.rounding.medium
-                color: sortMenu.visible ? Colours.palette.m3secondaryContainer : "transparent"
+                color: root.sortMenuOpen ? Colours.palette.m3secondaryContainer : "transparent"
 
                 StateLayer {
-                    color: sortMenu.visible ? Colours.palette.m3onSecondaryContainer : Colours.palette.m3onSurface
-                    onClicked: sortMenu.visible = !sortMenu.visible
+                    color: root.sortMenuOpen ? Colours.palette.m3onSecondaryContainer : Colours.palette.m3onSurface
+                    onClicked: {
+                        if (root.sortMenuOpen) {
+                            root.sortMenuCloseRequested();
+                            return;
+                        }
+                        // Bottom-right of sort button in toolbar coords
+                        const p = sortBtnWrap.mapToItem(root, 0, sortBtnWrap.height);
+                        root.sortMenuOpenRequested(p.x + sortBtnWrap.width, p.y + 4);
+                    }
                 }
 
                 MaterialIcon {
                     anchors.centerIn: parent
                     text: "sort"
-                    color: sortMenu.visible ? Colours.palette.m3onSecondaryContainer : Colours.palette.m3onSurface
+                    color: root.sortMenuOpen ? Colours.palette.m3onSecondaryContainer : Colours.palette.m3onSurface
                     fontStyle: Tokens.font.icon.medium
-                    fill: sortMenu.visible ? 1 : 0
+                    fill: root.sortMenuOpen ? 1 : 0
                 }
             }
 
-            // Dropdown
-            StyledRect {
-                id: sortMenu
-                visible: false
-                z: 500
-                anchors.top: parent.bottom
-                anchors.right: parent.right
-                anchors.topMargin: 4
-                implicitWidth: sortCol.implicitWidth + Tokens.padding.small * 2
-                implicitHeight: sortCol.implicitHeight + Tokens.padding.small * 2
-                radius: Tokens.rounding.large
-                color: Colours.palette.m3surfaceContainerHigh
-                border.width: 1
-                border.color: Colours.palette.m3outlineVariant
-
-                ColumnLayout {
-                    id: sortCol
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    anchors.margins: Tokens.padding.small
-                    spacing: 2
-
-                    SortRow {
-                        label: qsTr("名称")
-                        sortKey: "name"
-                    }
-                    SortRow {
-                        label: qsTr("大小")
-                        sortKey: "size"
-                    }
-                    SortRow {
-                        label: qsTr("类型")
-                        sortKey: "type"
-                    }
-                    SortRow {
-                        label: qsTr("修改时间")
-                        sortKey: "mtime"
-                    }
-
-                    StyledRect {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 1
-                        Layout.topMargin: 4
-                        Layout.bottomMargin: 4
-                        color: Colours.palette.m3outlineVariant
-                    }
-
-                    SortRow {
-                        label: root.state.sortReverse ? qsTr("升序") : qsTr("降序")
-                        sortKey: "__dir__"
-                        iconName: root.state.sortReverse ? "arrow_upward" : "arrow_downward"
-                    }
-                    SortRow {
-                        label: qsTr("文件夹优先")
-                        sortKey: "__folders__"
-                        checkable: true
-                        checked: root.state.foldersFirst
-                    }
-                }
-            }
         }
 
         StyledRect {

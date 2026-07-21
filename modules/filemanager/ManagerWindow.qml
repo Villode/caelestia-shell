@@ -86,6 +86,11 @@ FloatingWindow {
 
         Keys.onPressed: event => {
             if (event.key === Qt.Key_Escape) {
+                if (sortOverlay.visible) {
+                    sortOverlay.close();
+                    event.accepted = true;
+                    return;
+                }
                 if (toolbar.searchExpanded) {
                     toolbar.collapseSearch(true);
                     event.accepted = true;
@@ -236,6 +241,13 @@ FloatingWindow {
                     state: nState
                     actions: nActions
                     visible: !nState.isThisPC
+                    sortMenuOpen: sortOverlay.visible
+                    onSortMenuOpenRequested: (x, y) => {
+                        // x,y are bottom-right of sort button in toolbar coords
+                        const p = toolbar.mapToItem(chrome, x, y);
+                        sortOverlay.openAt(p.x, p.y);
+                    }
+                    onSortMenuCloseRequested: sortOverlay.close()
                 }
 
                 Item {
@@ -321,6 +333,173 @@ FloatingWindow {
             z: 15000
             state: nState
             actions: nActions
+        }
+
+        // Sort menu above folder view (opaque, not clipped by toolbar)
+        Item {
+            id: sortOverlay
+            anchors.fill: parent
+            z: 16000
+            visible: false
+
+            function openAt(anchorRightX: real, anchorTopY: real): void {
+                // Align menu's right edge to anchorRightX, top to anchorTopY
+                const mw = sortPanel.implicitWidth;
+                const mh = sortPanel.implicitHeight;
+                let x = anchorRightX - mw;
+                let y = anchorTopY;
+                x = Math.max(8, Math.min(x, width - mw - 8));
+                y = Math.max(8, Math.min(y, height - mh - 8));
+                sortPanel.x = x;
+                sortPanel.y = y;
+                visible = true;
+            }
+
+            function close(): void {
+                visible = false;
+            }
+
+            // Dim/click-away catcher (opaque enough to block list interaction)
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.LeftButton | Qt.RightButton
+                onClicked: sortOverlay.close()
+                onWheel: wheel => {
+                    sortOverlay.close();
+                    wheel.accepted = false;
+                }
+            }
+
+            StyledRect {
+                id: sortPanel
+                // Solid surface (not translucent palette) so list never shows through
+                color: Colours.palette.m3surfaceContainerHigh
+                radius: Tokens.rounding.large
+                border.width: 1
+                border.color: Colours.palette.m3outlineVariant
+                implicitWidth: sortCol.implicitWidth + Tokens.padding.small * 2
+                implicitHeight: sortCol.implicitHeight + Tokens.padding.small * 2
+                // Elevate
+                z: 1
+
+                // Block clicks through to dismiss layer when using menu
+                MouseArea {
+                    anchors.fill: parent
+                    acceptedButtons: Qt.LeftButton | Qt.RightButton
+                    onClicked: {} // swallow
+                }
+
+                ColumnLayout {
+                    id: sortCol
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    anchors.margins: Tokens.padding.small
+                    spacing: 2
+
+                    SortMenuRow {
+                        label: qsTr("名称")
+                        sortKey: "name"
+                    }
+                    SortMenuRow {
+                        label: qsTr("大小")
+                        sortKey: "size"
+                    }
+                    SortMenuRow {
+                        label: qsTr("类型")
+                        sortKey: "type"
+                    }
+                    SortMenuRow {
+                        label: qsTr("修改时间")
+                        sortKey: "mtime"
+                    }
+
+                    StyledRect {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 1
+                        Layout.topMargin: 4
+                        Layout.bottomMargin: 4
+                        color: Colours.palette.m3outlineVariant
+                    }
+
+                    SortMenuRow {
+                        label: nState.sortReverse ? qsTr("升序") : qsTr("降序")
+                        sortKey: "__dir__"
+                        iconName: nState.sortReverse ? "arrow_upward" : "arrow_downward"
+                    }
+                    SortMenuRow {
+                        label: qsTr("文件夹优先")
+                        sortKey: "__folders__"
+                        checkable: true
+                        checked: nState.foldersFirst
+                    }
+                }
+            }
+
+            component SortMenuRow: Item {
+                id: srow
+                property string label
+                property string sortKey
+                property string iconName: ""
+                property bool checkable: false
+                property bool checked: false
+
+                Layout.fillWidth: true
+                implicitHeight: 34
+                implicitWidth: Math.max(180, rowInner.implicitWidth + Tokens.padding.medium * 2)
+
+                readonly property bool activeKey: !checkable && sortKey !== "__dir__" && nState.sortBy === sortKey
+
+                StyledRect {
+                    anchors.fill: parent
+                    radius: Tokens.rounding.medium
+                    color: srow.activeKey ? Colours.palette.m3secondaryContainer : "transparent"
+
+                    StateLayer {
+                        color: srow.activeKey ? Colours.palette.m3onSecondaryContainer : Colours.palette.m3onSurface
+                        onClicked: {
+                            if (srow.sortKey === "__dir__")
+                                nState.toggleSortReverse();
+                            else if (srow.sortKey === "__folders__")
+                                nState.toggleFoldersFirst();
+                            else
+                                nState.setSortBy(srow.sortKey);
+                            // keep open for multi-tweak
+                        }
+                    }
+
+                    RowLayout {
+                        id: rowInner
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.leftMargin: Tokens.padding.medium
+                        anchors.rightMargin: Tokens.padding.small
+                        spacing: Tokens.spacing.small
+
+                        MaterialIcon {
+                            visible: srow.iconName.length > 0
+                            text: srow.iconName
+                            color: srow.activeKey ? Colours.palette.m3onSecondaryContainer : Colours.palette.m3onSurface
+                            fontStyle: Tokens.font.icon.small
+                        }
+
+                        StyledText {
+                            Layout.fillWidth: true
+                            text: srow.label
+                            color: srow.activeKey ? Colours.palette.m3onSecondaryContainer : Colours.palette.m3onSurface
+                            font: Tokens.font.body.builders.small.weight(srow.activeKey ? Font.Bold : Font.Normal).build()
+                        }
+
+                        MaterialIcon {
+                            visible: srow.activeKey || (srow.checkable && srow.checked)
+                            text: srow.checkable ? "check" : (nState.sortReverse ? "arrow_downward" : "arrow_upward")
+                            color: srow.activeKey ? Colours.palette.m3onSecondaryContainer : Colours.palette.m3primary
+                            fontStyle: Tokens.font.icon.small
+                        }
+                    }
+                }
+            }
         }
 
         FmProperties {
