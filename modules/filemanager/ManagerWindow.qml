@@ -66,7 +66,7 @@ FloatingWindow {
         command: ["hyprctl", "-j", "clients"]
         running: false
         stdout: StdioCollector {
-            onStreamFinished: root.syncFmGeomFromHyprJson(text())
+            onStreamFinished: root.syncFmGeomFromHyprJson(text)
         }
     }
 

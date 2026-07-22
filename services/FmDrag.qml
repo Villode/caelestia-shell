@@ -5,7 +5,6 @@ import Quickshell
 import Quickshell.Io
 
 // Cross-window FM drag without Qt Drag.Automatic.
-// Drop completes on: source MouseArea release, OR hypr left-button release bind, OR overlay.
 Singleton {
     id: root
 
@@ -25,11 +24,15 @@ Singleton {
     property real hotY: 18
     property bool cursorReady: false
     property var windows: []
-    property var dropHandler: null
     property bool bindInstalled: false
+    property string lastStatus: ""
 
     signal finished(int moved)
     signal cancelled()
+
+    function _log(msg) {
+        Quickshell.execDetached(["bash", "-c", "printf '%s %s\\n' \"$(date +%H:%M:%S)\" " + JSON.stringify(String(msg)) + " >> /tmp/fm-drag.log"]);
+    }
 
     function registerWindow(id, x, y, w, h, cwd) {
         if (!id)
@@ -41,14 +44,14 @@ Singleton {
             if (!e || !e.id)
                 continue;
             if (e.id === id) {
-                next.push({ id: id, x: x, y: y, w: w, h: h, cwd: cwd || "" });
+                next.push({ id: id, x: Number(x) || 0, y: Number(y) || 0, w: Number(w) || 0, h: Number(h) || 0, cwd: cwd || "" });
                 found = true;
             } else {
                 next.push(e);
             }
         }
         if (!found)
-            next.push({ id: id, x: x, y: y, w: w, h: h, cwd: cwd || "" });
+            next.push({ id: id, x: Number(x) || 0, y: Number(y) || 0, w: Number(w) || 0, h: Number(h) || 0, cwd: cwd || "" });
         windows = next;
     }
 
@@ -84,10 +87,11 @@ Singleton {
     function installReleaseBind() {
         if (bindInstalled)
             return;
-        // Left button release (bindl) anywhere → complete drop even outside FloatingWindow
-        Quickshell.execDetached(["hyprctl", "keyword", "bindl", ", mouse:272, exec, qs -c caelestia ipc call fmdrag complete"]);
-        Quickshell.execDetached(["hyprctl", "keyword", "bindl", ", mouse:273, exec, qs -c caelestia ipc call fmdrag cancel"]);
+        // bindr = on release (bindl is "locked/session lock", NOT release)
+        Quickshell.execDetached(["hyprctl", "keyword", "bindr", ", mouse:272, exec, qs -c caelestia ipc call fmdrag complete"]);
+        Quickshell.execDetached(["hyprctl", "keyword", "bindr", ", mouse:273, exec, qs -c caelestia ipc call fmdrag cancel"]);
         bindInstalled = true;
+        _log("bind installed");
     }
 
     function removeReleaseBind() {
@@ -95,10 +99,13 @@ Singleton {
             return;
         Quickshell.execDetached(["hyprctl", "keyword", "unbind", ", mouse:272"]);
         Quickshell.execDetached(["hyprctl", "keyword", "unbind", ", mouse:273"]);
+        // Also clear release binds if hypr stores separately
+        Quickshell.execDetached(["hyprctl", "keyword", "unbind", "r, mouse:272"]);
+        Quickshell.execDetached(["hyprctl", "keyword", "unbind", "r, mouse:273"]);
         bindInstalled = false;
     }
 
-    function begin(pathsList, cwd, name, icon, windowId, handler) {
+    function begin(pathsList, cwd, name, icon, windowId) {
         const list = [];
         if (pathsList && pathsList.length) {
             for (let i = 0; i < pathsList.length; i++) {
@@ -115,14 +122,15 @@ Singleton {
         primaryName = name || (list[0].split("/").pop() || "");
         iconSource = icon || "";
         count = list.length;
-        dropHandler = handler || null;
         pendingDest = cwd || "";
         pendingWindowId = windowId || "";
         sessionId = sessionId + 1;
         cursorReady = false;
         active = true;
+        lastStatus = "";
         installReleaseBind();
         cursorSeed.running = true;
+        _log("begin n=" + list.length + " cwd=" + sourceCwd + " win=" + sourceWindowId + " reg=" + windows.length);
     }
 
     function updateGlobal(gx, gy) {
@@ -150,53 +158,112 @@ Singleton {
     function cancel() {
         if (!active)
             return;
+        _log("cancel");
         end();
+        lastStatus = qsTr("已取消拖动");
         cancelled();
+    }
+
+    function parentDir(path) {
+        const p = String(path || "");
+        const i = p.lastIndexOf("/");
+        if (i <= 0)
+            return "/";
+        return p.slice(0, i);
+    }
+
+    function normalizePath(urlOrPath) {
+        let s = String(urlOrPath || "");
+        if (s.startsWith("file://")) {
+            try {
+                s = decodeURIComponent(s.slice(7));
+            } catch (e) {
+                s = s.slice(7);
+            }
+        }
+        while (s.length > 1 && s.endsWith("/"))
+            s = s.slice(0, -1);
+        return s;
+    }
+
+    function movePaths(list, destDir) {
+        destDir = normalizePath(destDir);
+        if (!list || !list.length || !destDir)
+            return 0;
+        let n = 0;
+        for (let i = 0; i < list.length; i++) {
+            const src = normalizePath(list[i]);
+            if (!src.length)
+                continue;
+            if (src === destDir || destDir.startsWith(src + "/"))
+                continue;
+            if (parentDir(src) === destDir)
+                continue;
+            const base = src.split("/").pop() || "item";
+            const dest = destDir + "/" + base;
+            if (src === dest)
+                continue;
+            Quickshell.execDetached(["gio", "move", src, dest]);
+            n++;
+        }
+        return n;
     }
 
     function completeDrop() {
         if (!active)
             return 0;
+        // Final cursor sample is best-effort; use last known global + pending
         const list = paths.slice();
         const win = windowAt(globalX, globalY);
         let dest = "";
-        // 1) Window under cursor (most reliable for cross-window)
-        if (win && win.cwd)
-            dest = win.cwd;
-        // 2) Explicit hover dest if same window as under cursor (subfolder tile)
-        if (pendingDest && pendingDest.length) {
-            if (!win || !pendingWindowId || pendingWindowId === (win.id || ""))
-                dest = pendingDest;
+        if (pendingDest && pendingDest.length)
+            dest = pendingDest;
+        if (win && win.cwd) {
+            // Prefer pending if it is under this window; else window cwd
+            if (!dest || !dest.length)
+                dest = win.cwd;
+            // If pending is from another window, use win under cursor
+            if (pendingWindowId && win.id && pendingWindowId !== win.id)
+                dest = win.cwd;
         }
         if ((!dest || !dest.length) && sourceCwd)
             dest = sourceCwd;
 
-        const foreign = !!(win && sourceWindowId && win.id !== sourceWindowId);
+        const foreign = !!(win && sourceWindowId && win.id !== sourceWindowId)
+            || !!(dest && sourceCwd && dest !== sourceCwd);
 
-        const handler = dropHandler;
-        const srcCwd = sourceCwd;
+        _log("complete gx=" + globalX + " gy=" + globalY
+            + " win=" + (win ? (win.id + "@" + win.cwd) : "null")
+            + " pending=" + pendingDest + " dest=" + dest
+            + " foreign=" + foreign + " reg=" + windows.length
+            + " paths=" + list.join(","));
+
         end();
 
         if (!list.length || !dest || !dest.length) {
+            lastStatus = qsTr("已取消拖动");
             cancelled();
             return 0;
         }
-        if (!foreign && dest === srcCwd) {
+        if (!foreign && dest === sourceCwd) {
+            lastStatus = qsTr("已取消（放到原目录）");
             cancelled();
             return 0;
         }
         if (list.indexOf(dest) >= 0) {
+            lastStatus = qsTr("无法放到自身");
             cancelled();
             return 0;
         }
-        let n = 0;
-        if (typeof handler === "function") {
-            try {
-                n = handler(list, dest) | 0;
-            } catch (e) {
-                n = 0;
-            }
-        }
+
+        const n = movePaths(list, dest);
+        _log("moved n=" + n + " -> " + dest);
+        if (n > 0)
+            lastStatus = foreign
+                ? qsTr("已移动 %1 项到另一窗口").arg(n)
+                : qsTr("已移动 %1 项").arg(n);
+        else
+            lastStatus = qsTr("没有可放置的项");
         finished(n);
         return n;
     }
@@ -212,7 +279,6 @@ Singleton {
         count = 0;
         pendingDest = "";
         pendingWindowId = "";
-        dropHandler = null;
         cursorReady = false;
     }
 
@@ -225,11 +291,16 @@ Singleton {
                 if (!root.active)
                     return;
                 try {
-                    const pos = JSON.parse(text());
+                    const pos = JSON.parse(text);
                     if (pos && pos.x !== undefined)
                         root.updateGlobal(Number(pos.x), Number(pos.y));
                 } catch (e) {}
             }
         }
     }
+
+    // Poll button state via hyprctl devices? Not available.
+    // Fallback: while active, poll cursor and detect when left button released using
+    // `hyprctl getoption` no...
+    // Use Process: python reading /dev/input requires root.
 }

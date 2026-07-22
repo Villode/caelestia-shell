@@ -174,7 +174,7 @@ Scope {
                         if (!FmDrag.active)
                             return;
                         try {
-                            const pos = JSON.parse(text());
+                            const pos = JSON.parse(text);
                             if (pos && pos.x !== undefined)
                                 FmDrag.updateGlobal(Number(pos.x), Number(pos.y));
                         } catch (e) {}

@@ -854,7 +854,7 @@ Item {
                 if (!root.dragVisualActive && !FmDrag.active)
                     return;
                 try {
-                    const pos = JSON.parse(text());
+                    const pos = JSON.parse(text);
                     if (pos && pos.x !== undefined && pos.y !== undefined)
                         FmDrag.updateGlobal(Number(pos.x), Number(pos.y));
                 } catch (e) {}
@@ -882,10 +882,14 @@ Item {
             root.dropHoverActive = false;
             root.dropHoverPath = "";
             root.frozenSelection = [];
-            if (moved > 0)
+            if (FmDrag.lastStatus)
+                root.state.statusText = FmDrag.lastStatus;
+            else if (moved > 0)
                 root.state.statusText = qsTr("已移动 %1 项").arg(moved);
             else
                 root.state.statusText = qsTr("已取消拖动");
+            if (moved > 0)
+                Qt.callLater(() => root.state.bumpRefresh());
         }
         function onCancelled() {
             root.dragVisualActive = false;
@@ -1002,8 +1006,7 @@ Item {
                 root.state.cwdPath(),
                 dragProxy.name,
                 dragProxy.iconSource,
-                root.windowId,
-                (plist, dest) => root.actions.dropInto(plist, dest, "move")
+                root.windowId
             );
             cursorPosProc.running = true;
         }
@@ -1055,7 +1058,7 @@ Item {
 
 
         onPressed: mouse => {
-            // Windows-like: foreign drag only paints drop target — ignore clicks/selection
+            // Foreign drag: accept so we can receive release for drop completion
             if (FmDrag.active && !root.dragVisualActive) {
                 mouse.accepted = true;
                 return;
@@ -1130,6 +1133,13 @@ Item {
             }
             if (root.dragVisualActive) {
                 finishInternalDrag(mouse.x, mouse.y);
+            } else if (FmDrag.active && !root.dragVisualActive) {
+                // Cross-window: release landed on this target window
+                try {
+                    const dest = root.pathAtViewPos(mouse.x, mouse.y) || root.state.cwdPath();
+                    FmDrag.setHoverDest(root.windowId, dest);
+                } catch (e) {}
+                FmDrag.completeDrop();
             } else {
                 dragArmed = false;
                 dragProxy.clear();
