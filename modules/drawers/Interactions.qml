@@ -22,6 +22,7 @@ CustomMouseArea {
     property bool dashboardShortcutActive
     property bool osdShortcutActive
     property bool utilitiesShortcutActive
+    property bool clipboardShortcutActive
 
     readonly property real contentXOffset: bar.isLeft ? bar.implicitWidth : 0
     readonly property real contentYOffset: bar.isTop ? bar.implicitHeight : borderThickness
@@ -109,6 +110,9 @@ CustomMouseArea {
     onClicked: {
         if (visibilities.multitasking)
             visibilities.multitasking = false;
+        // Corner clipboard panel: click free area to dismiss (not full-screen modal).
+        if (visibilities.clipboard && !inBottomPanel(panels.clipboard, mouseX, mouseY, true))
+            visibilities.clipboard = false;
     }
     onContainsMouseChanged: {
         if (!containsMouse) {
@@ -123,6 +127,8 @@ CustomMouseArea {
 
             if (!utilitiesShortcutActive)
                 visibilities.utilities = false;
+            if (!clipboardShortcutActive)
+                visibilities.clipboard = false;
 
             if (!popouts.currentName.startsWith("traymenu") || ((popouts.current as StackView)?.depth ?? 0) <= 1) {
                 popouts.hasCurrent = false;
@@ -364,6 +370,15 @@ CustomMouseArea {
             } else {
                 // Utilities hidden, clear shortcut flag
                 root.utilitiesShortcutActive = false;
+            }
+        }
+
+        function onClipboardChanged() {
+            if (root.visibilities.clipboard) {
+                const inClip = root.inBottomPanel(root.panels.clipboard, root.mouseX, root.mouseY, true);
+                root.clipboardShortcutActive = !inClip;
+            } else {
+                root.clipboardShortcutActive = false;
             }
         }
 

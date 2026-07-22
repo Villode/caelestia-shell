@@ -65,8 +65,11 @@ Region {
     R {
         id: clipboardRegion
 
-        // Centered clipboard history — track floating panel bounds
-        panel: root.panels.clipboardWrapper
+        // Bottom-corner clipboard — track panel like utilities
+        panel: root.panels.clipboard
+        x: root.panels.sidebar.edgeLeft ? root.panelXOffset : (root.win.width - width)
+        y: root.win.height - height
+        height: panel.height * (1 - root.panels.clipboard.offsetScale) + root.borderThickness
     }
 
     // Multitasking cards strip — only needed in Xor mode (as a hole → interactive).

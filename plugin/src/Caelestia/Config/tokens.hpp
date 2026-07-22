@@ -271,9 +271,9 @@ class ClipboardTokens : public ConfigObject {
     Q_OBJECT
     QML_ANONYMOUS
 
-    CONFIG_PROPERTY(int, width, 520)
-    CONFIG_PROPERTY(int, maxHeight, 560)
-    CONFIG_PROPERTY(int, itemHeight, 64)
+    CONFIG_PROPERTY(int, width, 430)
+    CONFIG_PROPERTY(int, maxHeight, 320)
+    CONFIG_PROPERTY(int, itemHeight, 56)
     CONFIG_PROPERTY(int, imageThumb, 48)
 
 public:

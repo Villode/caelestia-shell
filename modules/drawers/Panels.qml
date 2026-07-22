@@ -30,7 +30,7 @@ Item {
     readonly property alias session: session
     readonly property alias sessionWrapper: sessionWrapper
     readonly property alias clipboard: clipboard
-    readonly property alias clipboardWrapper: clipboardWrapper
+    readonly property alias clipboardWrapper: clipboard
     readonly property alias multitasking: multitasking
     readonly property alias multitaskingWrapper: multitaskingWrapper
     readonly property alias launcher: launcher
@@ -134,30 +134,6 @@ Item {
         }
     }
 
-    // Clipboard history — centered modal (like session)
-    Item {
-        id: clipboardWrapper
-
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.verticalCenter: parent.verticalCenter
-        readonly property real pad: Tokens.padding.extraLarge
-        width: clipboard.implicitWidth + pad * 2
-        height: clipboard.implicitHeight + pad * 2
-        // Use shouldBeActive only — chaining clipboard.visible created a binding loop.
-        visible: clipboard.shouldBeActive || clipboard.offsetScale < 0.999
-        z: 100
-
-        ClipboardPanel.Wrapper {
-            id: clipboard
-
-            visibilities: root.visibilities
-
-            anchors.centerIn: parent
-            width: implicitWidth
-            height: implicitHeight
-        }
-    }
-
     // —— Shell chrome (always above multitasking) ——
     // Volume/brightness OSD: opposite side of the taskbar when the bar is left/right.
     Item {
@@ -211,6 +187,25 @@ Item {
 
         screen: root.screen
         borderThickness: root.borderThickness
+    }
+
+
+    ClipboardPanel.Wrapper {
+        id: clipboard
+        z: 205
+
+        visibilities: root.visibilities
+        edgeLeft: root.chromeOnLeft
+
+        // Same bottom chrome corner as utilities (right-bottom by default).
+        anchors.bottom: parent.bottom
+        x: root.chromeOnLeft ? 0 : (parent.width - width)
+        width: implicitWidth
+        // Hide utilities while clipboard is open so they do not stack awkwardly.
+        onShouldBeActiveChanged: {
+            if (shouldBeActive && root.visibilities.utilities)
+                root.visibilities.utilities = false;
+        }
     }
 
     Utilities.Wrapper {

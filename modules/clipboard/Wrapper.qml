@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import Caelestia
 import Caelestia.Config
 import qs.components
 import qs.services
@@ -9,46 +10,50 @@ Item {
     id: root
 
     required property DrawerVisibilities visibilities
-    // Panels API compatibility (session has sidebarVisible)
-    property bool sidebarVisible: false
+    // When true, chrome sits on the left edge (taskbar on the right).
+    property bool edgeLeft: false
 
     readonly property bool shouldBeActive: !!(visibilities.clipboard && Config.utilities.clipboard.enabled)
-    readonly property alias contentItem: content.item
+    property real offsetScale: shouldBeActive ? 0 : 1
 
-    property real offsetScale: 1
+    readonly property real totalPadding: Tokens.padding.large + CUtils.clamp(Tokens.padding.large - Config.border.thickness, 0, Tokens.padding.large)
+    readonly property real nonAnimHeight: ((content.item as Content)?.nonAnimHeight ?? 0) + totalPadding
 
-    readonly property real contentW: content.item ? content.item.implicitWidth : 0
-    readonly property real contentH: content.item ? content.item.implicitHeight : 0
-    readonly property real nonAnimWidth: contentW
-    readonly property real nonAnimHeight: contentH
-
-    implicitWidth: Math.max(contentW, 1)
-    implicitHeight: Math.max(contentH, 1)
-
-    visible: shouldBeActive || offsetScale < 0.999
+    visible: offsetScale < 1
+    anchors.bottomMargin: (-implicitHeight - 5) * offsetScale
+    implicitHeight: content.implicitHeight + totalPadding
+    implicitWidth: Tokens.sizes.clipboard.width
     opacity: 1 - offsetScale
-    scale: 0.94 + 0.06 * (1 - offsetScale)
-    transformOrigin: Item.Center
 
     Behavior on offsetScale {
         Anim {}
     }
 
     onShouldBeActiveChanged: {
-        offsetScale = shouldBeActive ? 0 : 1;
-        if (shouldBeActive)
+        if (shouldBeActive) {
+            Clipboard.clearFilter();
             Clipboard.refresh();
+        }
     }
-
-    Component.onCompleted: offsetScale = shouldBeActive ? 0 : 1
 
     Loader {
         id: content
 
-        anchors.centerIn: parent
-        active: root.shouldBeActive || root.offsetScale < 0.999
+        readonly property real innerPad: Tokens.padding.large
+        readonly property real outerPad: CUtils.clamp(innerPad - Config.border.thickness, 0, innerPad)
+
+        anchors.top: parent.top
+        anchors.left: root.edgeLeft ? parent.left : undefined
+        anchors.right: root.edgeLeft ? undefined : parent.right
+        anchors.topMargin: innerPad
+        anchors.leftMargin: root.edgeLeft ? outerPad : innerPad
+        anchors.rightMargin: root.edgeLeft ? innerPad : outerPad
+
+        asynchronous: true
+        active: true
 
         sourceComponent: Content {
+            implicitWidth: root.implicitWidth - root.totalPadding
             visibilities: root.visibilities
         }
     }
