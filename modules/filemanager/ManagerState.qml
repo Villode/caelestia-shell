@@ -2,10 +2,12 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import qs.utils
 
-QtObject {
+Item {
     id: root
+    // Item (not QtObject) so we can own a Process for place resolution
 
     // Logical places (not filesystem names). Special root: ThisPC (Windows-style 此电脑)
     property list<string> cwd: ["ThisPC"]
@@ -82,8 +84,14 @@ QtObject {
         Documents: qsTr("文档"),
         Music: qsTr("音乐"),
         Pictures: qsTr("图片"),
-        Videos: qsTr("视频")
+        Videos: qsTr("视频"),
+        Templates: qsTr("模板"),
+        Public: qsTr("公共"),
+        Projects: qsTr("项目")
     })
+
+    // place key → real FS folder under $HOME (one name for each ZH/EN pair)
+    property var placeResolved: ({})
 
     function trashPath(): string {
         // XDG trash files dir
@@ -101,15 +109,29 @@ QtObject {
         return name === "Home" || name === "ThisPC" || name === "Trash" || name === "Phone" || !!placeFolders[name];
     }
 
+    // "Pictures" / "图片" → place key "Pictures"; unknown → ""
+    function placeKeyForFsName(name: string): string {
+        if (!name)
+            return "";
+        if (placeFolders[name])
+            return name;
+        for (const key of Object.keys(placeFolders)) {
+            if (placeFolders[key].indexOf(name) >= 0)
+                return key;
+        }
+        return "";
+    }
+
     function placeSelected(place: string): bool {
         if (place === "ThisPC")
             return isThisPC;
         if (place === "Trash")
             return isTrash();
         if (place === "Home")
-            return !isThisPC && !isTrash() && !isPhone && cwd.length >= 1 && cwd[0] === "Home" && (cwd.length === 1 || !placeFolders[cwd[1]]);
-        // place folders under Home
-        return !isThisPC && !isTrash() && !isPhone && cwd.length >= 2 && cwd[0] === "Home" && cwd[1] === place;
+            return !isThisPC && !isTrash() && !isPhone && cwd.length >= 1 && cwd[0] === "Home" && (cwd.length === 1 || !placeKeyForFsName(cwd[1]));
+        if (isThisPC || isTrash() || isPhone || cwd.length < 2 || cwd[0] !== "Home")
+            return false;
+        return placeKeyForFsName(cwd[1]) === place;
     }
 
     function prettyMtpHost(seg: string): string {
@@ -156,10 +178,71 @@ QtObject {
     }
 
     function preferredFolderName(place: string): string {
+        // One real directory for side-bar place (merged ZH/EN pair).
+        const resolved = placeResolved[place];
+        if (resolved)
+            return resolved;
         const candidates = placeFolders[place];
-        if (candidates && candidates.length)
-            return candidates[0];
-        return place;
+        if (!candidates || !candidates.length)
+            return place;
+        const home = Paths.home || "";
+        const xdgMap = ({
+            Pictures: Paths.pictures || "",
+            Videos: Paths.videos || "",
+            Downloads: Quickshell.env("XDG_DOWNLOAD_DIR") || "",
+            Desktop: Quickshell.env("XDG_DESKTOP_DIR") || "",
+            Documents: Quickshell.env("XDG_DOCUMENTS_DIR") || "",
+            Music: Quickshell.env("XDG_MUSIC_DIR") || "",
+            Templates: Quickshell.env("XDG_TEMPLATES_DIR") || "",
+            Public: Quickshell.env("XDG_PUBLICSHARE_DIR") || "",
+            Projects: Quickshell.env("XDG_PROJECTS_DIR") || ""
+        });
+        const xdg = xdgMap[place] || "";
+        if (xdg && home && xdg.startsWith(home + "/")) {
+            const name = xdg.slice(home.length + 1);
+            if (name.length && name.indexOf("/") < 0 && candidates.indexOf(name) >= 0)
+                return name;
+        }
+        return candidates[0];
+    }
+
+    // Home grid: hide the non-preferred sibling of a place pair (Pictures vs 图片).
+    function isHiddenPlaceSibling(fsName: string): bool {
+        const key = placeKeyForFsName(fsName);
+        if (!key)
+            return false;
+        return fsName !== preferredFolderName(key);
+    }
+
+    // True when browsing a place folder root under Home (图片 or Pictures, not Screenshots).
+    function isAtPlaceRoot(): bool {
+        if (isThisPC || isPhone || isTrash())
+            return false;
+        if (cwd.length !== 2 || cwd[0] !== "Home")
+            return false;
+        return !!placeKeyForFsName(cwd[1]);
+    }
+
+    // Other ZH/EN twin directory path for current place root ("" if none / not at place root).
+    function placeSiblingPath(): string {
+        if (!isAtPlaceRoot())
+            return "";
+        const key = placeKeyForFsName(cwd[1]);
+        if (!key)
+            return "";
+        const candidates = placeFolders[key];
+        if (!candidates || candidates.length < 2)
+            return "";
+        const cur = cwd[1];
+        const home = Paths.home || "";
+        if (!home)
+            return "";
+        for (let i = 0; i < candidates.length; i++) {
+            const name = candidates[i];
+            if (name && name !== cur)
+                return home + "/" + name;
+        }
+        return "";
     }
 
     function cwdPath(): string {
@@ -176,14 +259,8 @@ QtObject {
         if (cwd[0] === "Home") {
             if (cwd.length === 1)
                 return Paths.home;
-            let path = Paths.home;
-            for (let i = 1; i < cwd.length; i++) {
-                let seg = cwd[i];
-                if (i === 1 && placeFolders[seg])
-                    seg = preferredFolderName(seg);
-                path = path + "/" + seg;
-            }
-            return path;
+            // Real FS names only under Home (never remap place keys).
+            return Paths.home + "/" + cwd.slice(1).join("/");
         }
         if (cwd[0] === "")
             return "/" + cwd.slice(1).join("/");
@@ -195,7 +272,6 @@ QtObject {
         selection = [];
         resetSearchOnNavigate();
         statusText = qsTr("此电脑");
-        bumpRefresh();
     }
 
     function navigateToPlace(place: string): void {
@@ -210,11 +286,10 @@ QtObject {
         if (place === "Home")
             cwd = ["Home"];
         else
-            cwd = ["Home", place];
+            cwd = ["Home", preferredFolderName(place)];
         selection = [];
         resetSearchOnNavigate();
         statusText = displayPath();
-        bumpRefresh();
     }
 
     function navigateToTrash(): void {
@@ -249,7 +324,6 @@ QtObject {
         selection = [];
         resetSearchOnNavigate();
         statusText = isThisPC ? qsTr("此电脑") : displayPath();
-        bumpRefresh();
     }
 
     function sliceCwd(toIndex: int): void {
@@ -262,7 +336,6 @@ QtObject {
         selection = [];
         resetSearchOnNavigate();
         statusText = isThisPC ? qsTr("此电脑") : displayPath();
-        bumpRefresh();
     }
 
     function openAbsolutePath(path: string): void {
@@ -291,19 +364,12 @@ QtObject {
         } else if (path === home) {
             cwd = ["Home"];
         } else if (path.startsWith(home + "/")) {
+            // Keep real FS names (Pictures ≠ 图片). Never rewrite to place keys.
             const rel = path.slice(home.length + 1).split("/").filter(s => s.length > 0);
-            if (rel.length > 0) {
-                let first = rel[0];
-                for (const key of Object.keys(placeFolders)) {
-                    if (placeFolders[key].indexOf(first) >= 0) {
-                        first = key;
-                        break;
-                    }
-                }
-                cwd = ["Home", first].concat(rel.slice(1));
-            } else {
+            if (rel.length > 0)
+                cwd = ["Home"].concat(rel);
+            else
                 cwd = ["Home"];
-            }
         } else if (path.startsWith("/")) {
             if (path === "/")
                 cwd = [""];
@@ -316,7 +382,7 @@ QtObject {
         selection = [];
         resetSearchOnNavigate();
         statusText = displayPath();
-        bumpRefresh();
+        // path binding updates FileSystemModel; skip bumpRefresh (empty-path race)
     }
 
     function setSelection(paths: list<string>): void {
@@ -346,6 +412,12 @@ QtObject {
     function displayName(entry: var): string {
         if (!entry)
             return "";
+        // Home / place folders: always show Chinese place label (图片 not Pictures)
+        if (entry.isDir && cwd.length === 1 && cwd[0] === "Home") {
+            const key = placeKeyForFsName(entry.name || "");
+            if (key && placeLabels[key])
+                return placeLabels[key];
+        }
         if (entry.isDir || showExtensions)
             return entry.name || "";
         const base = entry.baseName;
@@ -599,4 +671,31 @@ QtObject {
             favorites: favorites
         }, null, 2);
     }
+    // Resolve ZH/EN place pairs under $HOME: pick candidate with more children
+    Process {
+        id: resolvePlacesProc
+        running: true
+        command: ["python3", "/home/villode/.config/quickshell/caelestia/modules/filemanager/resolve-places.py"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const map = {};
+                const lines = text.split("\n");
+                for (let i = 0; i < lines.length; i++) {
+                    const line = (lines[i] || "").trim();
+                    if (!line.length)
+                        continue;
+                    const bar = line.indexOf("|");
+                    if (bar < 0)
+                        continue;
+                    const key = line.slice(0, bar);
+                    const name = line.slice(bar + 1);
+                    if (key.length && name.length)
+                        map[key] = name;
+                }
+                root.placeResolved = map;
+            }
+        }
+    }
+
+
 }

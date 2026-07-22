@@ -255,13 +255,38 @@ Item {
 
     function rebuildSorted(): void {
         const items = [];
+        const seen = ({});
         try {
+            // At $HOME: one folder per ZH/EN place pair. At place root: merge twin dir.
+            const atHome = !root.state.isThisPC && root.state.cwd.length === 1 && root.state.cwd[0] === "Home";
+            const atPlaceRoot = root.state.isAtPlaceRoot && root.state.isAtPlaceRoot();
+
+            function pushEntry(e) {
+                if (!e)
+                    return;
+                const name = e.name || "";
+                if (!name.length)
+                    return;
+                if (atHome && e.isDir && root.state.isHiddenPlaceSibling(name))
+                    return;
+                if (seen[name])
+                    return;
+                seen[name] = true;
+                items.push(e);
+            }
+
             const entries = fsModel.entries;
             const n = entries ? entries.length : 0;
-            for (let i = 0; i < n; i++) {
-                const e = entries[i];
-                if (e)
-                    items.push(e);
+            for (let i = 0; i < n; i++)
+                pushEntry(entries[i]);
+
+            if (atPlaceRoot) {
+                try {
+                    const sib = fsModelSibling.entries;
+                    const sn = sib ? sib.length : 0;
+                    for (let i = 0; i < sn; i++)
+                        pushEntry(sib[i]);
+                } catch (e2) {}
             }
         } catch (err) {
             // leave empty
@@ -336,6 +361,33 @@ Item {
                 root.reloadMtimes(path);
             root.scheduleSortRebuild();
         }
+    }
+
+    // Twin of current place (e.g. ~/图片 while cwd is ~/Pictures) so side-bar 图片 shows both.
+    FileSystemModel {
+        id: fsModelSibling
+        path: {
+            const _tick = root.fsPathTick;
+            if (root.state.isThisPC)
+                return "";
+            if (root.fsPathOverride === "__refresh__")
+                return "";
+            if (!(root.state.isAtPlaceRoot && root.state.isAtPlaceRoot()))
+                return "";
+            return root.state.placeSiblingPath() || "";
+        }
+        showHidden: root.state.showHidden
+        nameFilters: {
+            const _ = root.state.nameFilter;
+            const scope = root.state.searchScope;
+            if (scope === "global")
+                return ["*"];
+            return root.state.nameFiltersActive;
+        }
+        onPathChanged: root.scheduleSortRebuild()
+        onEntriesChanged: root.scheduleSortRebuild()
+        onNameFiltersChanged: root.scheduleSortRebuild()
+        onShowHiddenChanged: root.scheduleSortRebuild()
     }
 
     Process {
