@@ -24,7 +24,9 @@ StyledRect {
     ColumnLayout {
         id: layout
 
-        anchors.fill: parent
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
         anchors.margins: Tokens.padding.large
         anchors.bottomMargin: Tokens.padding.medium
         spacing: 0
@@ -49,8 +51,6 @@ StyledRect {
             Layout.topMargin: Tokens.spacing.medium
             Layout.bottomMargin: Tokens.spacing.small
             Layout.fillWidth: true
-            Layout.fillHeight: true
-            Layout.minimumHeight: 72
             Layout.preferredHeight: 72
 
             SparklineItem {

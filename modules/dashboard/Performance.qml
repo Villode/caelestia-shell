@@ -52,6 +52,7 @@ Item {
 
         anchors.left: parent.left
         anchors.right: parent.right
+        anchors.top: parent.top
         spacing: Tokens.spacing.medium
         visible: !placeholder.active
 
@@ -59,11 +60,13 @@ Item {
             id: mainColumn
 
             Layout.fillWidth: true
+            Layout.fillHeight: false
             spacing: Tokens.spacing.medium
 
             RowLayout {
                 spacing: Tokens.spacing.medium
                 visible: cpuCard.active || gpuCard.active
+                Layout.fillHeight: false
 
                 WrappedLoader {
                     id: cpuCard
@@ -105,27 +108,25 @@ Item {
             }
 
             RowLayout {
-                // Equal-height bottom cards: shorter card (often Network in the middle)
-                // left a panel-coloured gap under it — looks like an extra mid-bottom block.
-                id: bottomRow
                 spacing: Tokens.spacing.medium
                 visible: storageCard.active || networkCard.active || memoryCard.active
+                Layout.fillHeight: false
 
-                BottomCardLoader {
+                WrappedLoader {
                     id: storageCard
 
                     active: Config.dashboard.performance.showStorage
                     sourceComponent: StorageCard {}
                 }
 
-                BottomCardLoader {
+                WrappedLoader {
                     id: networkCard
 
                     active: Config.dashboard.performance.showNetwork
                     sourceComponent: NetworkCard {}
                 }
 
-                BottomCardLoader {
+                WrappedLoader {
                     id: memoryCard
 
                     active: Config.dashboard.performance.showMemory
@@ -135,7 +136,6 @@ Item {
         }
 
         WrappedLoader {
-            // Match main column height (original WE-style tank).
             Layout.fillWidth: false
             Layout.fillHeight: false
             Layout.preferredHeight: mainColumn.implicitHeight
@@ -145,31 +145,10 @@ Item {
         }
     }
 
-    // CPU/GPU: natural height (do not stretch).
     component WrappedLoader: Loader {
         Layout.fillWidth: true
         Layout.fillHeight: false
         Layout.alignment: Qt.AlignTop
         visible: active
-    }
-
-    // Storage / Network / Memory share row height; stretch card surface to loader
-    // so the glass panel never peeks under a shorter middle card.
-    component BottomCardLoader: Loader {
-        id: bottomLoader
-
-        Layout.fillWidth: true
-        Layout.fillHeight: true
-        Layout.alignment: Qt.AlignTop
-        visible: active
-
-        onLoaded: {
-            if (item)
-                item.anchors.fill = bottomLoader;
-        }
-        onItemChanged: {
-            if (item)
-                item.anchors.fill = bottomLoader;
-        }
     }
 }

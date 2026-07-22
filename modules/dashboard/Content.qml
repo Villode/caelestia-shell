@@ -47,8 +47,25 @@ Item {
         return allTabs.filter(tab => tab.enabled);
     }
 
-    readonly property real nonAnimWidth: view.implicitWidth + viewWrapper.anchors.margins * 2
-    readonly property real nonAnimHeight: tabs.implicitHeight + tabs.anchors.topMargin + view.implicitHeight + viewWrapper.anchors.margins * 2
+    readonly property real contentPad: Tokens.padding.large
+    readonly property real tabsTopMargin: CUtils.clamp(contentPad - Config.border.thickness, 0, contentPad)
+    readonly property real activePaneWidth: {
+        const it = view.currentItem;
+        if (!it)
+            return 0;
+        return it.item ? it.item.implicitWidth : it.implicitWidth;
+    }
+    readonly property real activePaneHeight: {
+        const it = view.currentItem;
+        if (!it)
+            return 0;
+        return it.item ? it.item.implicitHeight : it.implicitHeight;
+    }
+    // MUST bind to active pane height directly. Column.implicitHeight was sticky
+    // after tab switch (stayed on Dashboard height while Performance content
+    // shrank) — that left ~160px of empty glass under the cards outside.
+    readonly property real nonAnimWidth: activePaneWidth + contentPad * 2
+    readonly property real nonAnimHeight: tabsTopMargin + tabs.implicitHeight + contentPad + activePaneHeight
 
     implicitWidth: nonAnimWidth
     implicitHeight: nonAnimHeight
@@ -59,10 +76,11 @@ Item {
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.topMargin: CUtils.clamp(anchors.margins - Config.border.thickness, 0, anchors.margins)
-        anchors.margins: Tokens.padding.large
+        anchors.topMargin: root.tabsTopMargin
+        anchors.leftMargin: root.contentPad
+        anchors.rightMargin: root.contentPad
 
-        nonAnimWidth: root.nonAnimWidth - anchors.margins * 2
+        nonAnimWidth: root.nonAnimWidth - root.contentPad * 2
         dashState: root.dashState
         tabs: root.dashboardTabs
     }
@@ -73,9 +91,10 @@ Item {
         anchors.top: tabs.bottom
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        anchors.margins: Tokens.padding.large
-
+        anchors.topMargin: root.contentPad
+        anchors.leftMargin: root.contentPad
+        anchors.rightMargin: root.contentPad
+        height: root.activePaneHeight
         radius: Tokens.rounding.large
         color: "transparent"
 
@@ -84,47 +103,44 @@ Item {
 
             readonly property int currentIndex: root.dashState.currentTab
             readonly property Item currentItem: {
-                repeater.count; // Trigger update on count change
+                repeater.count;
                 return repeater.itemAt(currentIndex);
             }
 
             anchors.fill: parent
-
             flickableDirection: Flickable.HorizontalFlick
+            clip: true
 
-            implicitWidth: currentItem?.implicitWidth ?? 0
-            // Prefer the active pane height only (row may still report inactive loaders).
-            implicitHeight: currentItem?.implicitHeight ?? 0
+            implicitWidth: root.activePaneWidth
+            implicitHeight: root.activePaneHeight
 
-            contentX: currentItem?.x ?? 0
-            contentWidth: row.implicitWidth
-            contentHeight: currentItem?.implicitHeight ?? 0
+            contentX: currentItem ? currentItem.x : 0
+            contentWidth: row.width
+            contentHeight: root.activePaneHeight
 
             onContentXChanged: {
                 if (!moving || !currentItem)
                     return;
-
                 const x = contentX - currentItem.x;
-                if (x > currentItem.implicitWidth / 2)
+                if (x > currentItem.width / 2)
                     root.dashState.currentTab = Math.min(root.dashState.currentTab + 1, tabs.count - 1);
-                else if (x < -currentItem.implicitWidth / 2)
+                else if (x < -currentItem.width / 2)
                     root.dashState.currentTab = Math.max(root.dashState.currentTab - 1, 0);
             }
 
             onDragEnded: {
                 if (!currentItem)
                     return;
-
                 const x = contentX - currentItem.x;
-                if (x > currentItem.implicitWidth / 10)
+                if (x > currentItem.width / 10)
                     root.dashState.currentTab = Math.min(root.dashState.currentTab + 1, tabs.count - 1);
-                else if (x < -currentItem.implicitWidth / 10)
+                else if (x < -currentItem.width / 10)
                     root.dashState.currentTab = Math.max(root.dashState.currentTab - 1, 0);
                 else
-                    contentX = Qt.binding(() => currentItem?.x ?? 0);
+                    contentX = Qt.binding(() => currentItem ? currentItem.x : 0);
             }
 
-            RowLayout {
+            Row {
                 id: row
 
                 Repeater {
@@ -140,13 +156,8 @@ Item {
                         required property int index
                         required property var modelData
 
-                        Layout.alignment: Qt.AlignTop
-                        // Non-current panes must not inflate height. Important:
-                        // Layout.minimumHeight defaults to implicitHeight (Media=320),
-                        // so without min=0 the Performance tab gets an empty strip under cards.
-                        Layout.minimumHeight: index === view.currentIndex ? implicitHeight : 0
-                        Layout.preferredHeight: index === view.currentIndex ? implicitHeight : 0
-                        Layout.maximumHeight: index === view.currentIndex ? -1 : 0
+                        width: item ? item.implicitWidth : 0
+                        height: item ? item.implicitHeight : 0
                         opacity: index === view.currentIndex ? 1 : 0
                         sourceComponent: modelData.component
 
@@ -155,7 +166,7 @@ Item {
                                 return true;
                             const vx = Math.floor(view.visibleArea.xPosition * view.contentWidth);
                             const vex = Math.floor(vx + view.visibleArea.widthRatio * view.contentWidth);
-                            return (vx >= x && vx <= x + implicitWidth) || (vex >= x && vex <= x + implicitWidth);
+                            return (vx >= x && vx <= x + width) || (vex >= x && vex <= x + width);
                         })
                     }
                 }
@@ -201,7 +212,8 @@ Item {
         Anim {}
     }
 
+    // Instant height: animating Media/Dashboard→Performance left a tall empty glass slab.
     Behavior on implicitHeight {
-        Anim {}
+        enabled: false
     }
 }
