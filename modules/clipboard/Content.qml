@@ -229,9 +229,9 @@ Item {
                                 }
 
                                 IconButton {
-                                    icon: modelData.pinned ? "keep" : "keep_outline"
+                                    icon: modelData.pinned ? "push_pin" : "keep"
                                     type: IconButton.Text
-                                    // Pin / unpin — stays at top of history
+                                    isToggle: true
                                     checked: !!modelData.pinned
                                     onClicked: Clipboard.togglePin(del.entryId)
                                 }

@@ -194,6 +194,8 @@ Singleton {
         }
         onLoadFailed: () => {
             root.pinnedIds = [];
+            // Seed empty pins file so next reload is quiet.
+            root.savePins();
         }
     }
 
