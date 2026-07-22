@@ -1,8 +1,14 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
+import Quickshell.Wayland
+import qs.services
+import qs.components
+import qs.components.images
+import Caelestia.Config
 
 Scope {
     id: root
@@ -127,6 +133,98 @@ Scope {
     function count(): int {
         prune();
         return windows.length;
+    }
+
+
+    // Screen-space drag ghost (Windows-like). Click-through; follows FmDrag.
+    Variants {
+        model: Screens.screens
+
+        PanelWindow {
+            id: ghostWin
+            required property var modelData
+            screen: modelData
+            visible: FmDrag.active
+            color: "transparent"
+            WlrLayershell.namespace: "caelestia-fm-drag"
+            WlrLayershell.layer: WlrLayer.Overlay
+            WlrLayershell.exclusionMode: ExclusionMode.Ignore
+            mask: Region {}
+            anchors.top: true
+            anchors.left: true
+            anchors.right: true
+            anchors.bottom: true
+
+            Item {
+                x: FmDrag.globalX - (ghostWin.screen ? ghostWin.screen.x : 0) - FmDrag.hotX
+                y: FmDrag.globalY - (ghostWin.screen ? ghostWin.screen.y : 0) - FmDrag.hotY
+                width: card.implicitWidth
+                height: card.implicitHeight
+                opacity: 0.94
+
+                StyledRect {
+                    id: card
+                    anchors.left: parent.left
+                    anchors.top: parent.top
+                    implicitWidth: Math.min(240, row.implicitWidth + Tokens.padding.medium * 2)
+                    implicitHeight: row.implicitHeight + Tokens.padding.small * 2
+                    radius: Tokens.rounding.large
+                    color: Colours.palette.m3surfaceContainerHigh
+                    border.width: 1
+                    border.color: Colours.palette.m3outlineVariant
+
+                    RowLayout {
+                        id: row
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.margins: Tokens.padding.small
+                        spacing: Tokens.spacing.small
+
+                        CachingIconImage {
+                            implicitSize: 36
+                            source: FmDrag.iconSource
+                        }
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 2
+                            StyledText {
+                                Layout.fillWidth: true
+                                text: FmDrag.primaryName
+                                elide: Text.ElideMiddle
+                                color: Colours.palette.m3onSurface
+                                font: Tokens.font.body.builders.small.weight(Font.Medium).build()
+                            }
+                            StyledText {
+                                visible: FmDrag.count > 1
+                                text: qsTr("%1 项").arg(FmDrag.count)
+                                color: Colours.palette.m3onSurfaceVariant
+                                font: Tokens.font.body.builders.small.scale(0.85).build()
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        visible: FmDrag.count > 1
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.margins: -6
+                        width: badge.implicitWidth + 10
+                        height: badge.implicitHeight + 4
+                        radius: height / 2
+                        color: Colours.palette.m3primary
+                        StyledText {
+                            id: badge
+                            anchors.centerIn: parent
+                            text: String(FmDrag.count)
+                            color: Colours.palette.m3onPrimary
+                            font: Tokens.font.body.builders.small.scale(0.85).weight(Font.Bold).build()
+                        }
+                    }
+                }
+            }
+        }
     }
 
     IpcHandler {

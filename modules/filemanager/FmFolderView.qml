@@ -582,9 +582,10 @@ Item {
         id: dragProxy
         width: ghostCard.implicitWidth
         height: ghostCard.implicitHeight
-        visible: root.dragVisualActive
+        // Visual is the screen-space ghost on FileManager; local proxy only holds drag payload
+        visible: false
         z: 200
-        opacity: root.dragVisualActive ? 0.92 : 0
+        opacity: 0
         property string path: ""
         property string name: ""
         property var paths: []
@@ -868,10 +869,9 @@ Item {
     }
 
     function _fmDragHoverTick() {
-        // Source window keeps its own local hover via updateInternalDrag
+        // Only non-source windows paint drop targets; never touch selection.
         if (!FmDrag.active || root.dragVisualActive)
             return;
-        // Map global pointer into this folder view
         let local = null;
         try {
             local = root.mapFromGlobal(FmDrag.globalX, FmDrag.globalY);
@@ -880,7 +880,6 @@ Item {
         }
         if (!local)
             return;
-        // Outside this view?
         if (local.x < 0 || local.y < 0 || local.x > root.width || local.y > root.height) {
             if (root.dropHoverActive) {
                 root.dropHoverActive = false;
@@ -888,18 +887,22 @@ Item {
             }
             return;
         }
-        // Convert to input/view coords (same margins as input MouseArea)
         const margin = Tokens.padding.extraSmall + Tokens.padding.medium;
-        const vx = local.x - margin;
-        const vy = local.y - margin;
-        const dest = root.pathAtViewPos(vx, vy);
+        const dest = root.pathAtViewPos(local.x - margin, local.y - margin);
+        // Refuse highlighting a dragged item path (no-op drop into self)
+        const paths = FmDrag.paths || [];
+        if (paths.indexOf && paths.indexOf(dest) >= 0) {
+            root.dropHoverActive = true;
+            root.dropHoverPath = root.state.cwdPath();
+            FmDrag.pendingDest = root.state.cwdPath();
+            return;
+        }
         root.dropHoverActive = true;
         if (dest !== root.dropHoverPath)
             root.dropHoverPath = dest;
-        // Tell source window where we are (store on root for finishInternalDrag via FmDrag)
-        // Source reads dropHoverPath from the target through a shared property:
         FmDrag.pendingDest = dest;
     }
+
 
     // Input overlay
     MouseArea {
@@ -955,10 +958,9 @@ Item {
             if (!paths.length)
                 return;
             root.dragVisualActive = true;
-            dragProxy.moveToInputLocal(mx, my);
+            // Freeze selection highlight on source (do not re-select during drag)
             root.dropHoverActive = true;
             root.dropHoverPath = root.pathAtViewPos(mx, my);
-            // Publish session so other FM windows can accept drop without Qt Drag
             FmDrag.begin(paths, root.state.cwdPath(), dragProxy.name, dragProxy.iconSource);
             try {
                 const g = input.mapToGlobal(mx, my);
@@ -969,16 +971,30 @@ Item {
         function updateInternalDrag(mx, my) {
             if (!root.dragVisualActive)
                 return;
-            dragProxy.moveToInputLocal(mx, my);
-            const dest = root.pathAtViewPos(mx, my);
-            if (dest !== root.dropHoverPath) {
-                root.dropHoverActive = true;
-                root.dropHoverPath = dest;
-            }
+            // Source keeps selection frozen; only update global ghost + local drop target if still inside
             try {
                 const g = input.mapToGlobal(mx, my);
                 FmDrag.updateGlobal(g.x, g.y);
             } catch (e) {}
+            // Local drop target only while pointer is still over *this* view
+            try {
+                const local = root.mapFromGlobal(FmDrag.globalX, FmDrag.globalY);
+                const inside = local && local.x >= 0 && local.y >= 0
+                        && local.x <= root.width && local.y <= root.height;
+                if (inside) {
+                    const margin = Tokens.padding.extraSmall + Tokens.padding.medium;
+                    const dest = root.pathAtViewPos(local.x - margin, local.y - margin);
+                    root.dropHoverActive = true;
+                    if (dest !== root.dropHoverPath)
+                        root.dropHoverPath = dest;
+                } else {
+                    // Pointer left this window — clear local drop highlight (target window paints its own)
+                    if (root.dropHoverActive) {
+                        root.dropHoverActive = false;
+                        root.dropHoverPath = "";
+                    }
+                }
+            } catch (e2) {}
         }
 
         function finishInternalDrag(mx, my) {
@@ -989,41 +1005,48 @@ Item {
             const paths = (dragProxy.paths && dragProxy.paths.length)
                 ? dragProxy.paths.slice()
                 : (dragProxy.path ? [dragProxy.path] : []);
-            const destLocal = root.pathAtViewPos(mx, my) || root.state.cwdPath();
             root.dragVisualActive = false;
             root.dropHoverActive = false;
             root.dropHoverPath = "";
             dragArmed = false;
             dragProxy.clear();
 
-            // Prefer drop target from another FM window under the pointer
-            let dest = destLocal;
+            let dest = "";
             let foreign = false;
             try {
-                if (FmDrag.pendingDest && FmDrag.pendingDest.length
-                        && FmDrag.pendingDest !== root.state.cwdPath()
-                        && FmDrag.pendingDest !== destLocal) {
-                    // If pointer left this window, pathAtViewPos is wrong — use pendingDest
-                }
-                // If we are still over this window, destLocal is correct.
-                // If pointer is over another window, destLocal is our cwd/tile under last local coords;
-                // detect foreign: global pointer not inside this root.
+                // Refresh global from last mouse if possible
                 const g = input.mapToGlobal(mx, my);
+                FmDrag.updateGlobal(g.x, g.y);
                 const localNow = root.mapFromGlobal(g.x, g.y);
                 const inside = localNow && localNow.x >= 0 && localNow.y >= 0
                         && localNow.x <= root.width && localNow.y <= root.height;
-                if (!inside && FmDrag.pendingDest && FmDrag.pendingDest.length) {
+                if (inside) {
+                    const margin = Tokens.padding.extraSmall + Tokens.padding.medium;
+                    dest = root.pathAtViewPos(localNow.x - margin, localNow.y - margin) || root.state.cwdPath();
+                    foreign = false;
+                } else if (FmDrag.pendingDest && FmDrag.pendingDest.length) {
                     dest = FmDrag.pendingDest;
                     foreign = true;
                 }
-            } catch (e) {}
+            } catch (e) {
+                if (FmDrag.pendingDest && FmDrag.pendingDest.length) {
+                    dest = FmDrag.pendingDest;
+                    foreign = true;
+                }
+            }
             FmDrag.pendingDest = "";
             FmDrag.end();
 
-            if (!paths.length)
+            if (!paths.length || !dest.length)
                 return;
+            // Same as Windows: drop on empty area of same folder = cancel
             if (!foreign && dest === root.state.cwdPath()) {
                 root.state.statusText = qsTr("已取消（放到原目录）");
+                return;
+            }
+            // Do not drop into one of the dragged items
+            if (paths.indexOf(dest) >= 0) {
+                root.state.statusText = qsTr("无法放到自身");
                 return;
             }
             root.actions.dropInto(paths, dest, "move");
@@ -1040,6 +1063,11 @@ Item {
 
 
         onPressed: mouse => {
+            // Windows-like: foreign drag only paints drop target — ignore clicks/selection
+            if (FmDrag.active && !root.dragVisualActive) {
+                mouse.accepted = true;
+                return;
+            }
             pressX = mouse.x;
             pressY = mouse.y;
             moved = false;
