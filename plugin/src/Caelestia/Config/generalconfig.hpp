@@ -103,6 +103,8 @@ class GeneralShortcuts : public ConfigObject {
     CONFIG_GLOBAL_PROPERTY(QString, closeWindow, u"Super+Q"_s)
     CONFIG_GLOBAL_PROPERTY(QString, fullscreen, u"Super+F"_s)
     CONFIG_GLOBAL_PROPERTY(QString, toggleFloating, u"Super+V"_s)
+    // Clipboard history (cliphist). Super+V is floating; use Super+Shift+V.
+    CONFIG_GLOBAL_PROPERTY(QString, clipboard, u"Super+Shift+V"_s)
 
 public:
     explicit GeneralShortcuts(QObject* parent = nullptr)

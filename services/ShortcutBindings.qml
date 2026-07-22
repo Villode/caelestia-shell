@@ -20,12 +20,13 @@ Singleton {
         session: "Super+Escape",
         closeWindow: "Super+Q",
         fullscreen: "Super+F",
-        toggleFloating: "Super+V"
+        toggleFloating: "Super+V",
+        clipboard: "Super+Shift+V"
     })
 
     readonly property list<string> actionIds: [
         "terminal", "fileManager", "launcher", "desktop", "screenshot", "nexus", "multitasking",
-        "dashboard", "sidebar", "session", "closeWindow", "fullscreen", "toggleFloating"
+        "dashboard", "sidebar", "session", "closeWindow", "fullscreen", "toggleFloating", "clipboard"
     ]
 
     property var previouslyApplied: ({})
@@ -46,6 +47,7 @@ Singleton {
         case "closeWindow": return config.closeWindow;
         case "fullscreen": return config.fullscreen;
         case "toggleFloating": return config.toggleFloating;
+        case "clipboard": return config.clipboard;
         }
         return "";
     }
@@ -66,6 +68,7 @@ Singleton {
         case "closeWindow": config.closeWindow = shortcut; break;
         case "fullscreen": config.fullscreen = shortcut; break;
         case "toggleFloating": config.toggleFloating = shortcut; break;
+        case "clipboard": config.clipboard = shortcut; break;
         }
     }
 
@@ -123,6 +126,7 @@ Singleton {
         case "closeWindow": return "killactive";
         case "fullscreen": return "fullscreen";
         case "toggleFloating": return "togglefloating";
+        case "clipboard": return "global, caelestia:clipboard";
         }
         return "";
     }
@@ -187,5 +191,6 @@ Singleton {
         function onCloseWindowChanged(): void { root.apply(); }
         function onFullscreenChanged(): void { root.apply(); }
         function onToggleFloatingChanged(): void { root.apply(); }
+        function onClipboardChanged(): void { root.apply(); }
     }
 }

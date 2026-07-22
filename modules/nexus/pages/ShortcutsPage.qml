@@ -374,6 +374,7 @@ PageBase {
         case "closeWindow": return qsTr("Close active window");
         case "fullscreen": return qsTr("Toggle fullscreen");
         case "toggleFloating": return qsTr("Toggle floating window");
+        case "clipboard": return qsTr("Toggle clipboard history");
         }
         return action;
     }
@@ -393,6 +394,7 @@ PageBase {
         case "closeWindow": return "close";
         case "fullscreen": return "fullscreen";
         case "toggleFloating": return "select_window";
+        case "clipboard": return "content_paste";
         }
         return "keyboard";
     }
@@ -421,6 +423,7 @@ PageBase {
         function onCloseWindowChanged(): void { root.refreshPreview(); }
         function onFullscreenChanged(): void { root.refreshPreview(); }
         function onToggleFloatingChanged(): void { root.refreshPreview(); }
+        function onClipboardChanged(): void { root.refreshPreview(); }
     }
 
 
@@ -1147,7 +1150,8 @@ PageBase {
         ShortcutEditor { action: "multitasking"; label: root.actionLabel(action) }
         ShortcutEditor { action: "dashboard"; label: root.actionLabel(action) }
         ShortcutEditor { action: "sidebar"; label: root.actionLabel(action) }
-        ShortcutEditor { action: "session"; label: root.actionLabel(action); last: true }
+        ShortcutEditor { action: "session"; label: root.actionLabel(action) }
+        ShortcutEditor { action: "clipboard"; label: root.actionLabel(action); last: true }
 
         SectionHeader { text: qsTr("Window management") }
 
