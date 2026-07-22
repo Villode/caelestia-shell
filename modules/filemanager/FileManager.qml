@@ -72,25 +72,32 @@ Scope {
         } catch (e) {}
     }
 
-    // Reuse last window, or create first
+    // Prefer a new window when one is already open so Super+E / explorer can stack windows.
+    // First launch still creates a single window.
     function openHome(): void {
-        let w = lastWindow();
-        if (!w)
-            w = createWindow();
-        if (!w)
-            return;
-        w.openPath("");
-        raiseWindow(w);
+        prune();
+        if (windows.length > 0)
+            openNew("");
+        else {
+            const w = createWindow();
+            if (!w)
+                return;
+            w.openPath("");
+            raiseWindow(w);
+        }
     }
 
     function openPath(path: string): void {
-        let w = lastWindow();
-        if (!w)
-            w = createWindow();
-        if (!w)
-            return;
-        w.openPath(path || "");
-        raiseWindow(w);
+        prune();
+        if (windows.length > 0)
+            openNew(path || "");
+        else {
+            const w = createWindow();
+            if (!w)
+                return;
+            w.openPath(path || "");
+            raiseWindow(w);
+        }
     }
 
     // Always new FloatingWindow

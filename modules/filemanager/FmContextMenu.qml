@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import Quickshell
 import QtQuick.Layouts
 import Caelestia.Config
 import qs.components
@@ -145,6 +146,7 @@ Item {
             { id: "mkdir", label: qsTr("新建文件夹"), submenu: "" }
         ];
         if (anchorIsDir && anchorPath.length) {
+            items.splice(1, 0, { id: "open-new", label: qsTr("在新窗口中打开"), submenu: "" });
             if (root.state.isFavorite(anchorPath))
                 items.push({ id: "unpin", label: qsTr("取消侧栏固定"), submenu: "" });
             else
@@ -201,6 +203,10 @@ Item {
                 root.actions.openEntry(true, root.anchorName, root.anchorPath);
             else
                 root.actions.openPaths(t);
+        } else if (id === "open-new") {
+            const path = (root.anchorIsDir && root.anchorPath) ? root.anchorPath : root.state.cwdPath();
+            if (path)
+                Quickshell.execDetached(["qs", "-c", "caelestia", "ipc", "call", "filemanager", "openNew", path]);
         } else if (id === "refresh") {
             root.state.bumpRefresh();
             root.state.statusText = qsTr("已刷新");

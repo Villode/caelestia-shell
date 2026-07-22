@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
+import Quickshell
 import Caelestia.Config
 import qs.components
 import qs.components.controls
@@ -93,6 +94,16 @@ StyledRect {
             onTriggered: {
                 root.state.bumpRefresh();
                 root.state.statusText = qsTr("已刷新");
+            }
+        }
+
+        ToolBtn {
+            icon: "open_in_new"
+            tip: qsTr("新窗口 (Ctrl+N)")
+            active: false
+            onTriggered: {
+                const p = root.state.cwdPath();
+                Quickshell.execDetached(["qs", "-c", "caelestia", "ipc", "call", "filemanager", "openNew", p || ""]);
             }
         }
 
