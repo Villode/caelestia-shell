@@ -103,29 +103,6 @@ Item {
     property string dropHoverPath: ""
     property bool dropHoverActive: false
     property bool dragVisualActive: false
-    // True while a system (cross-window) DnD is active from this view
-    property bool systemDragActive: false
-
-    function pathsToUriList(paths: var): string {
-        if (!paths || !paths.length)
-            return "";
-        const lines = [];
-        for (let i = 0; i < paths.length; i++) {
-            let path = String(paths[i] || "");
-            if (!path.length)
-                continue;
-            if (!path.startsWith("file:")) {
-                // Prefer Qt URL so spaces / Chinese / # encode correctly
-                try {
-                    path = Qt.resolvedUrl("file://" + path).toString();
-                } catch (e) {
-                    path = "file://" + path;
-                }
-            }
-            lines.push(path);
-        }
-        return lines.join("\r\n");
-    }
 
     // Bump path through empty so FileSystemModel.setPath reloads same dir
     property int fsPathTick: 0
@@ -600,66 +577,31 @@ Item {
         }
     }
 
-    // System DnD source (+ light local ghost only before grab starts)
+    // On-cursor ghost — local mouse-follow (smooth). Cross-window uses FmDrag singleton.
     Item {
         id: dragProxy
         width: ghostCard.implicitWidth
         height: ghostCard.implicitHeight
-        // Ghost stays visible: with Drag.Automatic it is also the system drag image
-        visible: root.dragVisualActive || root.systemDragActive || Drag.active
+        visible: root.dragVisualActive
         z: 200
-        opacity: 0.92
+        opacity: root.dragVisualActive ? 0.92 : 0
         property string path: ""
         property string name: ""
         property var paths: []
         property bool isDir: false
         property bool isImage: false
         property string iconSource: ""
-        property real hotX: 16
-        property real hotY: 16
+        property real hotX: 20
+        property real hotY: 20
         readonly property int count: (paths && paths.length) ? paths.length : (path ? 1 : 0)
 
-        Drag.dragType: Drag.Automatic
-        Drag.supportedActions: Qt.CopyAction | Qt.MoveAction
-        Drag.proposedAction: Qt.MoveAction
-        Drag.keys: ["text/uri-list", "text/plain"]
-
-        Drag.onDragStarted: {
-            root.systemDragActive = true;
-            // Keep dragVisualActive so ghost stays painted as the drag pixmap
-            root.dragVisualActive = true;
-            root.dropHoverActive = false;
-            root.dropHoverPath = "";
-            root.state.statusText = count > 1
-                ? qsTr("拖到其他窗口放置：%1 项").arg(count)
-                : qsTr("拖到其他窗口放置：%1").arg(name);
+        function moveToInputLocal(mx, my) {
+            const p = input.mapToItem(dragProxy.parent, mx, my);
+            dragProxy.x = p.x - hotX;
+            dragProxy.y = p.y - hotY;
         }
 
-        Drag.onDragFinished: dropAction => {
-            root.systemDragActive = false;
-            root.dragVisualActive = false;
-            root.dropHoverActive = false;
-            root.dropHoverPath = "";
-            input.dragArmed = false;
-            if (dropAction === Qt.MoveAction || dropAction === Qt.CopyAction) {
-                root.state.statusText = dropAction === Qt.MoveAction
-                    ? qsTr("已移动")
-                    : qsTr("已复制");
-                Qt.callLater(() => root.state.bumpRefresh());
-            } else if (dropAction === Qt.IgnoreAction) {
-                root.state.statusText = qsTr("已取消拖放");
-            }
-            dragProxy.clear();
-            Drag.active = false;
-        }
-
-        function moveToInputLocal(mx: real, my: real): void {
-            // Only used for the brief pre-grab frame
-            dragProxy.x = mx - hotX;
-            dragProxy.y = my - hotY;
-        }
-
-        function clear(): void {
+        function clear() {
             path = "";
             name = "";
             paths = [];
@@ -672,7 +614,7 @@ Item {
             id: ghostCard
             anchors.left: parent.left
             anchors.top: parent.top
-            implicitWidth: Math.min(180, ghostRow.implicitWidth + Tokens.padding.medium * 2)
+            implicitWidth: Math.min(220, ghostRow.implicitWidth + Tokens.padding.medium * 2)
             implicitHeight: ghostRow.implicitHeight + Tokens.padding.small * 2
             radius: Tokens.rounding.large
             color: Colours.palette.m3surfaceContainerHigh
@@ -712,7 +654,6 @@ Item {
                 }
             }
 
-            // Multi-select badge
             Rectangle {
                 visible: dragProxy.count > 1
                 anchors.right: parent.right
@@ -811,17 +752,21 @@ Item {
         z: 35
 
         onEntered: drag => {
-            // Accept file URI drops from other FM windows / apps (and same window system DnD)
+            // Local ghost drag uses finishInternalDrag; skip DropArea for it
+            if (root.dragVisualActive) {
+                drag.accepted = false;
+                return;
+            }
             drag.accepted = drag.hasUrls || drag.hasText;
             if (drag.accepted) {
                 root.dropHoverActive = true;
-                root.dropHoverPath = root.pathAtViewPos(drag.x, drag.y);
+                const dest = root.pathAtViewPos(drag.x, drag.y);
+                root.dropHoverPath = dest;
             }
         }
         onPositionChanged: drag => {
             if (!root.dropHoverActive)
                 return;
-            // Only recompute when cell changes — pathAtViewPos/itemAt every pixel is expensive
             const dest = root.pathAtViewPos(drag.x, drag.y);
             if (dest !== root.dropHoverPath)
                 root.dropHoverPath = dest;
@@ -878,6 +823,84 @@ Item {
         }
     }
 
+
+
+    // Poll cursor while dragging so other FM windows can highlight under the pointer
+    Timer {
+        id: fmDragPoll
+        interval: 50
+        repeat: true
+        running: root.dragVisualActive
+        onTriggered: cursorPosProc.running = true
+    }
+
+    Process {
+        id: cursorPosProc
+        command: ["hyprctl", "cursorpos"]
+        running: false
+        stdout: StdioCollector {
+            onStreamFinished: {
+                if (!root.dragVisualActive)
+                    return;
+                const s = text().trim(); // e.g. "123, 456"
+                const m = s.match(/(-?\d+)\s*,\s*(-?\d+)/);
+                if (m)
+                    FmDrag.updateGlobal(Number(m[1]), Number(m[2]));
+            }
+        }
+    }
+
+    // Accept drops from another FM window via FmDrag (no Qt system DnD)
+    Connections {
+        target: FmDrag
+        function onGlobalXChanged() { root._fmDragHoverTick(); }
+        function onGlobalYChanged() { root._fmDragHoverTick(); }
+        function onActiveChanged() {
+            if (!FmDrag.active) {
+                if (!root.dragVisualActive) {
+                    root.dropHoverActive = false;
+                    root.dropHoverPath = "";
+                }
+            } else {
+                root._fmDragHoverTick();
+            }
+        }
+    }
+
+    function _fmDragHoverTick() {
+        // Source window keeps its own local hover via updateInternalDrag
+        if (!FmDrag.active || root.dragVisualActive)
+            return;
+        // Map global pointer into this folder view
+        let local = null;
+        try {
+            local = root.mapFromGlobal(FmDrag.globalX, FmDrag.globalY);
+        } catch (e) {
+            return;
+        }
+        if (!local)
+            return;
+        // Outside this view?
+        if (local.x < 0 || local.y < 0 || local.x > root.width || local.y > root.height) {
+            if (root.dropHoverActive) {
+                root.dropHoverActive = false;
+                root.dropHoverPath = "";
+            }
+            return;
+        }
+        // Convert to input/view coords (same margins as input MouseArea)
+        const margin = Tokens.padding.extraSmall + Tokens.padding.medium;
+        const vx = local.x - margin;
+        const vy = local.y - margin;
+        const dest = root.pathAtViewPos(vx, vy);
+        root.dropHoverActive = true;
+        if (dest !== root.dropHoverPath)
+            root.dropHoverPath = dest;
+        // Tell source window where we are (store on root for finishInternalDrag via FmDrag)
+        // Source reads dropHoverPath from the target through a shared property:
+        FmDrag.pendingDest = dest;
+    }
+
     // Input overlay
     MouseArea {
         id: input
@@ -923,84 +946,98 @@ Item {
                 root.state.statusText = qsTr("拖动：%1").arg(md.name);
         }
 
-        function beginInternalDrag(mx: real, my: real): void {
-            if (!dragArmed || !dragProxy.path.length || root.dragVisualActive || root.systemDragActive)
+        function beginInternalDrag(mx, my) {
+            if (!dragArmed || !dragProxy.path.length || root.dragVisualActive)
                 return;
             const paths = (dragProxy.paths && dragProxy.paths.length)
                 ? dragProxy.paths.slice()
                 : (dragProxy.path ? [dragProxy.path] : []);
             if (!paths.length)
                 return;
-
-            const uriList = root.pathsToUriList(paths);
-            if (!uriList.length)
-                return;
-
-            // Position once; system DnD takes over immediately (no per-frame ghost follow)
-            dragProxy.moveToInputLocal(mx, my);
             root.dragVisualActive = true;
-
-            dragProxy.Drag.mimeData = {
-                "text/uri-list": uriList,
-                "text/plain": paths.join("\n")
-            };
-            dragProxy.Drag.hotSpot.x = dragProxy.hotX;
-            dragProxy.Drag.hotSpot.y = dragProxy.hotY;
-            dragProxy.Drag.supportedActions = Qt.CopyAction | Qt.MoveAction;
-            dragProxy.Drag.proposedAction = Qt.MoveAction;
-            dragProxy.Drag.dragType = Drag.Automatic;
-            // Activating starts the grab; onDragStarted clears local ghost work
-            dragProxy.Drag.active = true;
+            dragProxy.moveToInputLocal(mx, my);
+            root.dropHoverActive = true;
+            root.dropHoverPath = root.pathAtViewPos(mx, my);
+            // Publish session so other FM windows can accept drop without Qt Drag
+            FmDrag.begin(paths, root.state.cwdPath(), dragProxy.name, dragProxy.iconSource);
+            try {
+                const g = input.mapToGlobal(mx, my);
+                FmDrag.updateGlobal(g.x, g.y);
+            } catch (e) {}
         }
 
-        function updateInternalDrag(mx: real, my: real): void {
-            // After system DnD starts, ignore mouse move work (prevents jank)
-            if (root.systemDragActive)
-                return;
+        function updateInternalDrag(mx, my) {
             if (!root.dragVisualActive)
                 return;
             dragProxy.moveToInputLocal(mx, my);
+            const dest = root.pathAtViewPos(mx, my);
+            if (dest !== root.dropHoverPath) {
+                root.dropHoverActive = true;
+                root.dropHoverPath = dest;
+            }
+            try {
+                const g = input.mapToGlobal(mx, my);
+                FmDrag.updateGlobal(g.x, g.y);
+            } catch (e) {}
         }
 
-        function finishInternalDrag(mx: real, my: real): void {
-            if (root.systemDragActive) {
-                dragArmed = false;
-                return;
-            }
+        function finishInternalDrag(mx, my) {
             if (!root.dragVisualActive) {
                 dragArmed = false;
                 return;
             }
-            // Fallback: pure-local drop if system DnD failed to start
             const paths = (dragProxy.paths && dragProxy.paths.length)
                 ? dragProxy.paths.slice()
                 : (dragProxy.path ? [dragProxy.path] : []);
-            const dest = root.pathAtViewPos(mx, my) || root.state.cwdPath();
+            const destLocal = root.pathAtViewPos(mx, my) || root.state.cwdPath();
             root.dragVisualActive = false;
             root.dropHoverActive = false;
             root.dropHoverPath = "";
             dragArmed = false;
             dragProxy.clear();
+
+            // Prefer drop target from another FM window under the pointer
+            let dest = destLocal;
+            let foreign = false;
+            try {
+                if (FmDrag.pendingDest && FmDrag.pendingDest.length
+                        && FmDrag.pendingDest !== root.state.cwdPath()
+                        && FmDrag.pendingDest !== destLocal) {
+                    // If pointer left this window, pathAtViewPos is wrong — use pendingDest
+                }
+                // If we are still over this window, destLocal is correct.
+                // If pointer is over another window, destLocal is our cwd/tile under last local coords;
+                // detect foreign: global pointer not inside this root.
+                const g = input.mapToGlobal(mx, my);
+                const localNow = root.mapFromGlobal(g.x, g.y);
+                const inside = localNow && localNow.x >= 0 && localNow.y >= 0
+                        && localNow.x <= root.width && localNow.y <= root.height;
+                if (!inside && FmDrag.pendingDest && FmDrag.pendingDest.length) {
+                    dest = FmDrag.pendingDest;
+                    foreign = true;
+                }
+            } catch (e) {}
+            FmDrag.pendingDest = "";
+            FmDrag.end();
+
             if (!paths.length)
                 return;
-            if (dest === root.state.cwdPath()) {
+            if (!foreign && dest === root.state.cwdPath()) {
                 root.state.statusText = qsTr("已取消（放到原目录）");
                 return;
             }
             root.actions.dropInto(paths, dest, "move");
         }
 
-        function cancelInternalDrag(): void {
-            if (root.systemDragActive) {
-                dragProxy.Drag.active = false;
-                root.systemDragActive = false;
-            }
+        function cancelInternalDrag() {
             root.dragVisualActive = false;
             root.dropHoverActive = false;
             root.dropHoverPath = "";
             dragArmed = false;
             dragProxy.clear();
+            FmDrag.end();
         }
+
 
         onPressed: mouse => {
             pressX = mouse.x;
@@ -1034,9 +1071,7 @@ Item {
             if (Math.abs(mouse.x - pressX) > 6 || Math.abs(mouse.y - pressY) > 6)
                 moved = true;
 
-            // Start system DnD once; do not track every mouse move after that
-            if (root.systemDragActive)
-                return;
+            // Local drag: ghost follows cursor while left button held
             if (dragArmed && (mouse.buttons & Qt.LeftButton)) {
                 if (moved) {
                     if (!root.dragVisualActive)
