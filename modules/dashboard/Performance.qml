@@ -52,7 +52,6 @@ Item {
 
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.top: parent.top
         spacing: Tokens.spacing.medium
         visible: !placeholder.active
 
@@ -60,13 +59,11 @@ Item {
             id: mainColumn
 
             Layout.fillWidth: true
-            Layout.fillHeight: false
             spacing: Tokens.spacing.medium
 
             RowLayout {
                 spacing: Tokens.spacing.medium
                 visible: cpuCard.active || gpuCard.active
-                Layout.fillHeight: false
 
                 WrappedLoader {
                     id: cpuCard
@@ -110,7 +107,6 @@ Item {
             RowLayout {
                 spacing: Tokens.spacing.medium
                 visible: storageCard.active || networkCard.active || memoryCard.active
-                Layout.fillHeight: false
 
                 WrappedLoader {
                     id: storageCard
@@ -136,6 +132,7 @@ Item {
         }
 
         WrappedLoader {
+            // Match main column height (original WE-style tank), do not overstretch.
             Layout.fillWidth: false
             Layout.fillHeight: false
             Layout.preferredHeight: mainColumn.implicitHeight
@@ -145,6 +142,8 @@ Item {
         }
     }
 
+    // Cards keep natural height — fillHeight was stretching Storage/Memory to
+    // Network's 220px and left empty "extra" blocks at the bottom of the row.
     component WrappedLoader: Loader {
         Layout.fillWidth: true
         Layout.fillHeight: false
