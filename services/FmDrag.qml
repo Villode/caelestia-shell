@@ -23,6 +23,7 @@ Singleton {
     property string pendingWindowId: ""
     property real hotX: 18
     property real hotY: 18
+    property bool cursorReady: false
     property var windows: []
     property var dropHandler: null
     property bool bindInstalled: false
@@ -118,19 +119,18 @@ Singleton {
         pendingDest = cwd || "";
         pendingWindowId = windowId || "";
         sessionId = sessionId + 1;
+        cursorReady = false;
         active = true;
         installReleaseBind();
-        // Seed cursor
         cursorSeed.running = true;
     }
 
     function updateGlobal(gx, gy) {
         if (!active)
             return;
-        if (gx === globalX && gy === globalY)
-            return;
         globalX = gx;
         globalY = gy;
+        cursorReady = true;
         const win = windowAt(gx, gy);
         if (win) {
             pendingWindowId = win.id || "";
@@ -213,6 +213,7 @@ Singleton {
         pendingDest = "";
         pendingWindowId = "";
         dropHandler = null;
+        cursorReady = false;
     }
 
     Process {

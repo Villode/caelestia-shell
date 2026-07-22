@@ -136,7 +136,7 @@ Scope {
     }
 
 
-    // Full-screen drag layer: receives mouse release outside FloatingWindows
+    // Screen-space drag ghost (click-through). Drop completes via hypr mouse bind + FmDrag IPC.
     Variants {
         model: Screens.screens
 
@@ -144,20 +144,17 @@ Scope {
             id: dragLayer
             required property var modelData
             screen: modelData
-            // Always present while drag active so we can grab release
-            visible: FmDrag.active
+            visible: FmDrag.active && FmDrag.cursorReady
             color: "transparent"
             WlrLayershell.namespace: "caelestia-fm-drag"
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.exclusionMode: ExclusionMode.Ignore
-            // Must receive input (not click-through) to finish cross-window drop
-            mask: null
+            mask: Region {}
             anchors.top: true
             anchors.left: true
             anchors.right: true
             anchors.bottom: true
 
-            // Keep cursor updated even if source MouseArea stops
             Timer {
                 interval: 16
                 running: FmDrag.active
@@ -185,49 +182,13 @@ Scope {
                 }
             }
 
-            MouseArea {
-                id: grab
-                anchors.fill: parent
-                acceptedButtons: Qt.LeftButton | Qt.RightButton
-                hoverEnabled: true
-                preventStealing: true
-                // Press is already held from FM window — we mainly need release + move
-                onPositionChanged: mouse => {
-                    // Local screen coords → global
-                    const sx = dragLayer.screen ? dragLayer.screen.x : 0;
-                    const sy = dragLayer.screen ? dragLayer.screen.y : 0;
-                    FmDrag.updateGlobal(sx + mouse.x, sy + mouse.y);
-                }
-                onReleased: mouse => {
-                    if (!FmDrag.active)
-                        return;
-                    const sx = dragLayer.screen ? dragLayer.screen.x : 0;
-                    const sy = dragLayer.screen ? dragLayer.screen.y : 0;
-                    FmDrag.updateGlobal(sx + mouse.x, sy + mouse.y);
-                    FmDrag.completeDrop();
-                    mouse.accepted = true;
-                }
-                onCanceled: {
-                    if (FmDrag.active)
-                        FmDrag.completeDrop(); // still try drop under last cursor
-                }
-                // Right-click cancels
-                onPressed: mouse => {
-                    if (mouse.button === Qt.RightButton) {
-                        FmDrag.cancel();
-                        mouse.accepted = true;
-                    }
-                }
-            }
-
-            // Ghost under cursor
             Item {
+                visible: FmDrag.cursorReady
                 x: FmDrag.globalX - (dragLayer.screen ? dragLayer.screen.x : 0) - FmDrag.hotX
                 y: FmDrag.globalY - (dragLayer.screen ? dragLayer.screen.y : 0) - FmDrag.hotY
                 width: card.implicitWidth
                 height: card.implicitHeight
                 opacity: 0.94
-                z: 10
 
                 StyledRect {
                     id: card

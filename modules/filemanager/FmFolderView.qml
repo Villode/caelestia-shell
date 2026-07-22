@@ -587,13 +587,8 @@ Item {
         id: dragProxy
         width: ghostCard.implicitWidth
         height: ghostCard.implicitHeight
-        // Local ghost only while pointer still over this (source) window
-        visible: {
-            if (!root.dragVisualActive)
-                return false;
-            const w = FmDrag.windowAt(FmDrag.globalX, FmDrag.globalY);
-            return !w || !root.windowId || w.id === root.windowId;
-        }
+        // Payload-only; single screen-space ghost lives in FileManager overlay
+        visible: false
         z: 200
         opacity: visible ? 0.92 : 0
         property string path: ""
