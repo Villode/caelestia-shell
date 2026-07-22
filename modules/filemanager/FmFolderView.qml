@@ -19,6 +19,9 @@ Item {
     required property var state
     required property var actions
 
+    // Set by ManagerWindow for FmDrag hit-testing
+    property string windowId: ""
+
     // Min tile size; actual itemWidth grows so columns fill the view (no empty right column gap)
     readonly property int minItemWidth: 103
     readonly property int gridGap: Tokens.spacing.small
@@ -103,6 +106,8 @@ Item {
     property string dropHoverPath: ""
     property bool dropHoverActive: false
     property bool dragVisualActive: false
+    // Snapshot of selection while this window is drag source (Windows freezes selection)
+    property var frozenSelection: []
 
     // Bump path through empty so FileSystemModel.setPath reloads same dir
     property int fsPathTick: 0
@@ -794,7 +799,9 @@ Item {
         z: 34
         radius: Tokens.rounding.medium
         // Only show when drop target is current folder (not a subfolder — those highlight on the tile)
-        visible: root.dropHoverActive && root.dropHoverPath === root.state.cwdPath()
+        visible: root.dropHoverActive && !root.dragVisualActive && FmDrag.active
+            && (!FmDrag.pendingWindowId || !root.windowId || FmDrag.pendingWindowId === root.windowId)
+            && root.dropHoverPath === root.state.cwdPath()
         color: Qt.alpha(Colours.palette.m3primary, 0.04)
         border.width: 1
         border.color: Qt.alpha(Colours.palette.m3primary, 0.35)
@@ -869,39 +876,65 @@ Item {
     }
 
     function _fmDragHoverTick() {
-        // Only non-source windows paint drop targets; never touch selection.
+        // Target windows only. Use registered screen geometry — mapFromGlobal is wrong across FloatingWindows.
         if (!FmDrag.active || root.dragVisualActive)
             return;
-        let local = null;
-        try {
-            local = root.mapFromGlobal(FmDrag.globalX, FmDrag.globalY);
-        } catch (e) {
+        if (!root.windowId)
             return;
-        }
-        if (!local)
-            return;
-        if (local.x < 0 || local.y < 0 || local.x > root.width || local.y > root.height) {
+
+        const win = FmDrag.windowAt(FmDrag.globalX, FmDrag.globalY);
+        if (!win || win.id !== root.windowId) {
+            // Pointer not over this window
             if (root.dropHoverActive) {
                 root.dropHoverActive = false;
                 root.dropHoverPath = "";
             }
             return;
         }
-        const margin = Tokens.padding.extraSmall + Tokens.padding.medium;
-        const dest = root.pathAtViewPos(local.x - margin, local.y - margin);
-        // Refuse highlighting a dragged item path (no-op drop into self)
-        const paths = FmDrag.paths || [];
-        if (paths.indexOf && paths.indexOf(dest) >= 0) {
-            root.dropHoverActive = true;
-            root.dropHoverPath = root.state.cwdPath();
-            FmDrag.pendingDest = root.state.cwdPath();
-            return;
+
+        // Local coords inside client area (content includes chrome; approx full window)
+        const lx = FmDrag.globalX - win.x;
+        const ly = FmDrag.globalY - win.y;
+        // Folder view is not full window — use map if possible, else approximate content rect.
+        // Prefer mapping via folder root item if mapFromGlobal works relative to this item's window.
+        let vx = lx;
+        let vy = ly;
+        try {
+            // Map screen point into this FolderView; if engine returns garbage, fall back to win-local
+            const mapped = root.mapFromGlobal(FmDrag.globalX, FmDrag.globalY);
+            if (mapped && mapped.x >= -20 && mapped.y >= -20
+                    && mapped.x <= root.width + 20 && mapped.y <= root.height + 20) {
+                vx = mapped.x;
+                vy = mapped.y;
+            } else {
+                // Heuristic: header+toolbar ~ 100px, sidebar ~ 200px — bad. Keep win-local only for pane.
+                // FolderView is the content pane; use mapToItem from window not available.
+                // Clamp to view and treat as content coords with margin.
+                const margin = Tokens.padding.extraSmall + Tokens.padding.medium;
+                vx = Math.max(0, Math.min(root.width, lx)) - margin;
+                vy = Math.max(0, Math.min(root.height, ly)) - margin;
+            }
+        } catch (e) {
+            const margin = Tokens.padding.extraSmall + Tokens.padding.medium;
+            vx = lx - margin;
+            vy = ly - margin;
         }
+
+        const margin = Tokens.padding.extraSmall + Tokens.padding.medium;
+        // pathAtViewPos expects coords in input MouseArea space (view with margins)
+        const dest = root.pathAtViewPos(vx - margin, vy - margin);
+        const paths = FmDrag.paths || [];
+        let finalDest = dest;
+        if (paths.indexOf && paths.indexOf(finalDest) >= 0)
+            finalDest = root.state.cwdPath();
+
         root.dropHoverActive = true;
-        if (dest !== root.dropHoverPath)
-            root.dropHoverPath = dest;
-        FmDrag.pendingDest = dest;
+        if (finalDest !== root.dropHoverPath)
+            root.dropHoverPath = finalDest;
+        FmDrag.pendingDest = finalDest;
+        FmDrag.pendingWindowId = root.windowId;
     }
+
 
 
     // Input overlay
@@ -957,11 +990,12 @@ Item {
                 : (dragProxy.path ? [dragProxy.path] : []);
             if (!paths.length)
                 return;
+            // Freeze selection visually on source (do not let hover/drop restyle tiles as "selected")
+            root.frozenSelection = paths.slice();
             root.dragVisualActive = true;
-            // Freeze selection highlight on source (do not re-select during drag)
-            root.dropHoverActive = true;
-            root.dropHoverPath = root.pathAtViewPos(mx, my);
-            FmDrag.begin(paths, root.state.cwdPath(), dragProxy.name, dragProxy.iconSource);
+            root.dropHoverActive = false;
+            root.dropHoverPath = "";
+            FmDrag.begin(paths, root.state.cwdPath(), dragProxy.name, dragProxy.iconSource, root.windowId);
             try {
                 const g = input.mapToGlobal(mx, my);
                 FmDrag.updateGlobal(g.x, g.y);
@@ -971,30 +1005,13 @@ Item {
         function updateInternalDrag(mx, my) {
             if (!root.dragVisualActive)
                 return;
-            // Source keeps selection frozen; only update global ghost + local drop target if still inside
             try {
                 const g = input.mapToGlobal(mx, my);
                 FmDrag.updateGlobal(g.x, g.y);
             } catch (e) {}
-            // Local drop target only while pointer is still over *this* view
-            try {
-                const local = root.mapFromGlobal(FmDrag.globalX, FmDrag.globalY);
-                const inside = local && local.x >= 0 && local.y >= 0
-                        && local.x <= root.width && local.y <= root.height;
-                if (inside) {
-                    const margin = Tokens.padding.extraSmall + Tokens.padding.medium;
-                    const dest = root.pathAtViewPos(local.x - margin, local.y - margin);
-                    root.dropHoverActive = true;
-                    if (dest !== root.dropHoverPath)
-                        root.dropHoverPath = dest;
-                } else {
-                    // Pointer left this window — clear local drop highlight (target window paints its own)
-                    if (root.dropHoverActive) {
-                        root.dropHoverActive = false;
-                        root.dropHoverPath = "";
-                    }
-                }
-            } catch (e2) {}
+            // Source UI stays frozen (selection + no drop chrome). Dest computed on release / by target window.
+            root.dropHoverActive = false;
+            root.dropHoverPath = "";
         }
 
         function finishInternalDrag(mx, my) {
@@ -1008,33 +1025,36 @@ Item {
             root.dragVisualActive = false;
             root.dropHoverActive = false;
             root.dropHoverPath = "";
+            root.frozenSelection = [];
             dragArmed = false;
             dragProxy.clear();
 
             let dest = "";
             let foreign = false;
             try {
-                // Refresh global from last mouse if possible
                 const g = input.mapToGlobal(mx, my);
                 FmDrag.updateGlobal(g.x, g.y);
-                const localNow = root.mapFromGlobal(g.x, g.y);
-                const inside = localNow && localNow.x >= 0 && localNow.y >= 0
-                        && localNow.x <= root.width && localNow.y <= root.height;
-                if (inside) {
-                    const margin = Tokens.padding.extraSmall + Tokens.padding.medium;
-                    dest = root.pathAtViewPos(localNow.x - margin, localNow.y - margin) || root.state.cwdPath();
+            } catch (e) {}
+            try {
+                const win = FmDrag.windowAt(FmDrag.globalX, FmDrag.globalY);
+                if (win && root.windowId && win.id === root.windowId) {
+                    dest = root.pathAtViewPos(mx, my) || root.state.cwdPath();
                     foreign = false;
                 } else if (FmDrag.pendingDest && FmDrag.pendingDest.length) {
                     dest = FmDrag.pendingDest;
                     foreign = true;
+                } else if (win && win.cwd) {
+                    dest = win.cwd;
+                    foreign = win.id !== root.windowId;
                 }
-            } catch (e) {
+            } catch (e2) {
                 if (FmDrag.pendingDest && FmDrag.pendingDest.length) {
                     dest = FmDrag.pendingDest;
                     foreign = true;
                 }
             }
             FmDrag.pendingDest = "";
+            FmDrag.pendingWindowId = "";
             FmDrag.end();
 
             if (!paths.length || !dest.length)
@@ -1056,6 +1076,7 @@ Item {
             root.dragVisualActive = false;
             root.dropHoverActive = false;
             root.dropHoverPath = "";
+            root.frozenSelection = [];
             dragArmed = false;
             dragProxy.clear();
             FmDrag.end();
@@ -1221,7 +1242,14 @@ Item {
             baseName: baseName
         })
 
-        readonly property bool isSelected: modelData ? root.state.selection.indexOf(modelData.path) >= 0 : false
+        readonly property bool isSelected: {
+            if (!modelData)
+                return false;
+            const list = root.dragVisualActive && root.frozenSelection && root.frozenSelection.length
+                ? root.frozenSelection
+                : root.state.selection;
+            return list.indexOf(modelData.path) >= 0;
+        }
         readonly property bool isCut: modelData && root.state.clipboardMode === "cut" && root.state.clipboardPaths.indexOf(modelData.path) >= 0
         readonly property real nonAnimHeight: icon.implicitHeight + nameLabel.anchors.topMargin + nameLabel.implicitHeight + Tokens.padding.medium * 2
 
@@ -1231,12 +1259,24 @@ Item {
         implicitHeight: nonAnimHeight
         radius: Tokens.rounding.large
         opacity: isCut ? 0.42 : 1
-        readonly property bool isDropTarget: !!(modelData && modelData.isDir && root.dropHoverActive && root.dropHoverPath === modelData.path)
+        readonly property bool isDropTarget: {
+            if (!modelData || !modelData.isDir || !root.dropHoverActive)
+                return false;
+            // Source: freeze UI — no tile chrome walking under cursor
+            if (root.dragVisualActive)
+                return false;
+            if (!FmDrag.active)
+                return false;
+            if (FmDrag.pendingWindowId && root.windowId && FmDrag.pendingWindowId !== root.windowId)
+                return false;
+            return root.dropHoverPath === modelData.path;
+        }
+        // Drop target = outline only (not selection fill) so it never looks like selection moving
         color: isDropTarget
-            ? Qt.alpha(Colours.palette.m3primary, 0.18)
+            ? "transparent"
             : Qt.alpha(Colours.tPalette.m3surfaceContainerHighest, (GridView.isCurrentItem || isSelected) ? Colours.tPalette.m3surfaceContainerHighest.a : 0)
         border.width: isDropTarget ? 2 : 0
-        border.color: Colours.palette.m3primary
+        border.color: isDropTarget ? Colours.palette.m3primary : "transparent"
         z: GridView.isCurrentItem || isSelected || isDropTarget || implicitHeight !== nonAnimHeight ? 1 : 0
         clip: true
 
@@ -1344,19 +1384,37 @@ Item {
             baseName: baseName
         })
 
-        readonly property bool isSelected: modelData ? root.state.selection.indexOf(modelData.path) >= 0 : false
+        readonly property bool isSelected: {
+            if (!modelData)
+                return false;
+            const list = root.dragVisualActive && root.frozenSelection && root.frozenSelection.length
+                ? root.frozenSelection
+                : root.state.selection;
+            return list.indexOf(modelData.path) >= 0;
+        }
         readonly property bool isCut: !!(modelData && root.state.clipboardMode === "cut" && root.state.clipboardPaths.indexOf(modelData.path) >= 0)
 
         width: ListView.view ? ListView.view.width : 200
         implicitHeight: 40
         radius: Tokens.rounding.medium
         opacity: isCut ? 0.42 : 1
-        readonly property bool isDropTarget: !!(modelData && modelData.isDir && root.dropHoverActive && root.dropHoverPath === modelData.path)
+        readonly property bool isDropTarget: {
+            if (!modelData || !modelData.isDir || !root.dropHoverActive)
+                return false;
+            // Source: freeze UI — no tile chrome walking under cursor
+            if (root.dragVisualActive)
+                return false;
+            if (!FmDrag.active)
+                return false;
+            if (FmDrag.pendingWindowId && root.windowId && FmDrag.pendingWindowId !== root.windowId)
+                return false;
+            return root.dropHoverPath === modelData.path;
+        }
         color: isDropTarget
-            ? Qt.alpha(Colours.palette.m3primary, 0.18)
+            ? "transparent"
             : Qt.alpha(Colours.tPalette.m3surfaceContainerHighest, (ListView.isCurrentItem || isSelected) ? Colours.tPalette.m3surfaceContainerHighest.a : 0)
         border.width: isDropTarget ? 2 : 0
-        border.color: Colours.palette.m3primary
+        border.color: isDropTarget ? Colours.palette.m3primary : "transparent"
 
         Behavior on opacity {
             Anim { type: Anim.DefaultEffects }

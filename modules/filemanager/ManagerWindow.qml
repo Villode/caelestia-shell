@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Hyprland
 import Quickshell.Io
 import Caelestia.Config
 import qs.components
@@ -17,9 +18,64 @@ FloatingWindow {
 
     signal requestClose
 
+    // Unique id for FmDrag hit-testing (mapFromGlobal is unreliable across FloatingWindows)
+    readonly property string fmWindowId: `fm-${Math.random().toString(36).slice(2, 10)}`
+    property real fmGeomX: 0
+    property real fmGeomY: 0
+    property real fmGeomW: 0
+    property real fmGeomH: 0
+    readonly property string fmTitleTag: fmWindowId.slice(-6)
+
+    function applyFmGeom(x, y, w, h) {
+        root.fmGeomX = x;
+        root.fmGeomY = y;
+        root.fmGeomW = w;
+        root.fmGeomH = h;
+        FmDrag.registerWindow(root.fmWindowId, x, y, w, h, nState.cwdPath());
+    }
+
+    function syncFmGeomFromHyprJson(text) {
+        try {
+            const list = JSON.parse(text);
+            const tag = root.fmTitleTag;
+            for (let i = 0; i < list.length; i++) {
+                const c = list[i];
+                const title = c.title || "";
+                if (title.indexOf(tag) < 0)
+                    continue;
+                const at = c.at;
+                const size = c.size;
+                if (at && size && at.length >= 2 && size.length >= 2) {
+                    root.applyFmGeom(at[0], at[1], size[0], size[1]);
+                    return;
+                }
+            }
+        } catch (e) {}
+    }
+
+    Timer {
+        id: fmGeomTimer
+        interval: FmDrag.active ? 80 : 300
+        running: root.visible
+        repeat: true
+        onTriggered: fmGeomProc.running = true
+    }
+
+    Process {
+        id: fmGeomProc
+        command: ["hyprctl", "-j", "clients"]
+        running: false
+        stdout: StdioCollector {
+            onStreamFinished: root.syncFmGeomFromHyprJson(text())
+        }
+    }
+
+    Component.onCompleted: Qt.callLater(() => { fmGeomProc.running = true; })
+    Component.onDestruction: FmDrag.unregisterWindow(root.fmWindowId)
+
     color: Colours.tPalette.m3surface
     surfaceFormat.opaque: false
-    title: qsTr("文件")
+    title: qsTr("文件") + " · " + fmTitleTag
     implicitWidth: 1000
     implicitHeight: 640
     minimumSize.width: 480
@@ -290,6 +346,7 @@ FloatingWindow {
 
                     FmFolderView {
                         id: folder
+                        windowId: root.fmWindowId
                         anchors.fill: parent
                         visible: !nState.isThisPC && nState.searchScope !== "global"
                         state: nState
