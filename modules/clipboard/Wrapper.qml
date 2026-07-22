@@ -20,7 +20,8 @@ Item {
     readonly property real nonAnimHeight: ((content.item as Content)?.nonAnimHeight ?? 0) + totalPadding
 
     visible: offsetScale < 1
-    anchors.bottomMargin: (-implicitHeight - 5) * offsetScale
+    // Slide down from top (dashboard-style), not up from bottom.
+    anchors.topMargin: (-implicitHeight - 5) * offsetScale
     implicitHeight: content.implicitHeight + totalPadding
     implicitWidth: Tokens.sizes.clipboard.width
     opacity: 1 - offsetScale
@@ -42,10 +43,10 @@ Item {
         readonly property real innerPad: Tokens.padding.large
         readonly property real outerPad: CUtils.clamp(innerPad - Config.border.thickness, 0, innerPad)
 
-        anchors.top: parent.top
+        anchors.bottom: parent.bottom
         anchors.left: root.edgeLeft ? parent.left : undefined
         anchors.right: root.edgeLeft ? undefined : parent.right
-        anchors.topMargin: innerPad
+        anchors.bottomMargin: innerPad
         anchors.leftMargin: root.edgeLeft ? outerPad : innerPad
         anchors.rightMargin: root.edgeLeft ? innerPad : outerPad
 

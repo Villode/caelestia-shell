@@ -65,10 +65,10 @@ Region {
     R {
         id: clipboardRegion
 
-        // Bottom-corner clipboard — track panel like utilities
+        // Top-right clipboard panel
         panel: root.panels.clipboard
         x: root.panels.sidebar.edgeLeft ? root.panelXOffset : (root.win.width - width)
-        y: root.win.height - height
+        y: 0
         height: panel.height * (1 - root.panels.clipboard.offsetScale) + root.borderThickness
     }
 

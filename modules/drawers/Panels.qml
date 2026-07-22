@@ -192,16 +192,15 @@ Item {
 
     ClipboardPanel.Wrapper {
         id: clipboard
-        z: 205
+        z: 215
 
         visibilities: root.visibilities
         edgeLeft: root.chromeOnLeft
 
-        // Same bottom chrome corner as utilities (right-bottom by default).
-        anchors.bottom: parent.bottom
+        // Top-right chrome (top-left when taskbar is on the right).
+        anchors.top: parent.top
         x: root.chromeOnLeft ? 0 : (parent.width - width)
         width: implicitWidth
-        // Keep independent of utilities; stacking is fine at corner chrome.
     }
 
     Utilities.Wrapper {

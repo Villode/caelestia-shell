@@ -111,7 +111,7 @@ CustomMouseArea {
         if (visibilities.multitasking)
             visibilities.multitasking = false;
         // Corner clipboard panel: click free area to dismiss (not full-screen modal).
-        if (visibilities?.clipboard && panels.clipboard && !inBottomPanel(panels.clipboard, mouseX, mouseY, true))
+        if (visibilities?.clipboard && panels.clipboard && !inTopPanel(panels.clipboard, mouseX, mouseY))
             visibilities.clipboard = false;
     }
     onContainsMouseChanged: {
@@ -379,7 +379,7 @@ CustomMouseArea {
                 return;
             }
             if (root.visibilities.clipboard) {
-                const inClip = root.inBottomPanel(root.panels.clipboard, root.mouseX, root.mouseY, true);
+                const inClip = root.inTopPanel(root.panels.clipboard, root.mouseX, root.mouseY);
                 root.clipboardShortcutActive = !inClip;
             } else {
                 root.clipboardShortcutActive = false;
