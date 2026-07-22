@@ -13,9 +13,8 @@ StyledRect {
     color: Colours.tPalette.m3surfaceContainer
     radius: Tokens.rounding.extraLarge
 
+    // Minimum size from content; BottomCardLoader may stretch height to row max.
     implicitWidth: Tokens.sizes.dashboard.perfNetworkCardWidth
-    // Content height (not fixed 220): fixed height left empty panel under
-    // shorter Storage/Memory in the same row — looks like an extra mid-bottom block.
     implicitHeight: layout.implicitHeight + Tokens.padding.large + Tokens.padding.medium
 
     Native.ServiceRef {
@@ -25,9 +24,7 @@ StyledRect {
     ColumnLayout {
         id: layout
 
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: parent.top
+        anchors.fill: parent
         anchors.margins: Tokens.padding.large
         anchors.bottomMargin: Tokens.padding.medium
         spacing: 0
@@ -47,11 +44,13 @@ StyledRect {
             }
         }
 
-        // Sparkline graph — fixed height so card doesn't need a tall forced shell
+        // Sparkline: grow if row stretches us; floor keeps compact natural height
         Item {
             Layout.topMargin: Tokens.spacing.medium
             Layout.bottomMargin: Tokens.spacing.small
             Layout.fillWidth: true
+            Layout.fillHeight: true
+            Layout.minimumHeight: 72
             Layout.preferredHeight: 72
 
             SparklineItem {

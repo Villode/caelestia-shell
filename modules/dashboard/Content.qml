@@ -141,8 +141,10 @@ Item {
                         required property var modelData
 
                         Layout.alignment: Qt.AlignTop
-                        // Non-current panes must not inflate dashboard height
-                        // (Media 320px left empty strip under Performance).
+                        // Non-current panes must not inflate height. Important:
+                        // Layout.minimumHeight defaults to implicitHeight (Media=320),
+                        // so without min=0 the Performance tab gets an empty strip under cards.
+                        Layout.minimumHeight: index === view.currentIndex ? implicitHeight : 0
                         Layout.preferredHeight: index === view.currentIndex ? implicitHeight : 0
                         Layout.maximumHeight: index === view.currentIndex ? -1 : 0
                         opacity: index === view.currentIndex ? 1 : 0

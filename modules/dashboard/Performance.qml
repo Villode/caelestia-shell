@@ -105,27 +105,27 @@ Item {
             }
 
             RowLayout {
-                // Bottom-middle empty "connected" strip was Network's fixed 220px
-                // height forcing the row taller than Storage/Memory (gap under them).
+                // Equal-height bottom cards: shorter card (often Network in the middle)
+                // left a panel-coloured gap under it — looks like an extra mid-bottom block.
+                id: bottomRow
                 spacing: Tokens.spacing.medium
                 visible: storageCard.active || networkCard.active || memoryCard.active
-                Layout.alignment: Qt.AlignTop
 
-                WrappedLoader {
+                BottomCardLoader {
                     id: storageCard
 
                     active: Config.dashboard.performance.showStorage
                     sourceComponent: StorageCard {}
                 }
 
-                WrappedLoader {
+                BottomCardLoader {
                     id: networkCard
 
                     active: Config.dashboard.performance.showNetwork
                     sourceComponent: NetworkCard {}
                 }
 
-                WrappedLoader {
+                BottomCardLoader {
                     id: memoryCard
 
                     active: Config.dashboard.performance.showMemory
@@ -145,12 +145,31 @@ Item {
         }
     }
 
-    // Cards keep natural height — fillHeight was stretching Storage/Memory to
-    // Network's 220px and left empty "extra" blocks at the bottom of the row.
+    // CPU/GPU: natural height (do not stretch).
     component WrappedLoader: Loader {
         Layout.fillWidth: true
         Layout.fillHeight: false
         Layout.alignment: Qt.AlignTop
         visible: active
+    }
+
+    // Storage / Network / Memory share row height; stretch card surface to loader
+    // so the glass panel never peeks under a shorter middle card.
+    component BottomCardLoader: Loader {
+        id: bottomLoader
+
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+        Layout.alignment: Qt.AlignTop
+        visible: active
+
+        onLoaded: {
+            if (item)
+                item.anchors.fill = bottomLoader;
+        }
+        onItemChanged: {
+            if (item)
+                item.anchors.fill = bottomLoader;
+        }
     }
 }
