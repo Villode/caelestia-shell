@@ -605,10 +605,10 @@ Item {
         id: dragProxy
         width: ghostCard.implicitWidth
         height: ghostCard.implicitHeight
-        // Hide custom ghost once system drag owns the pointer — dual tracking was the lag source
-        visible: root.dragVisualActive && !root.systemDragActive
+        // Ghost stays visible: with Drag.Automatic it is also the system drag image
+        visible: root.dragVisualActive || root.systemDragActive || Drag.active
         z: 200
-        opacity: 0.9
+        opacity: 0.92
         property string path: ""
         property string name: ""
         property var paths: []
@@ -626,7 +626,8 @@ Item {
 
         Drag.onDragStarted: {
             root.systemDragActive = true;
-            root.dragVisualActive = false; // stop local ghost + mouse-follow work
+            // Keep dragVisualActive so ghost stays painted as the drag pixmap
+            root.dragVisualActive = true;
             root.dropHoverActive = false;
             root.dropHoverPath = "";
             root.state.statusText = count > 1
