@@ -93,6 +93,10 @@ Singleton {
         } else {
             extras.batchMessage(["keyword bindlni ,Caps_Lock,global,caelestia:refreshDevices", "keyword bindlni ,Num_Lock,global,caelestia:refreshDevices"]);
         }
+        // Session conf hardcodes Super+V etc.; re-apply user shortcuts after hypr reload.
+        try {
+            ShortcutBindings.scheduleApply(100);
+        } catch (e) {}
     }
 
     Component.onCompleted: reloadDynamicConfs()

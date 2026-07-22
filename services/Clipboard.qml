@@ -142,7 +142,9 @@ Singleton {
         if (!entryId)
             return;
         Quickshell.execDetached(["sh", "-c", "cliphist decode \"$1\" | wl-copy", "sh", entryId]);
-        Toaster.toast(qsTr("已复制"), qsTr("内容已放入系统剪切板"), "content_paste", Toast.Success, 1800);
+        try {
+            Toaster.toast(qsTr("已复制"), qsTr("内容已放入系统剪切板"), "content_paste", Toast.Success, 1800);
+        } catch (e) {}
     }
 
     function deleteEntry(entryId: string): void {
@@ -255,7 +257,9 @@ Singleton {
         onExited: () => {
             root.entries = [];
             root.refresh();
-            Toaster.toast(qsTr("已清空"), qsTr("剪切板历史已清除"), "delete_sweep", Toast.Info, 2000);
+            try {
+                Toaster.toast(qsTr("已清空"), qsTr("剪切板历史已清除"), "delete_sweep", Toast.Info, 2000);
+            } catch (e) {}
         }
     }
 

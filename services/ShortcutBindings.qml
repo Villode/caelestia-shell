@@ -30,30 +30,43 @@ Singleton {
     ]
 
     property var previouslyApplied: ({})
+    property int applyGeneration: 0
 
     function shortcut(action: string): string {
         const config = GlobalConfig.general.shortcuts;
+        if (!config)
+            return defaults[action] || "";
         switch (action) {
-        case "terminal": return config.terminal;
-        case "fileManager": return config.fileManager;
-        case "launcher": return config.launcher;
-        case "desktop": return config.desktop;
-        case "screenshot": return config.screenshot;
-        case "nexus": return config.nexus;
-        case "multitasking": return config.multitasking;
-        case "dashboard": return config.dashboard;
-        case "sidebar": return config.sidebar;
-        case "session": return config.session;
-        case "closeWindow": return config.closeWindow;
-        case "fullscreen": return config.fullscreen;
-        case "toggleFloating": return config.toggleFloating;
-        case "clipboard": return config.clipboard;
+        case "terminal": return config.terminal || defaults.terminal;
+        case "fileManager": return config.fileManager || defaults.fileManager;
+        case "launcher": return config.launcher || defaults.launcher;
+        case "desktop": return config.desktop || defaults.desktop;
+        case "screenshot": return config.screenshot || defaults.screenshot;
+        case "nexus": return config.nexus || defaults.nexus;
+        case "multitasking": return config.multitasking || defaults.multitasking;
+        case "dashboard": return config.dashboard || defaults.dashboard;
+        case "sidebar": return config.sidebar || defaults.sidebar;
+        case "session": return config.session || defaults.session;
+        case "closeWindow": return config.closeWindow || defaults.closeWindow;
+        case "fullscreen": return config.fullscreen || defaults.fullscreen;
+        case "toggleFloating": return config.toggleFloating || defaults.toggleFloating;
+        case "clipboard": {
+            // Property may be missing on old plugins — fall back safely.
+            try {
+                const v = config.clipboard;
+                if (v !== undefined && v !== null && String(v).length)
+                    return String(v);
+            } catch (e) {}
+            return defaults.clipboard;
+        }
         }
         return "";
     }
 
     function setShortcut(action: string, shortcut: string): void {
         const config = GlobalConfig.general.shortcuts;
+        if (!config)
+            return;
         switch (action) {
         case "terminal": config.terminal = shortcut; break;
         case "fileManager": config.fileManager = shortcut; break;
@@ -68,8 +81,16 @@ Singleton {
         case "closeWindow": config.closeWindow = shortcut; break;
         case "fullscreen": config.fullscreen = shortcut; break;
         case "toggleFloating": config.toggleFloating = shortcut; break;
-        case "clipboard": config.clipboard = shortcut; break;
+        case "clipboard":
+            try {
+                config.clipboard = shortcut;
+            } catch (e) {
+                console.warn("ShortcutBindings: clipboard config property missing — rebuild caelestia-config plugin");
+            }
+            break;
         }
+        // Apply immediately; property change also triggers, but do not rely solely on it.
+        Qt.callLater(root.apply);
     }
 
     function parsed(shortcut: string): var {
@@ -77,32 +98,53 @@ Singleton {
         if (parts.length === 0)
             return null;
         let key = parts.pop();
-        // Hyprland expects PrintScreen for the capture key on some builds/keymaps.
         const keyAliases = {
             print: "Print",
             printscreen: "Print",
             prtsc: "Print",
             prtscn: "Print",
-            sysrq: "Print"
+            sysrq: "Print",
+            return: "Return",
+            enter: "Return",
+            escape: "Escape",
+            esc: "Escape",
+            space: "Space",
+            tab: "Tab",
+            comma: "comma",
+            period: "period",
+            slash: "slash",
+            minus: "minus",
+            equal: "equal"
         };
         const alias = keyAliases[key.toLowerCase()];
         if (alias)
             key = alias;
+        else if (key.length === 1)
+            key = key.toUpperCase();
         const modifiers = parts.map(part => {
             switch (part.toLowerCase()) {
-            case "super": return "SUPER";
-            case "ctrl": return "CTRL";
-            case "alt": return "ALT";
-            case "shift": return "SHIFT";
-            default: return part.toUpperCase();
+            case "super":
+            case "meta":
+            case "win":
+                return "SUPER";
+            case "ctrl":
+            case "control":
+                return "CTRL";
+            case "alt":
+                return "ALT";
+            case "shift":
+                return "SHIFT";
+            default:
+                return part.toUpperCase();
             }
         }).filter(part => part.length > 0);
-        return { modifiers: modifiers.join(" "), key: key };
+        return {
+            modifiers: modifiers.join(" "),
+            key: key
+        };
     }
 
     function bindSpec(binding: var): string {
-        // Hyprctl accepts both ",Print" and ", Print". Prefer no-space form for bare keys
-        // because empty-modifier binds are easy to break with stray spaces.
         if (!binding)
             return "";
         if (!binding.modifiers || binding.modifiers.length === 0)
@@ -113,8 +155,8 @@ Singleton {
     function dispatch(action: string): string {
         const apps = GlobalConfig.general.apps;
         switch (action) {
-        case "terminal": return `exec, ${apps.terminal.join(" ")}`;
-        case "fileManager": return `exec, ${apps.explorer.join(" ")}`;
+        case "terminal": return `exec, ${(apps?.terminal ?? ["foot"]).join(" ")}`;
+        case "fileManager": return `exec, ${(apps?.explorer ?? ["thunar"]).join(" ")}`;
         case "launcher": return "exec, villode-launcher";
         case "desktop": return "exec, villode-desktop --toggle";
         case "screenshot": return "global, caelestia:screenshot";
@@ -132,37 +174,61 @@ Singleton {
     }
 
     function apply(): void {
+        const gen = ++applyGeneration;
         const commands = [];
         const remove = {};
+
+        // Collect every chord we may have ever bound so reloads / rebinds stay clean.
         for (const action of actionIds) {
             for (const chord of [defaults[action], previouslyApplied[action], shortcut(action)]) {
                 const binding = parsed(chord || "");
-                if (binding) {
-                    remove[bindSpec(binding)] = true;
-                    // Also clear the spaced empty-mod form used by older builds.
-                    if (!binding.modifiers || binding.modifiers.length === 0)
-                        remove[`, ${binding.key}`] = true;
-                }
+                if (!binding)
+                    continue;
+                remove[bindSpec(binding)] = true;
+                if (!binding.modifiers || binding.modifiers.length === 0)
+                    remove[`, ${binding.key}`] = true;
             }
         }
+
         for (const binding of Object.keys(remove))
             commands.push(`keyword unbind ${binding}`);
+        // Locked screenshot binds (bindl) need a separate clear.
+        for (const chord of [defaults.screenshot, previouslyApplied.screenshot, shortcut("screenshot")]) {
+            const binding = parsed(chord || "");
+            if (binding)
+                commands.push(`keyword unbindl ${bindSpec(binding)}`);
+        }
+
         for (const action of actionIds) {
             const chord = shortcut(action);
             const binding = parsed(chord);
             const actionDispatch = dispatch(action);
             if (binding && actionDispatch) {
                 const spec = bindSpec(binding);
-                // Regular bind for normal sessions.
+                // Hypr expects "dispatcher, arg" — actionDispatch already includes comma when needed.
                 commands.push(`keyword bind ${spec}, ${actionDispatch}`);
-                // Locked bind so Print still works on lockscreen / special states.
                 if (action === "screenshot")
                     commands.push(`keyword bindl ${spec}, ${actionDispatch}`);
             }
             previouslyApplied[action] = chord;
         }
-        if (commands.length > 0)
+
+        if (commands.length === 0)
+            return;
+
+        // Guard against overlapping applies from rapid setting changes.
+        if (gen !== applyGeneration)
+            return;
+
+        if (Hypr?.extras)
             Hypr.extras.batchMessage(commands);
+        else
+            console.warn("ShortcutBindings: Hypr.extras unavailable, binds not applied");
+    }
+
+    function scheduleApply(delayMs = 0): void {
+        applyTimer.interval = Math.max(0, delayMs);
+        applyTimer.restart();
     }
 
     function duplicateAction(action: string, chord: string): string {
@@ -176,21 +242,38 @@ Singleton {
         return "";
     }
 
+    Timer {
+        id: applyTimer
+        interval: 0
+        repeat: false
+        onTriggered: root.apply()
+    }
+
+    // Re-apply after Hyprland reloads its config (session conf would otherwise restore Super+V etc.).
+    Connections {
+        target: Hypr
+        function onConfigReloaded(): void {
+            root.scheduleApply(80);
+        }
+    }
+
     Connections {
         target: GlobalConfig.general.shortcuts
-        function onTerminalChanged(): void { root.apply(); }
-        function onFileManagerChanged(): void { root.apply(); }
-        function onLauncherChanged(): void { root.apply(); }
-        function onDesktopChanged(): void { root.apply(); }
-        function onScreenshotChanged(): void { root.apply(); }
-        function onNexusChanged(): void { root.apply(); }
-        function onMultitaskingChanged(): void { root.apply(); }
-        function onDashboardChanged(): void { root.apply(); }
-        function onSidebarChanged(): void { root.apply(); }
-        function onSessionChanged(): void { root.apply(); }
-        function onCloseWindowChanged(): void { root.apply(); }
-        function onFullscreenChanged(): void { root.apply(); }
-        function onToggleFloatingChanged(): void { root.apply(); }
-        function onClipboardChanged(): void { root.apply(); }
+        function onTerminalChanged(): void { root.scheduleApply(); }
+        function onFileManagerChanged(): void { root.scheduleApply(); }
+        function onLauncherChanged(): void { root.scheduleApply(); }
+        function onDesktopChanged(): void { root.scheduleApply(); }
+        function onScreenshotChanged(): void { root.scheduleApply(); }
+        function onNexusChanged(): void { root.scheduleApply(); }
+        function onMultitaskingChanged(): void { root.scheduleApply(); }
+        function onDashboardChanged(): void { root.scheduleApply(); }
+        function onSidebarChanged(): void { root.scheduleApply(); }
+        function onSessionChanged(): void { root.scheduleApply(); }
+        function onCloseWindowChanged(): void { root.scheduleApply(); }
+        function onFullscreenChanged(): void { root.scheduleApply(); }
+        function onToggleFloatingChanged(): void { root.scheduleApply(); }
+        function onClipboardChanged(): void { root.scheduleApply(); }
     }
+
+    Component.onCompleted: scheduleApply(120)
 }

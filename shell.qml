@@ -15,7 +15,9 @@ ShellRoot {
 
     Component.onCompleted: {
         UiLanguage.apply();
+        // Apply immediately and again shortly after Hypr socket is ready / session binds load.
         ShortcutBindings.apply();
+        Qt.callLater(() => ShortcutBindings.scheduleApply(250));
     }
 
     GSFLoader {}
