@@ -14,7 +14,9 @@ StyledRect {
     radius: Tokens.rounding.extraLarge
 
     implicitWidth: Tokens.sizes.dashboard.perfNetworkCardWidth
-    implicitHeight: Tokens.sizes.dashboard.perfNetworkCardHeight
+    // Content height (not fixed 220): fixed height left empty panel under
+    // shorter Storage/Memory in the same row — looks like an extra mid-bottom block.
+    implicitHeight: layout.implicitHeight + Tokens.padding.large + Tokens.padding.medium
 
     Native.ServiceRef {
         service: Native.NetworkUsage
@@ -23,7 +25,9 @@ StyledRect {
     ColumnLayout {
         id: layout
 
-        anchors.fill: parent
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
         anchors.margins: Tokens.padding.large
         anchors.bottomMargin: Tokens.padding.medium
         spacing: 0
@@ -43,12 +47,12 @@ StyledRect {
             }
         }
 
-        // Sparkline graph
+        // Sparkline graph — fixed height so card doesn't need a tall forced shell
         Item {
             Layout.topMargin: Tokens.spacing.medium
             Layout.bottomMargin: Tokens.spacing.small
             Layout.fillWidth: true
-            Layout.fillHeight: true
+            Layout.preferredHeight: 72
 
             SparklineItem {
                 id: sparkline

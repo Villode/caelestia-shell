@@ -13,9 +13,6 @@ Item {
     implicitWidth: placeholder.active ? Tokens.sizes.dashboard.perfPlaceholderWidth : content.implicitWidth
     implicitHeight: placeholder.active ? placeholder.implicitHeight + Tokens.padding.extraLarge * 2 : content.implicitHeight
 
-    // Clip any stray paint from inactive neighbors in the dashboard swipe row.
-    clip: true
-
     Loader {
         id: placeholder
 
@@ -55,11 +52,8 @@ Item {
 
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.top: parent.top
         spacing: Tokens.spacing.medium
         visible: !placeholder.active
-        // Prevent Layout from vertically stretching children to tallest card.
-        Layout.alignment: Qt.AlignTop
 
         ColumnLayout {
             id: mainColumn
@@ -111,8 +105,11 @@ Item {
             }
 
             RowLayout {
+                // Bottom-middle empty "connected" strip was Network's fixed 220px
+                // height forcing the row taller than Storage/Memory (gap under them).
                 spacing: Tokens.spacing.medium
                 visible: storageCard.active || networkCard.active || memoryCard.active
+                Layout.alignment: Qt.AlignTop
 
                 WrappedLoader {
                     id: storageCard
@@ -138,11 +135,11 @@ Item {
         }
 
         WrappedLoader {
-            // Natural tank height (160). Stretching to mainColumn left a tall empty
-            // secondary-coloured block beside shorter bottom cards ("多余连接小块").
+            // Match main column height (original WE-style tank).
             Layout.fillWidth: false
             Layout.fillHeight: false
-            Layout.alignment: Qt.AlignTop | Qt.AlignHCenter
+            Layout.preferredHeight: mainColumn.implicitHeight
+            Layout.alignment: Qt.AlignTop
             active: UPower.displayDevice.isLaptopBattery && Config.dashboard.performance.showBattery
             sourceComponent: BatteryTank {}
         }

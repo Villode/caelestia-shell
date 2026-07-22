@@ -140,15 +140,12 @@ Item {
                         required property int index
                         required property var modelData
 
-                        // Current tab only: inactive panes must not contribute to RowLayout
-                        // height (Media 320 / Weather can leave a strip under Performance).
                         Layout.alignment: Qt.AlignTop
-                        Layout.fillHeight: false
+                        // Non-current panes must not inflate dashboard height
+                        // (Media 320px left empty strip under Performance).
                         Layout.preferredHeight: index === view.currentIndex ? implicitHeight : 0
                         Layout.maximumHeight: index === view.currentIndex ? -1 : 0
-                        Layout.minimumHeight: 0
                         opacity: index === view.currentIndex ? 1 : 0
-                        // Keep horizontal width for swipe; vertical size ignored when not current.
                         sourceComponent: modelData.component
 
                         Component.onCompleted: active = Qt.binding(() => {
