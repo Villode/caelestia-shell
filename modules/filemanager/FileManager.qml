@@ -144,7 +144,13 @@ Scope {
             id: ghostWin
             required property var modelData
             screen: modelData
-            visible: FmDrag.active
+            visible: {
+                if (!FmDrag.active)
+                    return false;
+                const w = FmDrag.windowAt(FmDrag.globalX, FmDrag.globalY);
+                // Outside source (or no hit) → show screen ghost
+                return !w || !FmDrag.sourceWindowId || w.id !== FmDrag.sourceWindowId;
+            }
             color: "transparent"
             WlrLayershell.namespace: "caelestia-fm-drag"
             WlrLayershell.layer: WlrLayer.Overlay

@@ -587,10 +587,15 @@ Item {
         id: dragProxy
         width: ghostCard.implicitWidth
         height: ghostCard.implicitHeight
-        // Visual is the screen-space ghost on FileManager; local proxy only holds drag payload
-        visible: false
+        // Local ghost only while pointer still over this (source) window
+        visible: {
+            if (!root.dragVisualActive)
+                return false;
+            const w = FmDrag.windowAt(FmDrag.globalX, FmDrag.globalY);
+            return !w || !root.windowId || w.id === root.windowId;
+        }
         z: 200
-        opacity: 0
+        opacity: visible ? 0.92 : 0
         property string path: ""
         property string name: ""
         property var paths: []
@@ -833,27 +838,31 @@ Item {
 
 
 
-    // Poll cursor while dragging so other FM windows can highlight under the pointer
+    // Authoritative screen cursor while dragging (do NOT use mapToGlobal — wrong on FloatingWindow)
     Timer {
         id: fmDragPoll
-        interval: 50
+        interval: 16
         repeat: true
         running: root.dragVisualActive
-        onTriggered: cursorPosProc.running = true
+        onTriggered: {
+            if (!cursorPosProc.running)
+                cursorPosProc.running = true;
+        }
     }
 
     Process {
         id: cursorPosProc
-        command: ["hyprctl", "cursorpos"]
+        command: ["hyprctl", "cursorpos", "-j"]
         running: false
         stdout: StdioCollector {
             onStreamFinished: {
-                if (!root.dragVisualActive)
+                if (!root.dragVisualActive && !FmDrag.active)
                     return;
-                const s = text().trim(); // e.g. "123, 456"
-                const m = s.match(/(-?\d+)\s*,\s*(-?\d+)/);
-                if (m)
-                    FmDrag.updateGlobal(Number(m[1]), Number(m[2]));
+                try {
+                    const pos = JSON.parse(text());
+                    if (pos && pos.x !== undefined && pos.y !== undefined)
+                        FmDrag.updateGlobal(Number(pos.x), Number(pos.y));
+                } catch (e) {}
             }
         }
     }
@@ -876,7 +885,6 @@ Item {
     }
 
     function _fmDragHoverTick() {
-        // Target windows only. Use registered screen geometry — mapFromGlobal is wrong across FloatingWindows.
         if (!FmDrag.active || root.dragVisualActive)
             return;
         if (!root.windowId)
@@ -884,7 +892,6 @@ Item {
 
         const win = FmDrag.windowAt(FmDrag.globalX, FmDrag.globalY);
         if (!win || win.id !== root.windowId) {
-            // Pointer not over this window
             if (root.dropHoverActive) {
                 root.dropHoverActive = false;
                 root.dropHoverPath = "";
@@ -892,48 +899,32 @@ Item {
             return;
         }
 
-        // Local coords inside client area (content includes chrome; approx full window)
-        const lx = FmDrag.globalX - win.x;
-        const ly = FmDrag.globalY - win.y;
-        // Folder view is not full window — use map if possible, else approximate content rect.
-        // Prefer mapping via folder root item if mapFromGlobal works relative to this item's window.
-        let vx = lx;
-        let vy = ly;
-        try {
-            // Map screen point into this FolderView; if engine returns garbage, fall back to win-local
-            const mapped = root.mapFromGlobal(FmDrag.globalX, FmDrag.globalY);
-            if (mapped && mapped.x >= -20 && mapped.y >= -20
-                    && mapped.x <= root.width + 20 && mapped.y <= root.height + 20) {
-                vx = mapped.x;
-                vy = mapped.y;
-            } else {
-                // Heuristic: header+toolbar ~ 100px, sidebar ~ 200px — bad. Keep win-local only for pane.
-                // FolderView is the content pane; use mapToItem from window not available.
-                // Clamp to view and treat as content coords with margin.
-                const margin = Tokens.padding.extraSmall + Tokens.padding.medium;
-                vx = Math.max(0, Math.min(root.width, lx)) - margin;
-                vy = Math.max(0, Math.min(root.height, ly)) - margin;
-            }
-        } catch (e) {
-            const margin = Tokens.padding.extraSmall + Tokens.padding.medium;
-            vx = lx - margin;
-            vy = ly - margin;
-        }
+        // Default: drop into this window's current folder (reliable)
+        let dest = root.state.cwdPath();
 
-        const margin = Tokens.padding.extraSmall + Tokens.padding.medium;
-        // pathAtViewPos expects coords in input MouseArea space (view with margins)
-        const dest = root.pathAtViewPos(vx - margin, vy - margin);
+        // Optional finer target: map global → this view (only if result is sane)
+        try {
+            const mapped = root.mapFromGlobal(FmDrag.globalX, FmDrag.globalY);
+            if (mapped && mapped.x >= 0 && mapped.y >= 0
+                    && mapped.x <= root.width && mapped.y <= root.height) {
+                const margin = Tokens.padding.extraSmall + Tokens.padding.medium;
+                const tileDest = root.pathAtViewPos(mapped.x - margin, mapped.y - margin);
+                if (tileDest && tileDest.length)
+                    dest = tileDest;
+            }
+        } catch (e) {}
+
         const paths = FmDrag.paths || [];
-        let finalDest = dest;
-        if (paths.indexOf && paths.indexOf(finalDest) >= 0)
-            finalDest = root.state.cwdPath();
+        if (paths.indexOf && paths.indexOf(dest) >= 0)
+            dest = root.state.cwdPath();
 
         root.dropHoverActive = true;
-        if (finalDest !== root.dropHoverPath)
-            root.dropHoverPath = finalDest;
-        FmDrag.pendingDest = finalDest;
+        if (dest !== root.dropHoverPath)
+            root.dropHoverPath = dest;
+        FmDrag.pendingDest = dest;
         FmDrag.pendingWindowId = root.windowId;
     }
+
 
 
 
@@ -990,28 +981,22 @@ Item {
                 : (dragProxy.path ? [dragProxy.path] : []);
             if (!paths.length)
                 return;
-            // Freeze selection visually on source (do not let hover/drop restyle tiles as "selected")
             root.frozenSelection = paths.slice();
             root.dragVisualActive = true;
             root.dropHoverActive = false;
             root.dropHoverPath = "";
+            dragProxy.moveToInputLocal(mx, my);
             FmDrag.begin(paths, root.state.cwdPath(), dragProxy.name, dragProxy.iconSource, root.windowId);
-            try {
-                const g = input.mapToGlobal(mx, my);
-                FmDrag.updateGlobal(g.x, g.y);
-            } catch (e) {}
+            // Seed cursor from hypr immediately (mapToGlobal is unreliable for FloatingWindow)
+            cursorPosProc.running = true;
         }
 
         function updateInternalDrag(mx, my) {
             if (!root.dragVisualActive)
                 return;
-            try {
-                const g = input.mapToGlobal(mx, my);
-                FmDrag.updateGlobal(g.x, g.y);
-            } catch (e) {}
-            // Source UI stays frozen (selection + no drop chrome). Dest computed on release / by target window.
-            root.dropHoverActive = false;
-            root.dropHoverPath = "";
+            // Local ghost sticks to pointer inside this window
+            dragProxy.moveToInputLocal(mx, my);
+            // Screen coords + cross-window hover only from hyprctl poll
         }
 
         function finishInternalDrag(mx, my) {
@@ -1022,54 +1007,62 @@ Item {
             const paths = (dragProxy.paths && dragProxy.paths.length)
                 ? dragProxy.paths.slice()
                 : (dragProxy.path ? [dragProxy.path] : []);
+
+            // Snapshot session before end
+            const pendingDest = FmDrag.pendingDest || "";
+            const pendingWin = FmDrag.pendingWindowId || "";
+            const gx = FmDrag.globalX;
+            const gy = FmDrag.globalY;
+            const win = FmDrag.windowAt(gx, gy);
+
             root.dragVisualActive = false;
             root.dropHoverActive = false;
             root.dropHoverPath = "";
             root.frozenSelection = [];
             dragArmed = false;
             dragProxy.clear();
-
-            let dest = "";
-            let foreign = false;
-            try {
-                const g = input.mapToGlobal(mx, my);
-                FmDrag.updateGlobal(g.x, g.y);
-            } catch (e) {}
-            try {
-                const win = FmDrag.windowAt(FmDrag.globalX, FmDrag.globalY);
-                if (win && root.windowId && win.id === root.windowId) {
-                    dest = root.pathAtViewPos(mx, my) || root.state.cwdPath();
-                    foreign = false;
-                } else if (FmDrag.pendingDest && FmDrag.pendingDest.length) {
-                    dest = FmDrag.pendingDest;
-                    foreign = true;
-                } else if (win && win.cwd) {
-                    dest = win.cwd;
-                    foreign = win.id !== root.windowId;
-                }
-            } catch (e2) {
-                if (FmDrag.pendingDest && FmDrag.pendingDest.length) {
-                    dest = FmDrag.pendingDest;
-                    foreign = true;
-                }
-            }
             FmDrag.pendingDest = "";
             FmDrag.pendingWindowId = "";
             FmDrag.end();
 
-            if (!paths.length || !dest.length)
+            if (!paths.length) {
+                root.state.statusText = qsTr("已取消拖动");
                 return;
-            // Same as Windows: drop on empty area of same folder = cancel
+            }
+
+            let dest = "";
+            let foreign = false;
+            if (win && root.windowId && win.id === root.windowId) {
+                dest = root.pathAtViewPos(mx, my) || root.state.cwdPath();
+                foreign = false;
+            } else if (pendingDest.length) {
+                dest = pendingDest;
+                foreign = true;
+            } else if (win && win.cwd) {
+                dest = win.cwd;
+                foreign = !!(root.windowId && win.id !== root.windowId);
+            } else {
+                dest = root.pathAtViewPos(mx, my) || "";
+                foreign = false;
+            }
+
+            if (!dest.length) {
+                root.state.statusText = qsTr("已取消拖动");
+                return;
+            }
             if (!foreign && dest === root.state.cwdPath()) {
                 root.state.statusText = qsTr("已取消（放到原目录）");
                 return;
             }
-            // Do not drop into one of the dragged items
             if (paths.indexOf(dest) >= 0) {
                 root.state.statusText = qsTr("无法放到自身");
                 return;
             }
-            root.actions.dropInto(paths, dest, "move");
+            const n = root.actions.dropInto(paths, dest, "move");
+            if (n > 0)
+                root.state.statusText = foreign
+                    ? qsTr("已移动 %1 项到另一窗口").arg(n)
+                    : qsTr("已移动 %1 项").arg(n);
         }
 
         function cancelInternalDrag() {
