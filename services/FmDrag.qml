@@ -5,7 +5,7 @@ import Quickshell
 import Quickshell.Io
 
 // Cross-window FM drag without Qt Drag.Automatic.
-// Windows register geometry (screen coords); hover uses that — not mapFromGlobal.
+// Drop completes on: source MouseArea release, OR hypr left-button release bind, OR overlay.
 Singleton {
     id: root
 
@@ -23,9 +23,12 @@ Singleton {
     property string pendingWindowId: ""
     property real hotX: 18
     property real hotY: 18
-
-    // { id: string, x, y, w, h, cwd: string } — updated by each ManagerWindow
     property var windows: []
+    property var dropHandler: null
+    property bool bindInstalled: false
+
+    signal finished(int moved)
+    signal cancelled()
 
     function registerWindow(id, x, y, w, h, cwd) {
         if (!id)
@@ -60,10 +63,7 @@ Singleton {
         windows = next;
     }
 
-    // Topmost registered window under point (last registered that contains point —
-    // windows list order is registration order; prefer highest y-overlap last open)
     function windowAt(gx, gy) {
-        // Prefer non-source window under cursor (target), else source, else null.
         let sourceHit = null;
         let otherHit = null;
         for (let i = 0; i < windows.length; i++) {
@@ -75,12 +75,29 @@ Singleton {
             if (sourceWindowId && e.id === sourceWindowId)
                 sourceHit = e;
             else
-                otherHit = e; // last non-source wins (later register ≈ later open)
+                otherHit = e;
         }
         return otherHit || sourceHit;
     }
 
-    function begin(pathsList, cwd, name, icon, windowId) {
+    function installReleaseBind() {
+        if (bindInstalled)
+            return;
+        // Left button release (bindl) anywhere → complete drop even outside FloatingWindow
+        Quickshell.execDetached(["hyprctl", "keyword", "bindl", ", mouse:272, exec, qs -c caelestia ipc call fmdrag complete"]);
+        Quickshell.execDetached(["hyprctl", "keyword", "bindl", ", mouse:273, exec, qs -c caelestia ipc call fmdrag cancel"]);
+        bindInstalled = true;
+    }
+
+    function removeReleaseBind() {
+        if (!bindInstalled)
+            return;
+        Quickshell.execDetached(["hyprctl", "keyword", "unbind", ", mouse:272"]);
+        Quickshell.execDetached(["hyprctl", "keyword", "unbind", ", mouse:273"]);
+        bindInstalled = false;
+    }
+
+    function begin(pathsList, cwd, name, icon, windowId, handler) {
         const list = [];
         if (pathsList && pathsList.length) {
             for (let i = 0; i < pathsList.length; i++) {
@@ -97,10 +114,14 @@ Singleton {
         primaryName = name || (list[0].split("/").pop() || "");
         iconSource = icon || "";
         count = list.length;
-        pendingDest = "";
-        pendingWindowId = "";
+        dropHandler = handler || null;
+        pendingDest = cwd || "";
+        pendingWindowId = windowId || "";
         sessionId = sessionId + 1;
         active = true;
+        installReleaseBind();
+        // Seed cursor
+        cursorSeed.running = true;
     }
 
     function updateGlobal(gx, gy) {
@@ -110,9 +131,78 @@ Singleton {
             return;
         globalX = gx;
         globalY = gy;
+        const win = windowAt(gx, gy);
+        if (win) {
+            pendingWindowId = win.id || "";
+            if (win.cwd)
+                pendingDest = win.cwd;
+        }
+    }
+
+    function setHoverDest(windowId, dest) {
+        if (!active)
+            return;
+        pendingWindowId = windowId || pendingWindowId;
+        if (dest && dest.length)
+            pendingDest = dest;
+    }
+
+    function cancel() {
+        if (!active)
+            return;
+        end();
+        cancelled();
+    }
+
+    function completeDrop() {
+        if (!active)
+            return 0;
+        const list = paths.slice();
+        const win = windowAt(globalX, globalY);
+        let dest = "";
+        // 1) Window under cursor (most reliable for cross-window)
+        if (win && win.cwd)
+            dest = win.cwd;
+        // 2) Explicit hover dest if same window as under cursor (subfolder tile)
+        if (pendingDest && pendingDest.length) {
+            if (!win || !pendingWindowId || pendingWindowId === (win.id || ""))
+                dest = pendingDest;
+        }
+        if ((!dest || !dest.length) && sourceCwd)
+            dest = sourceCwd;
+
+        const foreign = !!(win && sourceWindowId && win.id !== sourceWindowId);
+
+        const handler = dropHandler;
+        const srcCwd = sourceCwd;
+        end();
+
+        if (!list.length || !dest || !dest.length) {
+            cancelled();
+            return 0;
+        }
+        if (!foreign && dest === srcCwd) {
+            cancelled();
+            return 0;
+        }
+        if (list.indexOf(dest) >= 0) {
+            cancelled();
+            return 0;
+        }
+        let n = 0;
+        if (typeof handler === "function") {
+            try {
+                n = handler(list, dest) | 0;
+            } catch (e) {
+                n = 0;
+            }
+        }
+        finished(n);
+        return n;
     }
 
     function end() {
+        removeReleaseBind();
         active = false;
         paths = [];
         sourceCwd = "";
@@ -122,11 +212,23 @@ Singleton {
         count = 0;
         pendingDest = "";
         pendingWindowId = "";
+        dropHandler = null;
     }
 
-    function takePaths() {
-        const out = (paths && paths.length) ? paths.slice() : [];
-        end();
-        return out;
+    Process {
+        id: cursorSeed
+        command: ["hyprctl", "cursorpos", "-j"]
+        running: false
+        stdout: StdioCollector {
+            onStreamFinished: {
+                if (!root.active)
+                    return;
+                try {
+                    const pos = JSON.parse(text());
+                    if (pos && pos.x !== undefined)
+                        root.updateGlobal(Number(pos.x), Number(pos.y));
+                } catch (e) {}
+            }
+        }
     }
 }

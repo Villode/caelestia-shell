@@ -136,37 +136,98 @@ Scope {
     }
 
 
-    // Screen-space drag ghost (Windows-like). Click-through; follows FmDrag.
+    // Full-screen drag layer: receives mouse release outside FloatingWindows
     Variants {
         model: Screens.screens
 
         PanelWindow {
-            id: ghostWin
+            id: dragLayer
             required property var modelData
             screen: modelData
-            visible: {
-                if (!FmDrag.active)
-                    return false;
-                const w = FmDrag.windowAt(FmDrag.globalX, FmDrag.globalY);
-                // Outside source (or no hit) → show screen ghost
-                return !w || !FmDrag.sourceWindowId || w.id !== FmDrag.sourceWindowId;
-            }
+            // Always present while drag active so we can grab release
+            visible: FmDrag.active
             color: "transparent"
             WlrLayershell.namespace: "caelestia-fm-drag"
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.exclusionMode: ExclusionMode.Ignore
-            mask: Region {}
+            // Must receive input (not click-through) to finish cross-window drop
+            mask: null
             anchors.top: true
             anchors.left: true
             anchors.right: true
             anchors.bottom: true
 
+            // Keep cursor updated even if source MouseArea stops
+            Timer {
+                interval: 16
+                running: FmDrag.active
+                repeat: true
+                onTriggered: {
+                    if (!cursorProc.running)
+                        cursorProc.running = true;
+                }
+            }
+
+            Process {
+                id: cursorProc
+                command: ["hyprctl", "cursorpos", "-j"]
+                running: false
+                stdout: StdioCollector {
+                    onStreamFinished: {
+                        if (!FmDrag.active)
+                            return;
+                        try {
+                            const pos = JSON.parse(text());
+                            if (pos && pos.x !== undefined)
+                                FmDrag.updateGlobal(Number(pos.x), Number(pos.y));
+                        } catch (e) {}
+                    }
+                }
+            }
+
+            MouseArea {
+                id: grab
+                anchors.fill: parent
+                acceptedButtons: Qt.LeftButton | Qt.RightButton
+                hoverEnabled: true
+                preventStealing: true
+                // Press is already held from FM window — we mainly need release + move
+                onPositionChanged: mouse => {
+                    // Local screen coords → global
+                    const sx = dragLayer.screen ? dragLayer.screen.x : 0;
+                    const sy = dragLayer.screen ? dragLayer.screen.y : 0;
+                    FmDrag.updateGlobal(sx + mouse.x, sy + mouse.y);
+                }
+                onReleased: mouse => {
+                    if (!FmDrag.active)
+                        return;
+                    const sx = dragLayer.screen ? dragLayer.screen.x : 0;
+                    const sy = dragLayer.screen ? dragLayer.screen.y : 0;
+                    FmDrag.updateGlobal(sx + mouse.x, sy + mouse.y);
+                    FmDrag.completeDrop();
+                    mouse.accepted = true;
+                }
+                onCanceled: {
+                    if (FmDrag.active)
+                        FmDrag.completeDrop(); // still try drop under last cursor
+                }
+                // Right-click cancels
+                onPressed: mouse => {
+                    if (mouse.button === Qt.RightButton) {
+                        FmDrag.cancel();
+                        mouse.accepted = true;
+                    }
+                }
+            }
+
+            // Ghost under cursor
             Item {
-                x: FmDrag.globalX - (ghostWin.screen ? ghostWin.screen.x : 0) - FmDrag.hotX
-                y: FmDrag.globalY - (ghostWin.screen ? ghostWin.screen.y : 0) - FmDrag.hotY
+                x: FmDrag.globalX - (dragLayer.screen ? dragLayer.screen.x : 0) - FmDrag.hotX
+                y: FmDrag.globalY - (dragLayer.screen ? dragLayer.screen.y : 0) - FmDrag.hotY
                 width: card.implicitWidth
                 height: card.implicitHeight
                 opacity: 0.94
+                z: 10
 
                 StyledRect {
                     id: card
@@ -261,4 +322,19 @@ Scope {
             return String(root.count());
         }
     }
+
+    IpcHandler {
+        target: "fmdrag"
+
+        function complete(): void {
+            if (FmDrag.active)
+                FmDrag.completeDrop();
+        }
+
+        function cancel(): void {
+            if (FmDrag.active)
+                FmDrag.cancel();
+        }
+    }
+
 }

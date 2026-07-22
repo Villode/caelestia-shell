@@ -874,13 +874,29 @@ Item {
         function onGlobalYChanged() { root._fmDragHoverTick(); }
         function onActiveChanged() {
             if (!FmDrag.active) {
-                if (!root.dragVisualActive) {
-                    root.dropHoverActive = false;
-                    root.dropHoverPath = "";
-                }
+                root.dragVisualActive = false;
+                root.dropHoverActive = false;
+                root.dropHoverPath = "";
+                root.frozenSelection = [];
             } else {
                 root._fmDragHoverTick();
             }
+        }
+        function onFinished(moved) {
+            root.dragVisualActive = false;
+            root.dropHoverActive = false;
+            root.dropHoverPath = "";
+            root.frozenSelection = [];
+            if (moved > 0)
+                root.state.statusText = qsTr("已移动 %1 项").arg(moved);
+            else
+                root.state.statusText = qsTr("已取消拖动");
+        }
+        function onCancelled() {
+            root.dragVisualActive = false;
+            root.dropHoverActive = false;
+            root.dropHoverPath = "";
+            root.frozenSelection = [];
         }
     }
 
@@ -921,8 +937,7 @@ Item {
         root.dropHoverActive = true;
         if (dest !== root.dropHoverPath)
             root.dropHoverPath = dest;
-        FmDrag.pendingDest = dest;
-        FmDrag.pendingWindowId = root.windowId;
+        FmDrag.setHoverDest(root.windowId, dest);
     }
 
 
@@ -986,17 +1001,22 @@ Item {
             root.dropHoverActive = false;
             root.dropHoverPath = "";
             dragProxy.moveToInputLocal(mx, my);
-            FmDrag.begin(paths, root.state.cwdPath(), dragProxy.name, dragProxy.iconSource, root.windowId);
-            // Seed cursor from hypr immediately (mapToGlobal is unreliable for FloatingWindow)
+            // dropHandler runs from screen overlay on release (source window may not get release)
+            FmDrag.begin(
+                paths,
+                root.state.cwdPath(),
+                dragProxy.name,
+                dragProxy.iconSource,
+                root.windowId,
+                (plist, dest) => root.actions.dropInto(plist, dest, "move")
+            );
             cursorPosProc.running = true;
         }
 
         function updateInternalDrag(mx, my) {
             if (!root.dragVisualActive)
                 return;
-            // Local ghost sticks to pointer inside this window
             dragProxy.moveToInputLocal(mx, my);
-            // Screen coords + cross-window hover only from hyprctl poll
         }
 
         function finishInternalDrag(mx, my) {
@@ -1004,16 +1024,14 @@ Item {
                 dragArmed = false;
                 return;
             }
-            const paths = (dragProxy.paths && dragProxy.paths.length)
-                ? dragProxy.paths.slice()
-                : (dragProxy.path ? [dragProxy.path] : []);
-
-            // Snapshot session before end
-            const pendingDest = FmDrag.pendingDest || "";
-            const pendingWin = FmDrag.pendingWindowId || "";
-            const gx = FmDrag.globalX;
-            const gy = FmDrag.globalY;
-            const win = FmDrag.windowAt(gx, gy);
+            // If still over source, refine dest from local pos before completeDrop
+            try {
+                const win = FmDrag.windowAt(FmDrag.globalX, FmDrag.globalY);
+                if (win && root.windowId && win.id === root.windowId) {
+                    const dest = root.pathAtViewPos(mx, my) || root.state.cwdPath();
+                    FmDrag.setHoverDest(root.windowId, dest);
+                }
+            } catch (e) {}
 
             root.dragVisualActive = false;
             root.dropHoverActive = false;
@@ -1021,48 +1039,12 @@ Item {
             root.frozenSelection = [];
             dragArmed = false;
             dragProxy.clear();
-            FmDrag.pendingDest = "";
-            FmDrag.pendingWindowId = "";
-            FmDrag.end();
 
-            if (!paths.length) {
-                root.state.statusText = qsTr("已取消拖动");
-                return;
-            }
-
-            let dest = "";
-            let foreign = false;
-            if (win && root.windowId && win.id === root.windowId) {
-                dest = root.pathAtViewPos(mx, my) || root.state.cwdPath();
-                foreign = false;
-            } else if (pendingDest.length) {
-                dest = pendingDest;
-                foreign = true;
-            } else if (win && win.cwd) {
-                dest = win.cwd;
-                foreign = !!(root.windowId && win.id !== root.windowId);
-            } else {
-                dest = root.pathAtViewPos(mx, my) || "";
-                foreign = false;
-            }
-
-            if (!dest.length) {
-                root.state.statusText = qsTr("已取消拖动");
-                return;
-            }
-            if (!foreign && dest === root.state.cwdPath()) {
-                root.state.statusText = qsTr("已取消（放到原目录）");
-                return;
-            }
-            if (paths.indexOf(dest) >= 0) {
-                root.state.statusText = qsTr("无法放到自身");
-                return;
-            }
-            const n = root.actions.dropInto(paths, dest, "move");
+            const n = FmDrag.completeDrop();
             if (n > 0)
-                root.state.statusText = foreign
-                    ? qsTr("已移动 %1 项到另一窗口").arg(n)
-                    : qsTr("已移动 %1 项").arg(n);
+                root.state.statusText = qsTr("已移动 %1 项").arg(n);
+            else if (!FmDrag.active)
+                root.state.statusText = root.state.statusText;
         }
 
         function cancelInternalDrag() {
@@ -1072,7 +1054,8 @@ Item {
             root.frozenSelection = [];
             dragArmed = false;
             dragProxy.clear();
-            FmDrag.end();
+            // Do not cancel session here if overlay will complete — only clear local UI.
+            // Real cancel is right-click on overlay or Escape.
         }
 
 
@@ -1160,7 +1143,17 @@ Item {
             pressHit = null;
         }
         onCanceled: {
-            cancelInternalDrag();
+            // Pointer left FloatingWindow — keep FmDrag session; hypr mouse-release bind completes drop
+            if (root.dragVisualActive || FmDrag.active) {
+                root.dragVisualActive = false;
+                root.dropHoverActive = false;
+                root.dropHoverPath = "";
+                root.frozenSelection = [];
+                dragArmed = false;
+                dragProxy.clear();
+            } else {
+                cancelInternalDrag();
+            }
             marqueeArmed = false;
             pressHit = null;
             root.marqueeActive = false;
