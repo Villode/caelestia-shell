@@ -111,7 +111,7 @@ CustomMouseArea {
         if (visibilities.multitasking)
             visibilities.multitasking = false;
         // Corner clipboard panel: click free area to dismiss (not full-screen modal).
-        if (visibilities.clipboard && !inBottomPanel(panels.clipboard, mouseX, mouseY, true))
+        if (visibilities?.clipboard && panels.clipboard && !inBottomPanel(panels.clipboard, mouseX, mouseY, true))
             visibilities.clipboard = false;
     }
     onContainsMouseChanged: {
@@ -127,7 +127,7 @@ CustomMouseArea {
 
             if (!utilitiesShortcutActive)
                 visibilities.utilities = false;
-            if (!clipboardShortcutActive)
+            if (!clipboardShortcutActive && visibilities)
                 visibilities.clipboard = false;
 
             if (!popouts.currentName.startsWith("traymenu") || ((popouts.current as StackView)?.depth ?? 0) <= 1) {
@@ -374,6 +374,10 @@ CustomMouseArea {
         }
 
         function onClipboardChanged() {
+            if (!root.visibilities || !root.panels?.clipboard) {
+                root.clipboardShortcutActive = false;
+                return;
+            }
             if (root.visibilities.clipboard) {
                 const inClip = root.inBottomPanel(root.panels.clipboard, root.mouseX, root.mouseY, true);
                 root.clipboardShortcutActive = !inClip;

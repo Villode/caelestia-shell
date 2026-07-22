@@ -201,11 +201,7 @@ Item {
         anchors.bottom: parent.bottom
         x: root.chromeOnLeft ? 0 : (parent.width - width)
         width: implicitWidth
-        // Hide utilities while clipboard is open so they do not stack awkwardly.
-        onShouldBeActiveChanged: {
-            if (shouldBeActive && root.visibilities.utilities)
-                root.visibilities.utilities = false;
-        }
+        // Keep independent of utilities; stacking is fine at corner chrome.
     }
 
     Utilities.Wrapper {

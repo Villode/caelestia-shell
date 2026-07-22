@@ -220,8 +220,6 @@ Item {
                                 IconButton {
                                     icon: "delete"
                                     type: IconButton.Text
-                                    label.color: Colours.palette.m3error
-                                    stateLayer.color: Colours.palette.m3error
                                     onClicked: Clipboard.deleteEntry(del.entryId)
                                 }
                             }
