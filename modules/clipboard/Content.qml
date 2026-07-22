@@ -79,7 +79,15 @@ Item {
 
                         StyledText {
                             Layout.fillWidth: true
-                            text: Clipboard.statusText.length ? Clipboard.statusText : qsTr("%1 条记录").arg(Clipboard.filteredEntries.length)
+                            text: {
+                                if (Clipboard.statusText.length)
+                                    return Clipboard.statusText;
+                                const n = Clipboard.filteredEntries.length;
+                                const pins = Clipboard.pinnedIds.length;
+                                if (pins > 0)
+                                    return qsTr("%1 条 · %2 置顶").arg(n).arg(pins);
+                                return qsTr("%1 条记录").arg(n);
+                            }
                             color: Colours.palette.m3onSurfaceVariant
                             font: Tokens.font.body.small
                             elide: Text.ElideRight
@@ -202,9 +210,12 @@ Item {
                                 spacing: Tokens.spacing.medium
 
                                 MaterialIcon {
-                                    text: modelData.isImage ? "image" : "notes"
-                                    color: isCurrent ? Colours.palette.m3onSecondaryContainer : Colours.palette.m3onSurfaceVariant
+                                    text: modelData.pinned ? "push_pin" : (modelData.isImage ? "image" : "notes")
+                                    color: modelData.pinned
+                                        ? Colours.palette.m3primary
+                                        : (isCurrent ? Colours.palette.m3onSecondaryContainer : Colours.palette.m3onSurfaceVariant)
                                     fontStyle: Tokens.font.icon.medium
+                                    fill: modelData.pinned ? 1 : 0
                                 }
 
                                 StyledText {
@@ -215,6 +226,14 @@ Item {
                                     elide: Text.ElideRight
                                     wrapMode: Text.NoWrap
                                     maximumLineCount: 2
+                                }
+
+                                IconButton {
+                                    icon: modelData.pinned ? "keep" : "keep_outline"
+                                    type: IconButton.Text
+                                    // Pin / unpin — stays at top of history
+                                    checked: !!modelData.pinned
+                                    onClicked: Clipboard.togglePin(del.entryId)
                                 }
 
                                 IconButton {
