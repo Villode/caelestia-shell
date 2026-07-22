@@ -93,11 +93,12 @@ Item {
             flickableDirection: Flickable.HorizontalFlick
 
             implicitWidth: currentItem?.implicitWidth ?? 0
+            // Prefer the active pane height only (row may still report inactive loaders).
             implicitHeight: currentItem?.implicitHeight ?? 0
 
             contentX: currentItem?.x ?? 0
             contentWidth: row.implicitWidth
-            contentHeight: row.implicitHeight
+            contentHeight: currentItem?.implicitHeight ?? 0
 
             onContentXChanged: {
                 if (!moving || !currentItem)
@@ -139,13 +140,15 @@ Item {
                         required property int index
                         required property var modelData
 
+                        // Current tab only: inactive panes must not contribute to RowLayout
+                        // height (Media 320 / Weather can leave a strip under Performance).
                         Layout.alignment: Qt.AlignTop
-                        // Non-current panes must not inflate the dashboard height
-                        // (e.g. Media's fixed 320px leaving an empty strip under Performance).
+                        Layout.fillHeight: false
                         Layout.preferredHeight: index === view.currentIndex ? implicitHeight : 0
                         Layout.maximumHeight: index === view.currentIndex ? -1 : 0
+                        Layout.minimumHeight: 0
                         opacity: index === view.currentIndex ? 1 : 0
-                        // Keep width for horizontal swipe geometry.
+                        // Keep horizontal width for swipe; vertical size ignored when not current.
                         sourceComponent: modelData.component
 
                         Component.onCompleted: active = Qt.binding(() => {
