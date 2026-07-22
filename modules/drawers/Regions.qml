@@ -62,6 +62,13 @@ Region {
         panel: root.panels.sessionWrapper
     }
 
+    R {
+        id: clipboardRegion
+
+        // Centered clipboard history — track floating panel bounds
+        panel: root.panels.clipboardWrapper
+    }
+
     // Multitasking cards strip — only needed in Xor mode (as a hole → interactive).
     // In Combine multitasking mode the whole free area is already interactive.
     R {

@@ -10,4 +10,6 @@ PersistentProperties {
     property bool sidebar
     // Mobile-style app switcher / multitasking overview
     property bool multitasking
+    // Clipboard history panel (cliphist)
+    property bool clipboard
 }

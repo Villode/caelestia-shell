@@ -50,7 +50,7 @@ StyledWindow {
             return 0;
 
         const thresholds = [];
-        for (const panel of ["dashboard", "launcher", "session", "sidebar"])
+        for (const panel of ["dashboard", "launcher", "session", "sidebar", "clipboard"])
             if (contentItem.Config[panel].enabled)
                 thresholds.push(contentItem.Config[panel].dragThreshold);
         return Math.max(...thresholds);
@@ -59,6 +59,7 @@ StyledWindow {
     onHasFullscreenChanged: {
         visibilities.launcher = false;
         visibilities.session = false;
+        visibilities.clipboard = false;
         visibilities.multitasking = false;
         visibilities.dashboard = false;
         panels.popouts.close();
@@ -67,7 +68,7 @@ StyledWindow {
     name: "drawers"
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
     WlrLayershell.layer: (fsTransitionProg > 0 && contentItem.Config.general.showOverFullscreen) || (hasSpecialWorkspace && hasFullscreenOnNormalWs) ? WlrLayer.Overlay : WlrLayer.Top
-    WlrLayershell.keyboardFocus: visibilities.launcher || visibilities.session || visibilities.multitasking ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: visibilities.launcher || visibilities.session || visibilities.clipboard || visibilities.multitasking ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
     mask: hasFullscreen ? emptyRegion : regions
 
@@ -113,11 +114,12 @@ StyledWindow {
 
         // Do NOT include multitasking — FocusGrab can monopolize input and freeze the external dock.
         // Multitasking uses Esc on its own content + click empty strip + logo toggle.
-        active: (visibilities.launcher && root.contentItem.Config.launcher.enabled) || (visibilities.session && root.contentItem.Config.session.enabled) || (visibilities.sidebar && root.contentItem.Config.sidebar.enabled) || (!root.contentItem.Config.dashboard.showOnHover && visibilities.dashboard && root.contentItem.Config.dashboard.enabled) || (panels.popouts.currentName.startsWith("traymenu") && (panels.popouts.current as StackView)?.depth > 1)
+        active: (visibilities.launcher && root.contentItem.Config.launcher.enabled) || (visibilities.session && root.contentItem.Config.session.enabled) || (visibilities.clipboard && root.contentItem.Config.utilities.clipboard.enabled) || (visibilities.sidebar && root.contentItem.Config.sidebar.enabled) || (!root.contentItem.Config.dashboard.showOnHover && visibilities.dashboard && root.contentItem.Config.dashboard.enabled) || (panels.popouts.currentName.startsWith("traymenu") && (panels.popouts.current as StackView)?.depth > 1)
         windows: [root]
         onCleared: {
             visibilities.launcher = false;
             visibilities.session = false;
+            visibilities.clipboard = false;
             // leave multitasking alone here — closed by its own UI / logo
             visibilities.sidebar = false;
             visibilities.dashboard = false;
@@ -150,6 +152,8 @@ StyledWindow {
             if (visibilities.multitasking)
                 return 0.55;
             if (visibilities.session && Config.session.enabled)
+                return 0.55;
+            if (visibilities.clipboard && Config.utilities.clipboard.enabled)
                 return 0.55;
             if (panels.popouts.detachedMode !== "")
                 return 0.55;
@@ -222,6 +226,14 @@ StyledWindow {
             panel: panels.sessionWrapper
             deformAmount: 0.06
             visible: panels.session.visible
+        }
+
+        PanelBg {
+            id: clipboardBg
+
+            panel: panels.clipboardWrapper
+            deformAmount: 0.06
+            visible: panels.clipboard.visible
         }
 
         // Multitasking uses only the scrim — no BlobRect panel background

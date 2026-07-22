@@ -266,6 +266,21 @@ public:
         : ConfigObject(parent) {}
 };
 
+
+class ClipboardTokens : public ConfigObject {
+    Q_OBJECT
+    QML_ANONYMOUS
+
+    CONFIG_PROPERTY(int, width, 520)
+    CONFIG_PROPERTY(int, maxHeight, 560)
+    CONFIG_PROPERTY(int, itemHeight, 64)
+    CONFIG_PROPERTY(int, imageThumb, 48)
+
+public:
+    explicit ClipboardTokens(QObject* parent = nullptr)
+        : ConfigObject(parent) {}
+};
+
 class UtilitiesTokens : public ConfigObject {
     Q_OBJECT
     QML_ANONYMOUS
@@ -343,6 +358,7 @@ class SizeTokens : public ConfigObject {
     CONFIG_SUBOBJECT(SessionTokens, session)
     CONFIG_SUBOBJECT(SidebarTokens, sidebar)
     CONFIG_SUBOBJECT(UtilitiesTokens, utilities)
+    CONFIG_SUBOBJECT(ClipboardTokens, clipboard)
     CONFIG_SUBOBJECT(LockTokens, lock)
     CONFIG_SUBOBJECT(WInfoTokens, winfo)
     CONFIG_SUBOBJECT(NexusTokens, nexus)
@@ -358,6 +374,7 @@ public:
         , m_session(new SessionTokens(this))
         , m_sidebar(new SidebarTokens(this))
         , m_utilities(new UtilitiesTokens(this))
+        , m_clipboard(new ClipboardTokens(this))
         , m_lock(new LockTokens(this))
         , m_winfo(new WInfoTokens(this))
         , m_nexus(new NexusTokens(this)) {}
