@@ -199,6 +199,15 @@ StyledWindow {
 
             panel: panels.dashboard
             deformAmount: 0.1
+            // Glass is shifted down by the top bar (y += bar height) but must not
+            // keep full panel.height — that hangs an empty blob past the dashboard
+            // content bottom ("底部外面" extra connected strip).
+            implicitHeight: {
+                const h = panel.height;
+                if (bar.isTop)
+                    return Math.max(0, h - bar.implicitHeight + root.borderThickness);
+                return h;
+            }
         }
 
         PanelBg {
