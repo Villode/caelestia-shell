@@ -103,6 +103,29 @@ Item {
     property string dropHoverPath: ""
     property bool dropHoverActive: false
     property bool dragVisualActive: false
+    // True while a system (cross-window) DnD is active from this view
+    property bool systemDragActive: false
+
+    function pathsToUriList(paths: var): string {
+        if (!paths || !paths.length)
+            return "";
+        const lines = [];
+        for (let i = 0; i < paths.length; i++) {
+            let path = String(paths[i] || "");
+            if (!path.length)
+                continue;
+            if (!path.startsWith("file:")) {
+                // Prefer Qt URL so spaces / Chinese / # encode correctly
+                try {
+                    path = Qt.resolvedUrl("file://" + path).toString();
+                } catch (e) {
+                    path = "file://" + path;
+                }
+            }
+            lines.push(path);
+        }
+        return lines.join("\r\n");
+    }
 
     // Bump path through empty so FileSystemModel.setPath reloads same dir
     property int fsPathTick: 0
@@ -577,7 +600,7 @@ Item {
         }
     }
 
-    // On-cursor ghost for internal drag (no Qt Drag grab — follows mouse while pressed)
+    // Drag ghost + system DnD source (uri-list for cross-window drops)
     Item {
         id: dragProxy
         width: ghostCard.implicitWidth
@@ -594,6 +617,37 @@ Item {
         property real hotX: 20
         property real hotY: 20
         readonly property int count: (paths && paths.length) ? paths.length : (path ? 1 : 0)
+
+        Drag.dragType: Drag.Automatic
+        Drag.supportedActions: Qt.CopyAction | Qt.MoveAction
+        Drag.proposedAction: Qt.MoveAction
+        Drag.keys: ["text/uri-list", "text/plain"]
+
+        Drag.onDragStarted: {
+            root.systemDragActive = true;
+            root.state.statusText = count > 1
+                ? qsTr("拖到其他窗口放置：%1 项").arg(count)
+                : qsTr("拖到其他窗口放置：%1").arg(name);
+        }
+
+        Drag.onDragFinished: dropAction => {
+            root.systemDragActive = false;
+            root.dragVisualActive = false;
+            root.dropHoverActive = false;
+            root.dropHoverPath = "";
+            input.dragArmed = false;
+            // Refresh source after move/copy (target also refreshes)
+            if (dropAction === Qt.MoveAction || dropAction === Qt.CopyAction) {
+                root.state.statusText = dropAction === Qt.MoveAction
+                    ? qsTr("已移动")
+                    : qsTr("已复制");
+                Qt.callLater(() => root.state.bumpRefresh());
+            } else if (dropAction === Qt.IgnoreAction) {
+                root.state.statusText = qsTr("已取消拖放");
+            }
+            dragProxy.clear();
+            Drag.active = false;
+        }
 
         function moveToInputLocal(mx: real, my: real): void {
             const p = input.mapToItem(dragProxy.parent, mx, my);
@@ -755,11 +809,7 @@ Item {
         z: 35
 
         onEntered: drag => {
-            // Internal drag uses mouse-follow ghost + dropInto on release (skip DropArea)
-            if (root.dragVisualActive) {
-                drag.accepted = false;
-                return;
-            }
+            // Accept file URI drops from other FM windows / apps (and same window system DnD)
             drag.accepted = drag.hasUrls || drag.hasText;
             if (drag.accepted) {
                 root.dropHoverActive = true;
@@ -871,23 +921,55 @@ Item {
         }
 
         function beginInternalDrag(mx: real, my: real): void {
-            if (!dragArmed || !dragProxy.path.length || root.dragVisualActive)
+            if (!dragArmed || !dragProxy.path.length || root.dragVisualActive || root.systemDragActive)
                 return;
+            const paths = (dragProxy.paths && dragProxy.paths.length)
+                ? dragProxy.paths.slice()
+                : (dragProxy.path ? [dragProxy.path] : []);
+            if (!paths.length)
+                return;
+
             root.dragVisualActive = true;
             dragProxy.moveToInputLocal(mx, my);
             root.dropHoverActive = true;
             root.dropHoverPath = root.pathAtViewPos(mx, my);
+
+            // System drag so other FM windows / apps can DropArea-accept the files
+            const uriList = root.pathsToUriList(paths);
+            if (!uriList.length)
+                return;
+            dragProxy.Drag.mimeData = {
+                "text/uri-list": uriList,
+                "text/plain": paths.join("\n")
+            };
+            dragProxy.Drag.hotSpot.x = dragProxy.hotX;
+            dragProxy.Drag.hotSpot.y = dragProxy.hotY;
+            dragProxy.Drag.supportedActions = Qt.CopyAction | Qt.MoveAction;
+            // Move by default between windows (Shift often forces move, Ctrl copy — compositor dependent)
+            dragProxy.Drag.proposedAction = Qt.MoveAction;
+            dragProxy.Drag.dragType = Drag.Automatic;
+            root.systemDragActive = true;
+            dragProxy.Drag.active = true;
         }
 
         function updateInternalDrag(mx: real, my: real): void {
             if (!root.dragVisualActive)
                 return;
             dragProxy.moveToInputLocal(mx, my);
-            root.dropHoverActive = true;
-            root.dropHoverPath = root.pathAtViewPos(mx, my);
+            // While system DnD is active, hover is driven by DropArea in the target
+            if (!root.systemDragActive) {
+                root.dropHoverActive = true;
+                root.dropHoverPath = root.pathAtViewPos(mx, my);
+            }
         }
 
         function finishInternalDrag(mx: real, my: real): void {
+            // Prefer system Drag completion (cross-window). Local fallback if DnD never started.
+            if (root.systemDragActive) {
+                // Drag.onDragFinished clears state; just stop mouse-driven ghost follow
+                dragArmed = false;
+                return;
+            }
             if (!root.dragVisualActive) {
                 dragArmed = false;
                 return;
@@ -903,17 +985,18 @@ Item {
             dragProxy.clear();
             if (!paths.length)
                 return;
-            // Default internal: move when dropping into a different folder (same volume UX)
-            // Use move if destination is a subfolder of cwd, else copy for safety on same dir cancel
             if (dest === root.state.cwdPath()) {
                 root.state.statusText = qsTr("已取消（放到原目录）");
                 return;
             }
-            // Same-parent check handled in dropInto
             root.actions.dropInto(paths, dest, "move");
         }
 
         function cancelInternalDrag(): void {
+            if (root.systemDragActive) {
+                dragProxy.Drag.active = false;
+                root.systemDragActive = false;
+            }
             root.dragVisualActive = false;
             root.dropHoverActive = false;
             root.dropHoverPath = "";

@@ -221,18 +221,16 @@ Item {
             root.state.statusText = qsTr("拖放内容无法识别");
             return 0;
         }
-        // Qt.MoveAction / LinkAction → move when proposed; otherwise copy
+        // Villode FM proposes Move; external apps usually Copy. Honor proposedAction.
         let mode = "copy";
         try {
             if (drop.proposedAction === Qt.MoveAction)
                 mode = "move";
-            else if (drop.supportedActions & Qt.MoveAction) {
-                // Modifier: if only Move is proposed by source cut, use move
-                // External file managers often use Copy by default
-            }
+            else if (drop.proposedAction === Qt.CopyAction)
+                mode = "copy";
+            else if ((drop.supportedActions & Qt.MoveAction) && !(drop.supportedActions & Qt.CopyAction))
+                mode = "move";
         } catch (e) {}
-        // Ctrl = force copy, Shift = force move (common desktop convention)
-        // Drop event has no modifiers in Qt Quick DropArea; use proposedAction only.
         return dropInto(paths, destDir, mode);
     }
 
