@@ -30,9 +30,6 @@ Singleton {
     signal finished(int moved)
     signal cancelled()
 
-    function _log(msg) {
-        Quickshell.execDetached(["bash", "-c", "printf '%s %s\\n' \"$(date +%H:%M:%S)\" " + JSON.stringify(String(msg)) + " >> /tmp/fm-drag.log"]);
-    }
 
     function registerWindow(id, x, y, w, h, cwd) {
         if (!id)
@@ -91,7 +88,6 @@ Singleton {
         Quickshell.execDetached(["hyprctl", "keyword", "bindr", ", mouse:272, exec, qs -c caelestia ipc call fmdrag complete"]);
         Quickshell.execDetached(["hyprctl", "keyword", "bindr", ", mouse:273, exec, qs -c caelestia ipc call fmdrag cancel"]);
         bindInstalled = true;
-        _log("bind installed");
     }
 
     function removeReleaseBind() {
@@ -130,7 +126,6 @@ Singleton {
         lastStatus = "";
         installReleaseBind();
         cursorSeed.running = true;
-        _log("begin n=" + list.length + " cwd=" + sourceCwd + " win=" + sourceWindowId + " reg=" + windows.length);
     }
 
     function updateGlobal(gx, gy) {
@@ -158,7 +153,6 @@ Singleton {
     function cancel() {
         if (!active)
             return;
-        _log("cancel");
         end();
         lastStatus = qsTr("已取消拖动");
         cancelled();
@@ -232,12 +226,6 @@ Singleton {
         const foreign = !!(win && sourceWindowId && win.id !== sourceWindowId)
             || !!(dest && sourceCwd && dest !== sourceCwd);
 
-        _log("complete gx=" + globalX + " gy=" + globalY
-            + " win=" + (win ? (win.id + "@" + win.cwd) : "null")
-            + " pending=" + pendingDest + " dest=" + dest
-            + " foreign=" + foreign + " reg=" + windows.length
-            + " paths=" + list.join(","));
-
         end();
 
         if (!list.length || !dest || !dest.length) {
@@ -257,7 +245,6 @@ Singleton {
         }
 
         const n = movePaths(list, dest);
-        _log("moved n=" + n + " -> " + dest);
         if (n > 0)
             lastStatus = foreign
                 ? qsTr("已移动 %1 项到另一窗口").arg(n)
