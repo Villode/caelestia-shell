@@ -12,6 +12,16 @@ StyledRect {
     required property var state
 
     property bool editingPath: false
+    // Depend on archiveNonce/cwd so breadcrumbs re-evaluate when browsing inside zip
+    readonly property var breadcrumbModel: {
+        const _n = root.state.archiveNonce;
+        const _c = root.state.cwd;
+        const _i = root.state.archiveInner;
+        const _r = root.state.archiveRoot;
+        if (root.state.pathSegments)
+            return root.state.pathSegments();
+        return root.state.cwd;
+    }
 
     implicitHeight: inner.implicitHeight + Tokens.padding.medium * 2
     color: Colours.tPalette.m3surfaceContainer
@@ -20,6 +30,8 @@ StyledRect {
     function beginEdit(): void {
         if (root.state.isThisPC)
             pathField.text = "";
+        else if (root.state.isArchiveBrowse)
+            pathField.text = root.state.displayPath() || "";
         else
             pathField.text = root.state.cwdPath() || "";
         editingPath = true;
@@ -57,7 +69,7 @@ StyledRect {
 
             StateLayer {
                 radius: Tokens.rounding.medium
-                disabled: root.state.isThisPC
+                disabled: !root.state.canNavigateUp
                 onClicked: root.state.popDir()
             }
 
@@ -65,7 +77,7 @@ StyledRect {
                 id: upIcon
                 anchors.centerIn: parent
                 text: "drive_folder_upload"
-                color: root.state.isThisPC ? Colours.palette.m3outline : Colours.palette.m3onSurface
+                color: root.state.canNavigateUp ? Colours.palette.m3onSurface : Colours.palette.m3outline
                 grade: 200
             }
         }
@@ -112,7 +124,7 @@ StyledRect {
                     spacing: 0
 
                     Repeater {
-                        model: root.state.cwd
+                        model: root.breadcrumbModel
 
                         Row {
                             id: folder
@@ -141,9 +153,14 @@ StyledRect {
 
                                 MouseArea {
                                     anchors.fill: parent
-                                    enabled: folder.index < root.state.cwd.length - 1
+                                    enabled: folder.index < root.breadcrumbModel.length - 1
                                     cursorShape: Qt.PointingHandCursor
-                                    onClicked: root.state.sliceCwd(folder.index)
+                                    onClicked: {
+                                        if (root.state.slicePathSegment)
+                                            root.state.slicePathSegment(folder.index);
+                                        else
+                                            root.state.sliceCwd(folder.index);
+                                    }
                                     z: 2
                                 }
 
@@ -153,10 +170,10 @@ StyledRect {
                                     anchors.left: parent.left
                                     anchors.verticalCenter: parent.verticalCenter
                                     anchors.leftMargin: Tokens.padding.medium
-                                    active: folder.index === 0 && (folder.modelData === "Home" || folder.modelData === "ThisPC" || folder.modelData === "Phone")
+                                    active: folder.index === 0 && (folder.modelData === "Home" || folder.modelData === "ThisPC" || folder.modelData === "Phone" || (root.state.isArchiveBrowse && folder.index === 0))
                                     sourceComponent: MaterialIcon {
-                                        text: folder.modelData === "ThisPC" ? "computer" : (folder.modelData === "Phone" ? "smartphone" : "home")
-                                        color: root.state.cwd.length === 1 ? Colours.palette.m3onSurface : Colours.palette.m3onSurfaceVariant
+                                        text: root.state.isArchiveBrowse ? "folder_zip" : (folder.modelData === "ThisPC" ? "computer" : (folder.modelData === "Phone" ? "smartphone" : "home"))
+                                        color: (root.breadcrumbModel.length === 1) ? Colours.palette.m3onSurface : Colours.palette.m3onSurfaceVariant
                                         fill: 1
                                     }
                                 }
@@ -173,8 +190,8 @@ StyledRect {
                                     anchors.left: parent.left
                                     anchors.leftMargin: Tokens.padding.medium + seg.iconW
                                     anchors.verticalCenter: parent.verticalCenter
-                                    text: root.state.labelForSegment(folder.modelData)
-                                    color: folder.index < root.state.cwd.length - 1 ? Colours.palette.m3onSurfaceVariant : Colours.palette.m3onSurface
+                                    text: root.state.isArchiveBrowse ? folder.modelData : root.state.labelForSegment(folder.modelData)
+                                    color: folder.index < root.breadcrumbModel.length - 1 ? Colours.palette.m3onSurfaceVariant : Colours.palette.m3onSurface
                                     font: Tokens.font.body.builders.small.weight(Font.Bold).build()
                                     elide: Text.ElideMiddle
                                     width: seg.nameW

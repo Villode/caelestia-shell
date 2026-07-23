@@ -262,36 +262,43 @@ Item {
         const items = [];
         const seen = ({});
         try {
-            // At $HOME: one folder per ZH/EN place pair. At place root: merge twin dir.
-            const atHome = !root.state.isThisPC && root.state.cwd.length === 1 && root.state.cwd[0] === "Home";
-            const atPlaceRoot = root.state.isAtPlaceRoot && root.state.isAtPlaceRoot();
+            // Virtual archive folder
+            if (root.state.isArchiveBrowse) {
+                const arch = root.state.archiveViewEntries();
+                for (let ai = 0; ai < arch.length; ai++)
+                    items.push(arch[ai]);
+            } else {
+                // At $HOME: one folder per ZH/EN place pair. At place root: merge twin dir.
+                const atHome = !root.state.isThisPC && root.state.cwd.length === 1 && root.state.cwd[0] === "Home";
+                const atPlaceRoot = root.state.isAtPlaceRoot && root.state.isAtPlaceRoot();
 
-            function pushEntry(e) {
-                if (!e)
-                    return;
-                const name = e.name || "";
-                if (!name.length)
-                    return;
-                if (atHome && e.isDir && root.state.isHiddenPlaceSibling(name))
-                    return;
-                if (seen[name])
-                    return;
-                seen[name] = true;
-                items.push(e);
-            }
+                function pushEntry(e) {
+                    if (!e)
+                        return;
+                    const name = e.name || "";
+                    if (!name.length)
+                        return;
+                    if (atHome && e.isDir && root.state.isHiddenPlaceSibling(name))
+                        return;
+                    if (seen[name])
+                        return;
+                    seen[name] = true;
+                    items.push(e);
+                }
 
-            const entries = fsModel.entries;
-            const n = entries ? entries.length : 0;
-            for (let i = 0; i < n; i++)
-                pushEntry(entries[i]);
+                const entries = fsModel.entries;
+                const n = entries ? entries.length : 0;
+                for (let i = 0; i < n; i++)
+                    pushEntry(entries[i]);
 
-            if (atPlaceRoot) {
-                try {
-                    const sib = fsModelSibling.entries;
-                    const sn = sib ? sib.length : 0;
-                    for (let i = 0; i < sn; i++)
-                        pushEntry(sib[i]);
-                } catch (e2) {}
+                if (atPlaceRoot) {
+                    try {
+                        const sib = fsModelSibling.entries;
+                        const sn = sib ? sib.length : 0;
+                        for (let i = 0; i < sn; i++)
+                            pushEntry(sib[i]);
+                    } catch (e2) {}
+                }
             }
         } catch (err) {
             // leave empty
@@ -325,6 +332,22 @@ Item {
 
     function scheduleSortRebuild(): void {
         sortRebuildTimer.restart();
+    }
+
+    Connections {
+        target: root.state
+        function onArchiveNonceChanged(): void {
+            root.scheduleSortRebuild();
+        }
+        function onArchiveLoadingChanged(): void {
+            root.scheduleSortRebuild();
+        }
+        function onArchiveRootChanged(): void {
+            root.scheduleSortRebuild();
+        }
+        function onArchiveInnerChanged(): void {
+            root.scheduleSortRebuild();
+        }
     }
 
     FileSystemModel {
@@ -453,9 +476,17 @@ Item {
                 fontStyle: Tokens.font.icon.builders.extraLarge.scale(2).weight(Font.Medium).build()
             }
             StyledText {
-                text: (root.state.nameFilter && root.state.nameFilter.length)
-                    ? qsTr("无搜索结果「%1」").arg(root.state.nameFilter)
-                    : qsTr("此文件夹为空")
+                text: {
+                    if (root.state.isArchiveBrowse && root.state.archiveLoading)
+                        return qsTr("正在读取压缩包…");
+                    if (root.state.isArchiveBrowse && root.state.archiveError && root.state.archiveError.length)
+                        return root.state.archiveError;
+                    if (root.state.nameFilter && root.state.nameFilter.length)
+                        return qsTr("无搜索结果「%1」").arg(root.state.nameFilter);
+                    if (root.state.isArchiveBrowse)
+                        return qsTr("压缩包内此目录为空");
+                    return qsTr("此文件夹为空");
+                }
                 color: Colours.palette.m3outline
                 font: Tokens.font.body.builders.large.weight(Font.Medium).build()
             }
@@ -481,7 +512,7 @@ Item {
         keyNavigationEnabled: true
         interactive: true
         model: sortedModel
-        delegate: GridEntry {}
+        delegate: FmGridEntry { host: root }
 
         Keys.onEscapePressed: root.clearSelection()
         Keys.onReturnPressed: {
@@ -512,7 +543,7 @@ Item {
         keyNavigationEnabled: true
         spacing: 2
         model: sortedModel
-        delegate: ListEntry {}
+        delegate: FmListEntry { host: root }
 
         Keys.onEscapePressed: root.clearSelection()
         Keys.onReturnPressed: {
@@ -1208,282 +1239,5 @@ Item {
         }
     }
 
-    component GridEntry: StyledRect {
-        id: item
-
-        required property int index
-        // ListModel roles — must be required so Qt binds them from the model
-        required property string path
-        required property string name
-        required property bool isDir
-        required property bool isImage
-        required property var size
-        required property string mimeType
-        required property string suffix
-        required property string baseName
-
-        readonly property var modelData: ({
-            path: path,
-            name: name,
-            isDir: isDir,
-            isImage: isImage,
-            size: size,
-            mimeType: mimeType,
-            suffix: suffix,
-            baseName: baseName
-        })
-
-        readonly property bool isSelected: {
-            if (!modelData)
-                return false;
-            const list = root.dragVisualActive && root.frozenSelection && root.frozenSelection.length
-                ? root.frozenSelection
-                : root.state.selection;
-            return list.indexOf(modelData.path) >= 0;
-        }
-        readonly property bool isCut: modelData && root.state.clipboardMode === "cut" && root.state.clipboardPaths.indexOf(modelData.path) >= 0
-        readonly property real nonAnimHeight: icon.implicitHeight + nameLabel.anchors.topMargin + nameLabel.implicitHeight + Tokens.padding.medium * 2
-
-        // Slightly smaller than cell so adjacent tiles have breathing room
-        width: GridView.view ? Math.max(root.minItemWidth, GridView.view.cellWidth - root.gridGap) : root.itemWidth
-        implicitWidth: width
-        implicitHeight: nonAnimHeight
-        radius: Tokens.rounding.large
-        opacity: isCut ? 0.42 : 1
-        readonly property bool isDropTarget: {
-            if (!modelData || !modelData.isDir || !root.dropHoverActive)
-                return false;
-            // Source: freeze UI — no tile chrome walking under cursor
-            if (root.dragVisualActive)
-                return false;
-            if (!FmDrag.active)
-                return false;
-            if (FmDrag.pendingWindowId && root.windowId && FmDrag.pendingWindowId !== root.windowId)
-                return false;
-            return root.dropHoverPath === modelData.path;
-        }
-        // Drop target = outline only (not selection fill) so it never looks like selection moving
-        color: isDropTarget
-            ? "transparent"
-            : Qt.alpha(Colours.tPalette.m3surfaceContainerHighest, (GridView.isCurrentItem || isSelected) ? Colours.tPalette.m3surfaceContainerHighest.a : 0)
-        border.width: isDropTarget ? 2 : 0
-        border.color: isDropTarget ? Colours.palette.m3primary : "transparent"
-        z: GridView.isCurrentItem || isSelected || isDropTarget || implicitHeight !== nonAnimHeight ? 1 : 0
-        clip: true
-
-        Behavior on opacity {
-            Anim { type: Anim.DefaultEffects }
-        }
-
-        StateLayer {
-            acceptedButtons: Qt.NoButton
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-        }
-
-        Rectangle {
-            visible: item.isCut
-            anchors.right: parent.right
-            anchors.top: parent.top
-            anchors.margins: 6
-            width: cutBadge.implicitWidth + 10
-            height: cutBadge.implicitHeight + 4
-            radius: height / 2
-            color: Colours.palette.m3tertiary
-            z: 2
-            StyledText {
-                id: cutBadge
-                anchors.centerIn: parent
-                text: qsTr("剪切")
-                color: Colours.palette.m3onTertiary
-                font: Tokens.font.body.builders.small.scale(0.85).weight(Font.Bold).build()
-            }
-        }
-
-        CachingIconImage {
-            id: icon
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.top: parent.top
-            anchors.topMargin: Tokens.padding.medium
-            implicitSize: root.itemWidth - Tokens.padding.medium * 2
-            opacity: item.isCut ? 0.85 : 1
-            // Reactive: roles change when delegate is recycled
-            source: {
-                const d = item.modelData;
-                if (!d || !d.path)
-                    return "";
-                if (d.isImage)
-                    return Qt.resolvedUrl(d.path);
-                return root.iconFor(d);
-            }
-        }
-
-        StyledText {
-            id: nameLabel
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.top: icon.bottom
-            anchors.topMargin: Tokens.spacing.small
-            anchors.margins: Tokens.padding.medium
-            horizontalAlignment: Text.AlignHCenter
-            text: {
-                // Prefer role properties (avoid id shadowing of "name")
-                const d = {
-                    path: item.path,
-                    name: item.name,
-                    isDir: item.isDir,
-                    isImage: item.isImage,
-                    size: item.size,
-                    mimeType: item.mimeType,
-                    suffix: item.suffix,
-                    baseName: item.baseName
-                };
-                return root.state.displayName(d);
-            }
-            // Keep tile height stable: always elide; at most 2 lines when focused/selected
-            wrapMode: (item.GridView.isCurrentItem || item.isSelected) ? Text.WrapAtWordBoundaryOrAnywhere : Text.NoWrap
-            maximumLineCount: (item.GridView.isCurrentItem || item.isSelected) ? 2 : 1
-            elide: Text.ElideRight
-        }
-
-        Behavior on implicitHeight {
-            Anim {}
-        }
-    }
-
-    component ListEntry: StyledRect {
-        id: row
-
-        required property int index
-        required property string path
-        required property string name
-        required property bool isDir
-        required property bool isImage
-        required property var size
-        required property string mimeType
-        required property string suffix
-        required property string baseName
-
-        readonly property var modelData: ({
-            path: path,
-            name: name,
-            isDir: isDir,
-            isImage: isImage,
-            size: size,
-            mimeType: mimeType,
-            suffix: suffix,
-            baseName: baseName
-        })
-
-        readonly property bool isSelected: {
-            if (!modelData)
-                return false;
-            const list = root.dragVisualActive && root.frozenSelection && root.frozenSelection.length
-                ? root.frozenSelection
-                : root.state.selection;
-            return list.indexOf(modelData.path) >= 0;
-        }
-        readonly property bool isCut: !!(modelData && root.state.clipboardMode === "cut" && root.state.clipboardPaths.indexOf(modelData.path) >= 0)
-
-        width: ListView.view ? ListView.view.width : 200
-        implicitHeight: 40
-        radius: Tokens.rounding.medium
-        opacity: isCut ? 0.42 : 1
-        readonly property bool isDropTarget: {
-            if (!modelData || !modelData.isDir || !root.dropHoverActive)
-                return false;
-            // Source: freeze UI — no tile chrome walking under cursor
-            if (root.dragVisualActive)
-                return false;
-            if (!FmDrag.active)
-                return false;
-            if (FmDrag.pendingWindowId && root.windowId && FmDrag.pendingWindowId !== root.windowId)
-                return false;
-            return root.dropHoverPath === modelData.path;
-        }
-        color: isDropTarget
-            ? "transparent"
-            : Qt.alpha(Colours.tPalette.m3surfaceContainerHighest, (ListView.isCurrentItem || isSelected) ? Colours.tPalette.m3surfaceContainerHighest.a : 0)
-        border.width: isDropTarget ? 2 : 0
-        border.color: isDropTarget ? Colours.palette.m3primary : "transparent"
-
-        Behavior on opacity {
-            Anim { type: Anim.DefaultEffects }
-        }
-
-        StateLayer {
-            acceptedButtons: Qt.NoButton
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-        }
-
-        RowLayout {
-            anchors.fill: parent
-            anchors.leftMargin: Tokens.padding.medium
-            anchors.rightMargin: Tokens.padding.medium
-            spacing: Tokens.spacing.medium
-
-            CachingIconImage {
-                implicitSize: 24
-                source: {
-                    const d = row.modelData;
-                    if (!d || !d.path)
-                        return "";
-                    if (d.isImage)
-                        return Qt.resolvedUrl(d.path);
-                    return root.iconFor(d);
-                }
-            }
-
-            StyledText {
-                Layout.fillWidth: true
-                text: root.state.displayName({
-                    path: row.path,
-                    name: row.name,
-                    isDir: row.isDir,
-                    isImage: row.isImage,
-                    size: row.size,
-                    mimeType: row.mimeType,
-                    suffix: row.suffix,
-                    baseName: row.baseName
-                })
-                color: Colours.palette.m3onSurface
-                font: Tokens.font.body.small
-                elide: Text.ElideMiddle
-            }
-
-            StyledText {
-                visible: row.modelData && !row.modelData.isDir
-                Layout.preferredWidth: 72
-                horizontalAlignment: Text.AlignRight
-                text: row.modelData ? root.humanSize(row.modelData.size) : ""
-                color: Colours.palette.m3onSurfaceVariant
-                font: Tokens.font.body.builders.small.scale(0.9).build()
-            }
-
-            StyledText {
-                visible: !!(row.modelData && row.modelData.isDir)
-                Layout.preferredWidth: 72
-                horizontalAlignment: Text.AlignRight
-                text: qsTr("文件夹")
-                color: Colours.palette.m3onSurfaceVariant
-                font: Tokens.font.body.builders.small.scale(0.9).build()
-            }
-
-            StyledText {
-                Layout.preferredWidth: 118
-                horizontalAlignment: Text.AlignRight
-                text: row.modelData ? (root.mtimeFor(row.modelData.name) || "—") : "—"
-                color: Colours.palette.m3onSurfaceVariant
-                font: Tokens.font.body.builders.small.scale(0.9).build()
-            }
-
-            StyledText {
-                visible: row.isCut
-                text: qsTr("剪切")
-                color: Colours.palette.m3tertiary
-                font: Tokens.font.body.builders.small.weight(Font.Bold).build()
-            }
-        }
-    }
+    // Delegates: FmGridEntry.qml / FmListEntry.qml
 }

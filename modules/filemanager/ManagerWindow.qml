@@ -96,8 +96,26 @@ FloatingWindow {
         state: nState
         showProperties: path => props.openFor(path)
         jobUi: jobOverlay
+        previewUi: quickLook
         confirmUi: confirmDlg
         nameUi: nameDlg
+    }
+
+    Connections {
+        target: nState
+        function onArchiveLoadingChanged(): void {
+            if (!nState.archiveLoading && nState.isArchiveBrowse) {
+                if (jobOverlay.expanded)
+                    jobOverlay.close();
+                nState.statusText = nState.displayPath();
+            }
+        }
+        function onArchiveErrorChanged(): void {
+            if (nState.archiveError && nState.archiveError.length && !nState.archiveLoading) {
+                if (jobOverlay.expanded)
+                    jobOverlay.finishFail(nState.archiveError);
+            }
+        }
     }
 
     FmDevices {

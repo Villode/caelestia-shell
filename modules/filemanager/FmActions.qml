@@ -60,17 +60,143 @@ Item {
     }
 
     function openPaths(paths: list<string>): void {
+        if (!paths || !paths.length)
+            return;
+        // Single item: use internal open; multi: external for non-previewables
+        if (paths.length === 1) {
+            const p = paths[0];
+            const base = p.split("/").pop() || p;
+            const isArch = p.startsWith("archive://") || (root.state.isArchiveFile && root.state.isArchiveFile(p));
+            openEntry(false, base, p);
+            return;
+        }
         for (let i = 0; i < paths.length; i++)
             Quickshell.execDetached(["xdg-open", paths[i]]);
-        if (paths.length)
-            root.state.statusText = qsTr("已打开 %1 项").arg(paths.length);
+        root.state.statusText = qsTr("已打开 %1 项").arg(paths.length);
     }
 
     function openEntry(isDir: bool, name: string, path: string): void {
-        if (isDir)
+        if (!path || !path.length)
+            return;
+
+        // Inside virtual archive
+        if (root.state.isArchiveBrowse) {
+            if (isDir) {
+                root.state.pushDir(name);
+                return;
+            }
+            // Files inside archive: extract to cache then preview
+            openArchiveMember(path, name);
+            return;
+        }
+
+        if (isDir) {
             root.state.pushDir(name);
-        else
-            Quickshell.execDetached(["xdg-open", path]);
+            return;
+        }
+
+        // Archive → enter as folder
+        if (root.state.isArchiveFile && root.state.isArchiveFile(path)) {
+            uiOpen(qsTr("正在打开压缩包…"), name || path.split("/").pop());
+            if (jobUi && typeof jobUi.setProgress === "function")
+                jobUi.setProgress(-1, qsTr("读取目录列表…"));
+            root.state.enterArchive(path);
+            return;
+        }
+
+        // Image / audio / video → internal Quick Look (wired via jobUi parent or signal)
+        if ((root.state.isImageFile && root.state.isImageFile(path, false))
+            || (root.state.isAudioFile && root.state.isAudioFile(path))
+            || (root.state.isVideoFile && root.state.isVideoFile(path))) {
+            openInternalPreview(path, name, false, root.state.isImageFile(path, false));
+            return;
+        }
+
+        // Text-ish still use Quick Look
+        const e = (root.state.archiveCompoundExt && root.state.archiveCompoundExt(path)) || "";
+        const textExts = ["txt", "md", "json", "qml", "js", "ts", "css", "html", "xml", "yml", "yaml", "toml", "ini", "log", "csv", "sh", "py", "rs", "go", "c", "h", "cpp", "svg"];
+        if (textExts.indexOf(e) >= 0) {
+            openInternalPreview(path, name, false, false);
+            return;
+        }
+
+        Quickshell.execDetached(["xdg-open", path]);
+    }
+
+    // Set by ManagerWindow to open FmQuickLook without circular imports
+    property var previewUi: null
+
+    function openInternalPreview(path: string, name: string, isDir: bool, isImage: bool): void {
+        if (previewUi && typeof previewUi.openFor === "function") {
+            previewUi.openFor(path, name || (path.split("/").pop() || path), isDir, isImage);
+            root.state.statusText = qsTr("预览：%1").arg(name || path.split("/").pop());
+            return;
+        }
+        Quickshell.execDetached(["xdg-open", path]);
+    }
+
+    function openArchiveMember(virtualPath: string, name: string): void {
+        // virtualPath: archive://HOST!/member
+        let host = root.state.archiveRoot;
+        let member = "";
+        if (virtualPath.startsWith("archive://")) {
+            const rest = virtualPath.slice("archive://".length);
+            const bang = rest.indexOf("!/");
+            if (bang >= 0) {
+                host = rest.slice(0, bang);
+                member = rest.slice(bang + 2);
+            }
+        }
+        if (!host.length || !member.length) {
+            root.state.statusText = qsTr("无法打开压缩包内文件");
+            return;
+        }
+        // Directory members end with /
+        if (member.endsWith("/")) {
+            root.state.pushDir(name);
+            return;
+        }
+        const cacheDir = (Quickshell.env("XDG_CACHE_HOME") || (Paths.home + "/.cache")) + "/caelestia/filemanager-preview";
+        const safeName = (name || member.split("/").pop() || "file").replace(/\//g, "_");
+        const outPath = cacheDir + "/" + safeName;
+        // Extract single member (flattened name) then preview
+        const script =
+            "mkdir -p " + shellQuote(cacheDir) + " && " +
+            "rm -f " + shellQuote(outPath) + " && " +
+            "cd " + shellQuote(cacheDir) + " && " +
+            "7z e -y -so -- " + shellQuote(host) + " " + shellQuote(member) + " > " + shellQuote(outPath) + " 2>/dev/null && " +
+            "test -s " + shellQuote(outPath) + " && echo OK";
+        extractPreviewProc.running = false;
+        extractPreviewProc.command = ["bash", "-c", script];
+        extractPreviewProc.outPath = outPath;
+        extractPreviewProc.outName = name || safeName;
+        extractPreviewProc.running = true;
+        root.state.statusText = qsTr("正在解出预览…");
+        // Immediate feedback: indeterminate job overlay
+        uiOpen(qsTr("正在准备预览…"), name || safeName);
+        if (jobUi && typeof jobUi.setProgress === "function")
+            jobUi.setProgress(-1, qsTr("从压缩包解出文件…"));
+    }
+
+    Process {
+        id: extractPreviewProc
+        property string outPath: ""
+        property string outName: ""
+        command: ["true"]
+        running: false
+        stdout: StdioCollector {}
+        onExited: code => {
+            if (code === 0 && outPath.length) {
+                if (jobUi && typeof jobUi.close === "function")
+                    jobUi.close();
+                else if (jobUi && typeof jobUi.finishOk === "function")
+                    jobUi.finishOk(qsTr("就绪"));
+                root.openInternalPreview(outPath, outName, false, root.state.isImageFile(outPath, false));
+            } else {
+                root.uiFail(qsTr("无法解压该文件以预览"));
+                root.state.statusText = qsTr("无法解压该文件以预览");
+            }
+        }
     }
 
     function copy(paths: list<string>): void {
@@ -160,7 +286,7 @@ Item {
     }
 
     // mode: "copy" | "move". destDir absolute path (current folder or target folder).
-    // Returns number of items scheduled.
+    // Returns number of items scheduled (starts async progress job).
     function dropInto(paths: list<string>, destDir: string, mode: string): int {
         if (!paths || !paths.length || !destDir || !destDir.length) {
             root.state.statusText = qsTr("无法放置");
@@ -174,7 +300,6 @@ Item {
             destDir = destDir.slice(0, -1);
 
         const op = (mode === "move") ? "move" : "copy";
-        let n = 0;
         const jobs = [];
         for (let i = 0; i < paths.length; i++) {
             const src = normalizeLocalPath(paths[i]);
@@ -190,29 +315,17 @@ Item {
             const dest = destDir + "/" + base;
             if (src === dest)
                 continue;
-            jobs.push({ src: src, dest: dest });
-            n++;
+            jobs.push({ src: src, dest: dest, label: base });
         }
-        if (!n) {
+        if (!jobs.length) {
             root.state.statusText = qsTr("没有可放置的项");
             return 0;
         }
 
-        // Prefer gio for trash-aware move and remote/gvfs; fall back friendly message
-        for (let k = 0; k < jobs.length; k++) {
-            const j = jobs[k];
-            if (op === "copy")
-                Quickshell.execDetached(["gio", "copy", "-p", j.src, j.dest]);
-            else
-                Quickshell.execDetached(["gio", "move", j.src, j.dest]);
-        }
-        root.state.statusText = op === "move"
-            ? qsTr("已移动 %1 项").arg(n)
-            : qsTr("已复制 %1 项").arg(n);
-        // Refresh after short delay so gio can finish first write
-        Qt.callLater(() => root.state.bumpRefresh());
-        refreshTimer.restart();
-        return n;
+        const title = op === "move" ? qsTr("正在移动…") : qsTr("正在复制…");
+        const detail = qsTr("%1 项 → %2").arg(jobs.length).arg(Paths.shortenHome(destDir));
+        runFileJobs(op, jobs, title, detail);
+        return jobs.length;
     }
 
     function dropFromEvent(drop: var, destDir: string): int {
@@ -242,28 +355,36 @@ Item {
     }
 
     function trash(paths: list<string>): void {
-        if (!paths.length)
+        if (!paths || !paths.length)
             return;
-        for (let i = 0; i < paths.length; i++)
-            Quickshell.execDetached(["gio", "trash", paths[i]]);
+        const jobs = [];
+        for (let i = 0; i < paths.length; i++) {
+            const p = normalizeLocalPath(paths[i]);
+            if (!p.length)
+                continue;
+            jobs.push({ src: p, dest: "", label: p.split("/").pop() || p });
+        }
+        if (!jobs.length)
+            return;
         root.state.setSelection([]);
-        root.state.statusText = qsTr("已移到回收站 %1 项").arg(paths.length);
-        Qt.callLater(() => root.state.bumpRefresh());
+        runFileJobs("trash", jobs, qsTr("正在移到回收站…"), qsTr("%1 项").arg(jobs.length));
     }
 
     // Permanent delete (rm -rf) — caller must confirm first
     function deletePermanent(paths: list<string>): void {
-        if (!paths.length)
+        if (!paths || !paths.length)
             return;
+        const jobs = [];
         for (let i = 0; i < paths.length; i++) {
-            const p = paths[i];
+            const p = normalizeLocalPath(paths[i]);
             if (!p || p === "/" || p === Paths.home)
                 continue;
-            Quickshell.execDetached(["rm", "-rf", "--", p]);
+            jobs.push({ src: p, dest: "", label: p.split("/").pop() || p });
         }
+        if (!jobs.length)
+            return;
         root.state.setSelection([]);
-        root.state.statusText = qsTr("已永久删除 %1 项").arg(paths.length);
-        Qt.callLater(() => root.state.bumpRefresh());
+        runFileJobs("delete", jobs, qsTr("正在永久删除…"), qsTr("%1 项").arg(jobs.length));
     }
 
     function requestEmptyTrash(): void {
@@ -275,6 +396,10 @@ Item {
 
     // Wipe XDG trash files + info (caller should confirm)
     function emptyTrash(): void {
+        if (busy) {
+            root.state.statusText = qsTr("已有文件任务进行中");
+            return;
+        }
         const files = root.state.trashPath();
         const info = Paths.home + "/.local/share/Trash/info";
         const script =
@@ -282,13 +407,10 @@ Item {
             "f=" + shellQuote(files) + "; i=" + shellQuote(info) + "; " +
             "mkdir -p \"$f\" \"$i\"; " +
             "find \"$f\" -mindepth 1 -maxdepth 1 -exec rm -rf -- {} + 2>/dev/null || true; " +
-            "find \"$i\" -mindepth 1 -maxdepth 1 -exec rm -rf -- {} + 2>/dev/null || true";
-        Quickshell.execDetached(["bash", "-c", script]);
+            "find \"$i\" -mindepth 1 -maxdepth 1 -exec rm -rf -- {} + 2>/dev/null || true; " +
+            "echo OK";
         root.state.setSelection([]);
-        root.state.statusText = qsTr("回收站已清空");
-        Qt.callLater(() => root.state.bumpRefresh());
-        // delayed second refresh in case rm is slow
-        emptyRefresh.restart();
+        runSoftJob("empty-trash", script, qsTr("正在清空回收站…"), qsTr("删除回收站中的全部项目"));
     }
 
     Timer {
@@ -434,6 +556,118 @@ Item {
             jobUi.finishFail(text || "");
     }
 
+    // Python runner for copy/move/trash/delete — item progress + optional gio percent
+    function pyFileRunner(): string {
+        return "import json,os,re,shutil,subprocess,sys\n" +
+            "jobs=json.loads(os.environ['FM_JOBS'])\n" +
+            "op=os.environ.get('FM_OP','copy')\n" +
+            "n=max(1,len(jobs))\n" +
+            "last=-1\n" +
+            "def emit(p,msg=''):\n" +
+            "  global last\n" +
+            "  p=max(0,min(100,int(p)))\n" +
+            "  if p!=last or msg:\n" +
+            "    last=p\n" +
+            "    print(f'PROGRESS:{p}|{msg}',flush=True)\n" +
+            "def run(cmd):\n" +
+            "  return subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)\n" +
+            "def copy_one(src,dest,label,base):\n" +
+            "  # try gio with progress if available\n" +
+            "  p=subprocess.Popen(['gio','copy','-p',src,dest],stdout=subprocess.PIPE,stderr=subprocess.STDOUT,bufsize=0)\n" +
+            "  buf=b''\n" +
+            "  used=False\n" +
+            "  while True:\n" +
+            "    ch=p.stdout.read(1)\n" +
+            "    if not ch: break\n" +
+            "    used=True\n" +
+            "    buf+=ch\n" +
+            "    if len(buf)>320: buf=buf[-320:]\n" +
+            "    t=buf.decode('utf-8','replace')\n" +
+            "    ms=list(re.finditer(r'(\\d{1,3})%', t))\n" +
+            "    if ms:\n" +
+            "      pct=int(ms[-1].group(1))\n" +
+            "      emit(base+pct/n,label)\n" +
+            "  rc=p.wait()\n" +
+            "  if rc==0: return True\n" +
+            "  # fallback shutil\n" +
+            "  try:\n" +
+            "    if os.path.isdir(src) and not os.path.islink(src):\n" +
+            "      if os.path.exists(dest): shutil.rmtree(dest)\n" +
+            "      shutil.copytree(src,dest,symlinks=True)\n" +
+            "    else:\n" +
+            "      shutil.copy2(src,dest,follow_symlinks=False)\n" +
+            "    return True\n" +
+            "  except Exception as e:\n" +
+            "    print(f'FAIL:1|{label}: {e}',flush=True)\n" +
+            "    return False\n" +
+            "def move_one(src,dest,label):\n" +
+            "  r=run(['gio','move',src,dest])\n" +
+            "  if r.returncode==0: return True\n" +
+            "  try:\n" +
+            "    shutil.move(src,dest)\n" +
+            "    return True\n" +
+            "  except Exception as e:\n" +
+            "    print(f'FAIL:1|{label}: {e}',flush=True)\n" +
+            "    return False\n" +
+            "def trash_one(src,label):\n" +
+            "  r=run(['gio','trash',src])\n" +
+            "  if r.returncode==0: return True\n" +
+            "  print(f'FAIL:{r.returncode}|{label}',flush=True)\n" +
+            "  return False\n" +
+            "def delete_one(src,label):\n" +
+            "  try:\n" +
+            "    if os.path.islink(src) or os.path.isfile(src):\n" +
+            "      os.unlink(src)\n" +
+            "    elif os.path.isdir(src):\n" +
+            "      shutil.rmtree(src)\n" +
+            "    else:\n" +
+            "      os.unlink(src)\n" +
+            "    return True\n" +
+            "  except Exception as e:\n" +
+            "    r=run(['rm','-rf','--',src])\n" +
+            "    if r.returncode==0: return True\n" +
+            "    print(f'FAIL:1|{label}: {e}',flush=True)\n" +
+            "    return False\n" +
+            "for i,job in enumerate(jobs):\n" +
+            "  src=job.get('src',''); dest=job.get('dest',''); label=job.get('label') or os.path.basename(src) or src\n" +
+            "  print(f'STAGE:{i+1}/{n}|{label}',flush=True)\n" +
+            "  base=i*100.0/n\n" +
+            "  emit(base,label)\n" +
+            "  ok=False\n" +
+            "  if op=='copy': ok=copy_one(src,dest,label,base)\n" +
+            "  elif op=='move': ok=move_one(src,dest,label)\n" +
+            "  elif op=='trash': ok=trash_one(src,label)\n" +
+            "  elif op=='delete': ok=delete_one(src,label)\n" +
+            "  else:\n" +
+            "    print(f'FAIL:1|unknown op {op}',flush=True); sys.exit(1)\n" +
+            "  if not ok: sys.exit(1)\n" +
+            "  emit(base+100.0/n,label)\n" +
+            "print('OK',flush=True)\n"
+    }
+
+    function runFileJobs(kind: string, jobs: var, title: string, detail: string): void {
+        if (busy) {
+            root.state.statusText = qsTr("已有文件任务进行中");
+            return;
+        }
+        if (!jobs || !jobs.length)
+            return;
+        busy = true;
+        jobKind = kind;
+        progress = 0;
+        root.state.statusText = title;
+        uiOpen(title, detail || "");
+        const json = JSON.stringify(jobs);
+        jobProc.running = false;
+        jobProc.command = [
+            "bash", "-c",
+            "export FM_OP=" + shellQuote(kind) + "; " +
+            "export FM_JOBS=" + shellQuote(json) + "; " +
+            "python3 -u -c " + shellQuote(pyFileRunner())
+        ];
+        jobProc.running = true;
+    }
+
     // Python runner: parse 7z -bsp1 progress and emit PROGRESS:n lines
     function py7zRunner(jobsJson: string): string {
         // jobsJson: [{"cmd":[...],"label":"..."}, ...]
@@ -475,7 +709,7 @@ Item {
 
     function runPythonJobs(kind: string, jobs: var, title: string, detail: string): void {
         if (busy) {
-            root.state.statusText = qsTr("已有压缩/解压任务进行中");
+            root.state.statusText = qsTr("已有文件任务进行中");
             return;
         }
         busy = true;
@@ -496,7 +730,7 @@ Item {
     function runSoftJob(kind: string, script: string, title: string, detail: string): void {
         // tar etc. without real percent → indeterminate spinner + soft pulse
         if (busy) {
-            root.state.statusText = qsTr("已有压缩/解压任务进行中");
+            root.state.statusText = qsTr("已有文件任务进行中");
             return;
         }
         busy = true;
@@ -683,15 +917,44 @@ Item {
             const kind = root.jobKind;
             root.jobKind = "";
             if (code === 0) {
-                const msg = kind === "compress" ? (root.jobDetail ? qsTr("已压缩：%1").arg(root.jobDetail) : qsTr("压缩完成")) : qsTr("解压完成");
+                let msg = qsTr("完成");
+                if (kind === "compress")
+                    msg = root.jobDetail ? qsTr("已压缩：%1").arg(root.jobDetail) : qsTr("压缩完成");
+                else if (kind === "extract")
+                    msg = qsTr("解压完成");
+                else if (kind === "copy")
+                    msg = qsTr("复制完成");
+                else if (kind === "move")
+                    msg = qsTr("移动完成");
+                else if (kind === "trash")
+                    msg = qsTr("已移到回收站");
+                else if (kind === "delete")
+                    msg = qsTr("已永久删除");
+                else if (kind === "empty-trash")
+                    msg = qsTr("回收站已清空");
                 root.state.statusText = msg;
                 root.uiOk(msg);
                 root.state.bumpRefresh();
+                refreshTimer.restart();
             } else {
                 const err = (jobErr.text || "").trim();
-                const msg = err.length ? qsTr("失败：%1").arg(err.slice(0, 120)) : qsTr("压缩/解压失败");
+                let fallback = qsTr("操作失败");
+                if (kind === "compress" || kind === "extract")
+                    fallback = qsTr("压缩/解压失败");
+                else if (kind === "copy")
+                    fallback = qsTr("复制失败");
+                else if (kind === "move")
+                    fallback = qsTr("移动失败");
+                else if (kind === "trash")
+                    fallback = qsTr("移到回收站失败");
+                else if (kind === "delete")
+                    fallback = qsTr("删除失败");
+                else if (kind === "empty-trash")
+                    fallback = qsTr("清空回收站失败");
+                const msg = err.length ? qsTr("失败：%1").arg(err.slice(0, 120)) : fallback;
                 root.state.statusText = msg;
                 root.uiFail(msg);
+                root.state.bumpRefresh();
             }
             root.progress = -1;
         }

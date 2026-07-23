@@ -34,7 +34,9 @@ Item {
     }
 
     function setProgress(pct: real, text: string): void {
-        if (pct >= 0)
+        if (pct < 0)
+            progress = -1;
+        else
             progress = Math.min(100, Math.max(0, pct));
         if (text && text.length)
             detail = text;

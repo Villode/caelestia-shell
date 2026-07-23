@@ -54,8 +54,282 @@ Item {
     // favorites: [{ path: string, name: string }]
     property var favorites: []
 
+    // Virtual archive browse: open zip/7z/... as a navigable folder in the main view
+    property string archiveRoot: ""          // host archive path
+    property string archiveInner: ""         // "" or "subdir/" (trailing slash when non-empty)
+    property var archiveEntries: []          // raw list from 7z [{name,isDir,size,...}]
+    property bool archiveLoading: false
+    property string archiveError: ""
+    property int archiveNonce: 0
+
+    readonly property bool isArchiveBrowse: archiveRoot.length > 0
+
     readonly property bool isThisPC: cwd.length === 1 && cwd[0] === "ThisPC"
     readonly property bool isPhone: cwd.length >= 1 && cwd[0] === "Phone"
+
+    function clearArchiveBrowse(): void {
+        archiveRoot = "";
+        archiveInner = "";
+        archiveEntries = [];
+        archiveLoading = false;
+        archiveError = "";
+        archiveNonce = archiveNonce + 1;
+    }
+
+    function archiveCompoundExt(path: string): string {
+        const n = ((path || "").split("/").pop() || "").toLowerCase();
+        const multi = [".tar.gz", ".tar.xz", ".tar.bz2", ".tar.zst", ".tgz", ".txz", ".tbz2", ".tzst"];
+        for (let i = 0; i < multi.length; i++) {
+            if (n.endsWith(multi[i]))
+                return multi[i].slice(1);
+        }
+        const i = n.lastIndexOf(".");
+        if (i <= 0)
+            return "";
+        return n.slice(i + 1);
+    }
+
+    function isArchiveFile(path: string): bool {
+        const e = archiveCompoundExt(path);
+        const list = ["zip", "7z", "rar", "tar", "gz", "tgz", "xz", "txz", "bz2", "tbz2", "zst", "tzst", "lz", "lzma", "cab", "iso", "apk", "jar", "war", "tar.gz", "tar.xz", "tar.bz2", "tar.zst"];
+        return list.indexOf(e) >= 0;
+    }
+
+    function isImageFile(path: string, flag: bool): bool {
+        if (flag)
+            return true;
+        const e = archiveCompoundExt(path);
+        const list = ["png", "jpg", "jpeg", "jpe", "jfif", "webp", "gif", "bmp", "tif", "tiff", "ico", "heic", "heif", "avif", "svg"];
+        return list.indexOf(e) >= 0;
+    }
+
+    function isAudioFile(path: string): bool {
+        const e = archiveCompoundExt(path);
+        const list = ["mp3", "flac", "wav", "ogg", "oga", "opus", "m4a", "aac", "wma", "aiff", "ape", "alac"];
+        return list.indexOf(e) >= 0;
+    }
+
+    function isVideoFile(path: string): bool {
+        const e = archiveCompoundExt(path);
+        const list = ["mp4", "mkv", "webm", "avi", "mov", "m4v", "wmv", "flv", "ts", "m2ts"];
+        return list.indexOf(e) >= 0;
+    }
+
+    function enterArchive(path: string): void {
+        if (!path || !path.length)
+            return;
+        archiveRoot = path;
+        archiveInner = "";
+        archiveEntries = [];
+        archiveError = "";
+        archiveLoading = true;
+        selection = [];
+        resetSearchOnNavigate();
+        statusText = qsTr("正在打开压缩包…");
+        archiveNonce = archiveNonce + 1;
+        // JSON list via helper (reliable vs huge 7z text through collector)
+        const script = Quickshell.shellPath("modules/filemanager/list-archive.py");
+        archiveListProc.running = false;
+        archiveListProc.command = ["python3", script, path];
+        archiveListProc.running = true;
+    }
+
+    function setArchiveInner(rel: string): void {
+        // rel without leading slash; folders end with /
+        let r = rel || "";
+        while (r.startsWith("/"))
+            r = r.slice(1);
+        if (r.length && !r.endsWith("/"))
+            r += "/";
+        archiveInner = r;
+        selection = [];
+        resetSearchOnNavigate();
+        statusText = archiveDisplayPath();
+        archiveNonce = archiveNonce + 1;
+    }
+
+    function pushArchiveDir(name: string): void {
+        if (!name || !name.length)
+            return;
+        setArchiveInner(archiveInner + name + "/");
+    }
+
+    function popArchiveDir(): void {
+        if (!isArchiveBrowse)
+            return;
+        if (!archiveInner.length) {
+            // leave archive back to parent folder of archive file
+            const parent = archiveRoot.substring(0, archiveRoot.lastIndexOf("/")) || "/";
+            clearArchiveBrowse();
+            openAbsolutePath(parent);
+            return;
+        }
+        const parts = archiveInner.replace(/\/+$/, "").split("/").filter(s => s.length > 0);
+        parts.pop();
+        setArchiveInner(parts.length ? parts.join("/") + "/" : "");
+    }
+
+    function archiveDisplayPath(): string {
+        if (!isArchiveBrowse)
+            return displayPath();
+        const base = (archiveRoot.split("/").pop() || archiveRoot);
+        if (!archiveInner.length)
+            return qsTr("%1（压缩包）").arg(base);
+        return qsTr("%1 / %2").arg(base).arg(archiveInner.replace(/\/+$/, ""));
+    }
+
+    function pathSegments(): var {
+        if (!isArchiveBrowse)
+            return cwd;
+        const segs = [];
+        const base = (archiveRoot.split("/").pop() || archiveRoot);
+        segs.push(base);
+        let inner = archiveInner || "";
+        while (inner.endsWith("/"))
+            inner = inner.slice(0, -1);
+        if (inner.length) {
+            const parts = inner.split("/");
+            for (let i = 0; i < parts.length; i++) {
+                if (parts[i].length)
+                    segs.push(parts[i]);
+            }
+        }
+        return segs;
+    }
+
+    function slicePathSegment(toIndex: int): void {
+        if (isArchiveBrowse) {
+            if (toIndex < 0)
+                return;
+            if (toIndex === 0) {
+                setArchiveInner("");
+                return;
+            }
+            const segs = pathSegments();
+            if (toIndex >= segs.length)
+                return;
+            const parts = [];
+            for (let i = 1; i <= toIndex; i++)
+                parts.push(segs[i]);
+            setArchiveInner(parts.length ? (parts.join("/") + "/") : "");
+            return;
+        }
+        sliceCwd(toIndex);
+    }
+
+    readonly property bool canNavigateUp: isArchiveBrowse || !isThisPC
+
+    function canGoUp(): bool {
+        return canNavigateUp;
+    }
+
+
+    function parseArchiveListing(raw: string): void {
+        let items = [];
+        let err = "";
+        try {
+            const data = JSON.parse(String(raw || "").trim() || "{}");
+            if (data && Array.isArray(data.items))
+                items = data.items;
+            if (data && data.ok === false)
+                err = String(data.error || qsTr("无法打开压缩包"));
+            else if (data && data.error)
+                err = String(data.error);
+        } catch (e) {
+            // Fallback: line-based 7z -ba parse
+            const lines = String(raw || "").split("\n");
+            const re = /^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+([D.][\w.]+)\s+(\d+)\s+(\d+)\s+(.+)$/;
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i];
+                if (!line || !line.length)
+                    continue;
+                line = line.replace(/\r$/, "");
+                const mm = line.match(re);
+                if (!mm)
+                    continue;
+                const attr = mm[2] || "";
+                const size = Number(mm[3] || 0);
+                const name = (mm[5] || "").trim();
+                if (!name.length)
+                    continue;
+                items.push({
+                    path: name,
+                    name: name,
+                    isDir: attr.indexOf("D") === 0,
+                    size: size
+                });
+            }
+            if (!items.length)
+                err = qsTr("压缩包为空或无法列出内容");
+        }
+        archiveEntries = items;
+        archiveLoading = false;
+        if (!items.length)
+            archiveError = err.length ? err : qsTr("压缩包为空或无法列出内容");
+        else
+            archiveError = "";
+        statusText = archiveError.length ? archiveError : archiveDisplayPath();
+        archiveNonce = archiveNonce + 1;
+        console.log("[FM] archive listed", archiveRoot, "items=", items.length, "err=", archiveError);
+    }
+
+    // Children of archiveInner as folder-view entries
+    function archiveViewEntries(): var {
+        const out = [];
+        const prefix = archiveInner || "";
+        const seen = ({});
+        for (let i = 0; i < archiveEntries.length; i++) {
+            const e = archiveEntries[i];
+            const full = e.path || e.name || "";
+            if (!full.length)
+                continue;
+            if (prefix.length && !full.startsWith(prefix))
+                continue;
+            let rest = prefix.length ? full.slice(prefix.length) : full;
+            if (!rest.length)
+                continue;
+            const slash = rest.indexOf("/");
+            if (slash >= 0) {
+                const dirName = rest.slice(0, slash);
+                if (!dirName.length || seen[dirName])
+                    continue;
+                seen[dirName] = true;
+                out.push({
+                    path: "archive://" + archiveRoot + "!/" + prefix + dirName + "/",
+                    name: dirName,
+                    isDir: true,
+                    isImage: false,
+                    size: 0,
+                    mimeType: "",
+                    suffix: "",
+                    baseName: dirName,
+                    archiveMember: prefix + dirName + "/"
+                });
+            } else {
+                // entry at this level (file or empty dir)
+                if (seen[rest])
+                    continue;
+                seen[rest] = true;
+                const base = rest;
+                const isD = !!(e.isDir);
+                const dot = base.lastIndexOf(".");
+                const suf = (!isD && dot > 0) ? base.slice(dot + 1).toLowerCase() : "";
+                const member = prefix + rest + (isD ? "/" : "");
+                out.push({
+                    path: "archive://" + archiveRoot + "!/" + member,
+                    name: base,
+                    isDir: isD,
+                    isImage: !isD && isImageFile(base, false),
+                    size: isD ? 0 : (e.size || 0),
+                    mimeType: "",
+                    suffix: suf,
+                    baseName: (!isD && dot > 0) ? base.slice(0, dot) : base,
+                    archiveMember: member
+                });
+            }
+        }
+        return out;
+    }
 
     function gvfsDir(): string {
         const runtime = Quickshell.env("XDG_RUNTIME_DIR") || "";
@@ -161,6 +435,8 @@ Item {
 
     // Friendly bar text (not raw /run/user/.../gvfs/...)
     function displayPath(): string {
+        if (isArchiveBrowse)
+            return archiveDisplayPath();
         if (isThisPC)
             return qsTr("此电脑");
         if (isPhone) {
@@ -246,6 +522,9 @@ Item {
     }
 
     function cwdPath(): string {
+        if (isArchiveBrowse)
+            return "";
+
         if (cwd.length === 0 || cwd[0] === "ThisPC")
             return "";
         if (cwd[0] === "Phone") {
@@ -268,6 +547,7 @@ Item {
     }
 
     function navigateToThisPC(): void {
+        clearArchiveBrowse();
         cwd = ["ThisPC"];
         selection = [];
         resetSearchOnNavigate();
@@ -279,6 +559,7 @@ Item {
             navigateToThisPC();
             return;
         }
+        clearArchiveBrowse();
         if (place === "Trash") {
             navigateToTrash();
             return;
@@ -301,6 +582,10 @@ Item {
     }
 
     function pushDir(name: string): void {
+        if (isArchiveBrowse) {
+            pushArchiveDir(name);
+            return;
+        }
         if (isThisPC)
             return;
         cwd = cwd.concat([name]);
@@ -310,6 +595,10 @@ Item {
     }
 
     function popDir(): void {
+        if (isArchiveBrowse) {
+            popArchiveDir();
+            return;
+        }
         if (isThisPC)
             return;
         if (cwd.length > 1) {
@@ -343,6 +632,9 @@ Item {
             navigateToThisPC();
             return;
         }
+        // Leaving virtual archive unless opening into it
+        if (isArchiveBrowse && !(path.startsWith("archive://")))
+            clearArchiveBrowse();
         // expand ~
         if (path === "~")
             path = Paths.home;
@@ -697,5 +989,49 @@ Item {
         }
     }
 
+
+
+    Process {
+        id: archiveListProc
+        command: ["true"]
+        running: false
+        stdout: StdioCollector {
+            id: archiveListOut
+            onStreamFinished: {
+                // Prefer property access like other modules
+                root.parseArchiveListing(text);
+            }
+        }
+        stderr: StdioCollector {
+            id: archiveListErr
+        }
+        onExited: code => {
+            if (!root.isArchiveBrowse)
+                return;
+            // Ensure parse even if streamFinished order is weird
+            if (root.archiveLoading) {
+                let raw = "";
+                try {
+                    raw = archiveListOut.text || "";
+                } catch (e) {
+                    raw = "";
+                }
+                if (raw && raw.length)
+                    root.parseArchiveListing(raw);
+            }
+            if (code !== 0 && !root.archiveEntries.length) {
+                root.archiveLoading = false;
+                let err = "";
+                try {
+                    err = (archiveListErr.text || "").trim();
+                } catch (e2) {
+                    err = "";
+                }
+                root.archiveError = err.length ? err.slice(0, 160) : qsTr("无法打开压缩包");
+                root.statusText = root.archiveError;
+                root.archiveNonce = root.archiveNonce + 1;
+            }
+        }
+    }
 
 }
