@@ -11,7 +11,7 @@ import qs.components.controls
 import qs.services
 import qs.utils
 
-// Horizontal landscape cards, start from top-left. Scrim only (no panel shell).
+// Multi-row window cards (wrap when one row is full). Scrim only (no panel shell).
 Item {
     id: root
 
@@ -19,12 +19,56 @@ Item {
     required property ShellScreen screen
 
     readonly property real screenAspect: Math.max(1.2, screen.width / Math.max(1, screen.height))
-    readonly property real cardH: Math.min(screen.height * 0.34, 280)
-    readonly property real cardW: cardH * screenAspect
     readonly property real edgePad: Tokens.padding.largeIncreased
+    readonly property real cardGap: Tokens.spacing.large
+    readonly property real labelExtra: 36
+    // Available width for cards inside the strip
+    readonly property real availableW: Math.max(160, screen.width - 48 - edgePad * 2)
+    // Max vertical room: leave space for dock + a little breathing room
+    readonly property real maxStripH: Math.max(200, screen.height * 0.62)
+
+    readonly property int clientCount: clients.length
+
+    // Preferred card height scales down as the grid fills more rows
+    readonly property real baseCardH: Math.min(screen.height * 0.30, 260)
+    readonly property real minCardH: Math.min(120, baseCardH * 0.55)
+
+    // Estimate columns from available width using a mid aspect
+    readonly property real midAspect: Math.max(1.0, Math.min(1.8, screenAspect))
+    readonly property real estCardW: baseCardH * midAspect
+    readonly property int colsAtBase: Math.max(1, Math.floor((availableW + cardGap) / (estCardW + cardGap)))
+    readonly property int rowsAtBase: Math.max(1, Math.ceil(Math.max(1, clientCount) / colsAtBase))
+
+    // Shrink card height if too many rows would overflow maxStripH
+    readonly property real rowPitchAtBase: baseCardH + labelExtra + cardGap
+    readonly property real fitScale: {
+        if (clientCount <= 0)
+            return 1;
+        const need = rowsAtBase * (baseCardH + labelExtra) + Math.max(0, rowsAtBase - 1) * cardGap;
+        if (need <= maxStripH)
+            return 1;
+        const scale = maxStripH / Math.max(1, need);
+        return Math.max(minCardH / baseCardH, Math.min(1, scale));
+    }
+
+    readonly property real cardH: Math.max(minCardH, baseCardH * fitScale)
+
+    // After cardH settled, recompute columns with actual typical width
+    readonly property real typCardW: cardH * midAspect
+    readonly property int flowColumns: Math.max(1, Math.floor((availableW + cardGap) / (typCardW + cardGap)))
 
     implicitWidth: Math.max(1, screen.width - 48)
-    implicitHeight: cardH + 48
+    // Height follows Flow content (multi-row)
+    implicitHeight: {
+        if (clientCount === 0)
+            return cardH + 48;
+        // Prefer measured flow height when available
+        const measured = flow.implicitHeight > 0 ? flow.implicitHeight + edgePad * 2 : 0;
+        if (measured > 0)
+            return Math.min(maxStripH + edgePad, measured);
+        const rows = Math.max(1, Math.ceil(clientCount / flowColumns));
+        return Math.min(maxStripH + edgePad, rows * (cardH + labelExtra) + Math.max(0, rows - 1) * cardGap + edgePad * 2);
+    }
 
     function clientAddress(client: var): string {
         const a = client?.address ?? client?.lastIpcObject?.address ?? "";
@@ -137,21 +181,23 @@ Item {
 
         anchors.fill: parent
         visible: root.clients.length > 0
-        contentWidth: row.implicitWidth + root.edgePad * 2
-        contentHeight: height
-        flickableDirection: Flickable.HorizontalFlick
+        contentWidth: width
+        contentHeight: Math.max(height, flow.y + flow.implicitHeight + root.edgePad)
+        flickableDirection: Flickable.VerticalFlick
         boundsBehavior: Flickable.StopAtBounds
-        clip: false
-        // Start from left — do not center the first card
+        clip: true
         contentX: 0
+        contentY: 0
 
-        Row {
-            id: row
+        Flow {
+            id: flow
 
             x: root.edgePad
             y: root.edgePad
-            height: root.cardH + 36
-            spacing: Tokens.spacing.large
+            width: Math.max(1, strip.width - root.edgePad * 2)
+            spacing: root.cardGap
+            // Flow lays left-to-right, wraps to next line
+            flow: Flow.LeftToRight
 
             Repeater {
                 model: root.clients
@@ -166,6 +212,10 @@ Item {
                     screen: root.screen
                 }
             }
+        }
+
+        StyledScrollBar.vertical: StyledScrollBar {
+            flickable: strip
         }
     }
 
@@ -182,36 +232,96 @@ Item {
 
         readonly property string appClass: client?.lastIpcObject?.class ?? ""
         readonly property string appTitle: client?.title ?? client?.lastIpcObject?.title ?? qsTr("Application")
+        readonly property bool isFocused: {
+            const ipc = client?.lastIpcObject ?? {};
+            if (ipc.focused === true || ipc.active === true)
+                return true;
+            // Match Hyprland focused toplevel by address
+            const active = Hypr.activeToplevel ?? null;
+            const a = root.clientAddress(client);
+            const b = root.clientAddress(active);
+            if (a && b && a === b)
+                return true;
+            // focusHistoryID 0 is usually the focused window
+            if ((ipc.focusHistoryID ?? -1) === 0)
+                return true;
+            return false;
+        }
+        property bool hovered: false
+        readonly property real cardRadius: Tokens.rounding.large
+        readonly property real ringW: card.hovered || card.isFocused ? 3 : 1
+        readonly property color ringColor: card.isFocused
+            ? Colours.palette.m3primary
+            : card.hovered
+              ? Colours.palette.m3secondary
+              : Qt.alpha(Colours.palette.m3outlineVariant, 0.3)
 
-        StyledRect {
-            id: frame
+        // Outer ring (no clip) — avoids square corners from thick border + clip
+        Rectangle {
+            id: ring
 
             anchors.left: parent.left
             anchors.top: parent.top
             width: card.cardWidth
             height: card.cardHeight
-            radius: Tokens.rounding.large
-            color: Colours.tPalette.m3surfaceContainer
-            border.width: 1
-            border.color: Qt.alpha(Colours.palette.m3outlineVariant, 0.3)
+            radius: card.cardRadius
+            color: "transparent"
+            border.width: card.ringW
+            border.color: card.ringColor
+            z: 4
+
+            Behavior on border.width {
+                NumberAnimation {
+                    duration: 120
+                    easing.type: Easing.OutCubic
+                }
+            }
+            Behavior on border.color {
+                ColorAnimation {
+                    duration: 120
+                }
+            }
+        }
+
+        // Inner card: clip content to rounded rect; leave room for ring stroke
+        Item {
+            id: frame
+
+            anchors.left: ring.left
+            anchors.top: ring.top
+            anchors.margins: card.ringW
+            width: ring.width - card.ringW * 2
+            height: ring.height - card.ringW * 2
             clip: true
+
+            // Rounded mask for children (clip alone can leave square pixels on GPU layers)
+            layer.enabled: true
+            layer.smooth: true
+            layer.samples: 4
+
+            Rectangle {
+                id: frameBg
+
+                anchors.fill: parent
+                radius: Math.max(0, card.cardRadius - card.ringW)
+                color: Colours.tPalette.m3surfaceContainer
+            }
 
             ScreencopyView {
                 id: thumb
 
                 anchors.fill: parent
-                anchors.margins: 1
                 captureSource: card.client?.wayland ?? null // qmllint disable unresolved-type
                 live: true
-                constraintSize.width: card.cardWidth - 2
-                constraintSize.height: card.cardHeight - 2
+                constraintSize.width: frame.width
+                constraintSize.height: frame.height
             }
 
             Rectangle {
                 anchors.fill: parent
                 visible: !thumb.captureSource
                 color: Colours.palette.m3surfaceContainerHigh
-                radius: parent.radius
+                radius: Math.max(0, card.cardRadius - card.ringW)
 
                 Image {
                     anchors.centerIn: parent
@@ -223,15 +333,29 @@ Item {
                 }
             }
 
-            // Focus (below close)
+            // Soft wash — same radius as frame, sits under close btn
+            Rectangle {
+                anchors.fill: parent
+                radius: Math.max(0, card.cardRadius - card.ringW)
+                color: card.isFocused
+                    ? Qt.alpha(Colours.palette.m3primary, 0.18)
+                    : card.hovered
+                      ? Qt.alpha(Colours.palette.m3secondary, 0.12)
+                      : "transparent"
+                z: 2
+            }
+
             MouseArea {
                 anchors.fill: parent
-                z: 1
+                z: 3
+                hoverEnabled: true
                 acceptedButtons: Qt.LeftButton
+                cursorShape: Qt.PointingHandCursor
+                onEntered: card.hovered = true
+                onExited: card.hovered = false
                 onClicked: root.focusClient(card.client)
             }
 
-            // Larger, clearer close control (top-right of each card)
             StyledRect {
                 id: closeBtn
 
@@ -254,7 +378,7 @@ Item {
 
                 MouseArea {
                     anchors.fill: parent
-                    anchors.margins: -4 // larger hit area
+                    anchors.margins: -4
                     cursorShape: Qt.PointingHandCursor
                     onClicked: mouse => {
                         mouse.accepted = true;
@@ -265,8 +389,8 @@ Item {
         }
 
         RowLayout {
-            anchors.left: frame.left
-            anchors.top: frame.bottom
+            anchors.left: ring.left
+            anchors.top: ring.bottom
             anchors.topMargin: Tokens.spacing.extraSmall
             width: card.cardWidth
             spacing: Tokens.spacing.extraSmall
@@ -282,7 +406,11 @@ Item {
             StyledText {
                 Layout.fillWidth: true
                 text: card.appTitle
-                color: Colours.palette.m3onSurface
+                color: card.isFocused
+                    ? Colours.palette.m3primary
+                    : card.hovered
+                      ? Colours.palette.m3secondary
+                      : Colours.palette.m3onSurface
                 font: Tokens.font.label.small
                 elide: Text.ElideRight
             }

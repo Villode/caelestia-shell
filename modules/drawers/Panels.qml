@@ -60,8 +60,8 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        // Height = card strip only (not full screen) so bottom dock stays free for input
-        height: multitaskingActive ? multitasking.implicitHeight + Tokens.padding.large : 0
+        // Height follows multi-row card grid (capped inside Content) so dock stays free
+        height: multitaskingActive ? Math.min(parent.height * 0.72, multitasking.implicitHeight + Tokens.padding.large) : 0
         visible: multitaskingActive
         z: 10
         clip: false

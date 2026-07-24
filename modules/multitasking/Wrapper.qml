@@ -35,12 +35,15 @@ Item {
     Loader {
         id: content
 
-        anchors.centerIn: parent
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.top
+        width: parent.width
         active: root.shouldBeActive || root.offsetScale < 0.999
 
         sourceComponent: Content {
             visibilities: root.visibilities
             screen: root.screen
+            width: content.width
         }
     }
 }
