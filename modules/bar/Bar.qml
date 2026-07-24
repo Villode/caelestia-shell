@@ -132,9 +132,15 @@ GridLayout {
 
             DelegateChoice {
                 roleValue: "spacer"
+                // Vertical bar: spacers stretch to center activeWindow between ends.
+                // Top (horizontal) bar: do not stretch — dual fill spacers leave a hollow middle.
                 delegate: WrappedLoader {
-                    Layout.fillWidth: !root.isVertical && enabled
+                    Layout.fillWidth: false
                     Layout.fillHeight: root.isVertical && enabled
+                    Layout.preferredWidth: root.isVertical ? -1 : 0
+                    Layout.preferredHeight: root.isVertical ? 0 : -1
+                    Layout.maximumWidth: root.isVertical ? -1 : 0
+                    Layout.maximumHeight: root.isVertical ? 0 : -1
                 }
             }
             DelegateChoice {

@@ -5944,12 +5944,12 @@ Keyboard layout: %1</source>
         <message>
             <location line="+4" />
             <source>Installed channel</source>
-            <translation>已安装渠道</translation>
+            <translation>已安装通道</translation>
         </message>
         <message>
             <location line="+2" />
             <source>Release channel</source>
-            <translation>发布渠道</translation>
+            <translation>发布通道</translation>
         </message>
         <message>
             <location line="+62" />
@@ -6039,7 +6039,7 @@ Keyboard layout: %1</source>
         <message>
             <location line="+3" />
             <source>No details</source>
-            <translation>暂无说明</translation>
+            <translation>暂无详情</translation>
         </message>
         <message>
             <location line="+97" />
@@ -6801,4 +6801,96 @@ Keyboard layout: %1</source>
             <translation>图片文件</translation>
         </message>
     </context>
+
+<context>
+    <name>UpdatesPage</name>
+    <message>
+        <source>%1 packages will be upgraded</source>
+        <translation>将升级 %1 个软件包</translation>
+    </message>
+    <message>
+        <source>%1% · %2 / %3</source>
+        <translation>%1% · %2 / %3</translation>
+    </message>
+    <message>
+        <source>Already on the latest release channel version</source>
+        <translation>已是发布通道上的最新版本</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>关闭</translation>
+    </message>
+    <message>
+        <source>Failed (exit %1)</source>
+        <translation>失败（退出码 %1）</translation>
+    </message>
+    <message>
+        <source>Failed, exit code %1</source>
+        <translation>失败，退出码 %1</translation>
+    </message>
+    <message>
+        <source>Finished</source>
+        <translation>已完成</translation>
+    </message>
+    <message>
+        <source>Installing packages…</source>
+        <translation>正在安装软件包…</translation>
+    </message>
+    <message>
+        <source>List truncated; full set will install during upgrade.</source>
+        <translation>列表已截断；升级时仍会安装全部软件包。</translation>
+    </message>
+    <message>
+        <source>May include kernel, drivers and libraries. You will confirm in a dialog — no terminal.</source>
+        <translation>可能包含内核、驱动与基础库。在弹窗中确认，不会打开终端。</translation>
+    </message>
+    <message>
+        <source>Review packages, then start. Polkit may ask for your password.</source>
+        <translation>先确认软件包列表，再开始。可能弹出密码框。</translation>
+    </message>
+    <message>
+        <source>Running system upgrade…</source>
+        <translation>正在执行系统升级…</translation>
+    </message>
+    <message>
+        <source>Running…</source>
+        <translation>进行中…</translation>
+    </message>
+    <message>
+        <source>Start update</source>
+        <translation>开始更新</translation>
+    </message>
+    <message>
+        <source>Starting…</source>
+        <translation>正在开始…</translation>
+    </message>
+    <message>
+        <source>System upgrade</source>
+        <translation>系统升级</translation>
+    </message>
+    <message>
+        <source>Updates desktop components only — not a full system upgrade.</source>
+        <translation>仅更新桌面组件，不是完整系统升级。</translation>
+    </message>
+    <message>
+        <source>Updating Villode components…</source>
+        <translation>正在更新 Villode 组件…</translation>
+    </message>
+    <message>
+        <source>Updating…</source>
+        <translation>更新中…</translation>
+    </message>
+    <message>
+        <source>Use Check to refresh</source>
+        <translation>点「检查」刷新</translation>
+    </message>
+    <message>
+        <source>Waiting for password…</source>
+        <translation>等待输入密码…</translation>
+    </message>
+    <message>
+        <source>Working…</source>
+        <translation>处理中…</translation>
+    </message>
+</context>
 </TS>

@@ -75,8 +75,10 @@ Item {
         id: content
 
         // Explicit geometry — conditional anchors do not clear at runtime in Qt Quick.
+        // Top bar: pin content to y=0 (screen top). Bottom-pinning during thickness
+        // animation left a hollow / sunken strip in the middle of the top edge.
         x: root.isLeft ? Math.max(0, root.width - root.contentThickness) : 0
-        y: root.isTop ? Math.max(0, root.height - root.contentThickness) : 0
+        y: 0
         width: root.isVertical ? root.contentThickness : root.width
         height: root.isVertical ? root.height : root.contentThickness
         active: root.shouldBeVisible

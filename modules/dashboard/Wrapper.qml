@@ -6,12 +6,17 @@ import Caelestia
 import Caelestia.Config
 import qs.components
 import qs.components.filedialog
+import qs.services
 import qs.utils
 
 Item {
     id: root
 
     required property DrawerVisibilities visibilities
+    // Top taskbar: open position sits this far below the screen top so the panel
+    // is fully under the bar (content + local glass as one box).
+    property real edgeClearance: 0
+    readonly property bool underTopBar: edgeClearance > 0
     readonly property DashboardState dashState: DashboardState {
         reloadableId: "dashboardState"
     }
@@ -34,7 +39,8 @@ Item {
     // Never draw the dashboard over the multitasking scrim. Closing it
     // immediately also prevents a translucent frame during the two animations.
     visible: !visibilities.multitasking && offsetScale < 1
-    anchors.topMargin: (-implicitHeight - 5) * offsetScale
+    // Open: edgeClearance (0 for side bars). Closed: fully above the screen.
+    anchors.topMargin: root.edgeClearance + (-implicitHeight - 5 - root.edgeClearance) * offsetScale
     implicitHeight: content.implicitHeight
     implicitWidth: content.implicitWidth || 854 // Hard coded fallback for first open
     opacity: 1 - offsetScale
@@ -43,11 +49,25 @@ Item {
         Anim {}
     }
 
+    // Local glass when under the top taskbar — avoids ContentWindow blob y/deform
+    // mismatch that left empty space above content and overflowed the bottom.
+    StyledRect {
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.top
+        width: content.width || parent.implicitWidth
+        height: content.height || parent.implicitHeight
+        radius: Tokens.rounding.extraLarge
+        color: Colours.tPalette.m3surface
+        visible: root.underTopBar
+        z: 0
+    }
+
     Loader {
         id: content
 
         anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottom: parent.bottom
+        anchors.top: parent.top
+        z: 1
 
         active: root.shouldBeActive || root.visible
 

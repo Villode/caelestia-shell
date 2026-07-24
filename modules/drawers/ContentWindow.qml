@@ -185,6 +185,17 @@ StyledWindow {
             smoothing: root.contentItem.Config.border.smoothing
         }
 
+        // Dashboard glass must NOT share the border blob group: when closed its
+        // bottom sits only a few px above the screen, and BlobInvertedRect always
+        // smin-merges every rect in the group — on a top taskbar that permanently
+        // bites a hollow into the middle of the bar chrome.
+        BlobGroup {
+            id: dashBlobGroup
+
+            color: root.surfaceColour
+            smoothing: root.contentItem.Config.border.smoothing
+        }
+
         BlobInvertedRect {
             anchors.fill: parent
             anchors.margins: -50 // Make border thicker to smooth out bulge from closed drawers
@@ -200,14 +211,15 @@ StyledWindow {
             id: dashBg
 
             panel: panels.dashboard
+            group: dashBlobGroup
+            // Top bar uses local glass inside dashboard Wrapper (edgeClearance);
+            // keep this blob only for side-bar positions.
+            visible: panel.visible && !bar.isTop
             deformAmount: 0.1
-            // y is offset by top-bar height or the top border thickness. Height must
-            // subtract the same offset or the glass hangs past the content bottom
-            // (exterior strip under the dashboard, often most visible on Performance).
-            implicitHeight: {
-                const yOff = bar.isTop ? bar.implicitHeight : root.borderThickness;
-                return Math.max(0, panel.height - yOff);
-            }
+            x: panel.x
+            y: panel.y + root.borderThickness
+            implicitWidth: panel.visible && !bar.isTop ? panel.width : 0
+            implicitHeight: panel.visible && !bar.isTop ? Math.max(0, panel.height - root.borderThickness) : 0
         }
 
         PanelBg {
@@ -341,7 +353,8 @@ StyledWindow {
             utilities.deformMatrix: utilsBg.rawDeformMatrix
 
             dashboard.transform: Matrix4x4 {
-                matrix: dashBg.deformMatrix
+                // Top bar: deform was shifting content down relative to glass.
+                matrix: bar.isTop ? Qt.matrix4x4() : dashBg.deformMatrix
             }
             launcher.transform: Matrix4x4 {
                 matrix: launcherBg.deformMatrix
@@ -395,6 +408,7 @@ StyledWindow {
         visible: panel.visible
         group: blobGroup
         x: panel.x + (bar.isLeft ? bar.implicitWidth : 0)
+        // Default: below top bar / top border. Dashboard overrides y (edgeClearance).
         y: panel.y + (bar.isTop ? bar.implicitHeight : root.borderThickness)
         implicitWidth: panel.width
         implicitHeight: panel.height

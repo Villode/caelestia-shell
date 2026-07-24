@@ -105,6 +105,9 @@ Item {
         z: 120
 
         visibilities: root.visibilities
+        // Move the whole panel under the top taskbar so content and glass share
+        // one box (no empty topInset + deform mismatch).
+        edgeClearance: root.bar?.isTop ? (root.bar.implicitHeight || 0) : 0
 
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: parent.top

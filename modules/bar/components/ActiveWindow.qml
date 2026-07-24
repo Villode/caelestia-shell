@@ -38,54 +38,66 @@ Item {
     property Title current: text1
 
     clip: true
+    // On top bar the loader fills remaining width; keep a compact content width for metrics,
+    // while the row below centers icon+title in the allocated cell.
     implicitWidth: root.isVertical ? Math.max(icon.implicitWidth, current.implicitHeight) : icon.implicitWidth + current.implicitWidth + current.anchors.leftMargin
     implicitHeight: root.isVertical ? icon.implicitHeight + current.implicitWidth + current.anchors.topMargin : Math.max(icon.implicitHeight, current.implicitHeight)
 
-    Loader {
-        asynchronous: true
-        anchors.fill: parent
-        active: !Config.bar.activeWindow.showOnHover
+    Item {
+        id: contentRow
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.horizontalCenter: root.isVertical ? undefined : parent.horizontalCenter
+        anchors.left: root.isVertical ? undefined : undefined
+        width: root.isVertical ? parent.width : (icon.implicitWidth + current.implicitWidth + (root.isVertical ? 0 : Tokens.spacing.small))
+        height: root.isVertical ? parent.height : Math.max(icon.implicitHeight, current.implicitHeight)
 
-        sourceComponent: MouseArea {
-            cursorShape: Qt.PointingHandCursor
-            hoverEnabled: true
-            onPositionChanged: {
-                const popouts = root.bar.popouts;
-                if (popouts.hasCurrent && popouts.currentName !== "activewindow")
-                    popouts.hasCurrent = false;
-            }
-            onClicked: {
-                const popouts = root.bar.popouts;
-                if (popouts.hasCurrent) {
-                    popouts.hasCurrent = false;
-                } else {
-                    popouts.currentName = "activewindow";
-                    const p = root.mapToItem(root.bar, root.implicitWidth / 2, root.implicitHeight / 2);
-                    popouts.currentCenter = root.isVertical ? p.y : p.x;
-                    popouts.hasCurrent = true;
+        Loader {
+            asynchronous: true
+            anchors.fill: parent
+            active: !Config.bar.activeWindow.showOnHover
+
+            sourceComponent: MouseArea {
+                cursorShape: Qt.PointingHandCursor
+                hoverEnabled: true
+                onPositionChanged: {
+                    const popouts = root.bar.popouts;
+                    if (popouts.hasCurrent && popouts.currentName !== "activewindow")
+                        popouts.hasCurrent = false;
+                }
+                onClicked: {
+                    const popouts = root.bar.popouts;
+                    if (popouts.hasCurrent) {
+                        popouts.hasCurrent = false;
+                    } else {
+                        popouts.currentName = "activewindow";
+                        const p = root.mapToItem(root.bar, root.width / 2, root.height / 2);
+                        popouts.currentCenter = root.isVertical ? p.y : p.x;
+                        popouts.hasCurrent = true;
+                    }
                 }
             }
         }
-    }
 
-    MaterialIcon {
-        id: icon
+        MaterialIcon {
+            id: icon
 
-        anchors.horizontalCenter: root.isVertical ? parent.horizontalCenter : undefined
-        anchors.verticalCenter: root.isVertical ? undefined : parent.verticalCenter
-        anchors.left: root.isVertical ? undefined : parent.left
+            anchors.horizontalCenter: root.isVertical ? parent.horizontalCenter : undefined
+            anchors.verticalCenter: root.isVertical ? undefined : parent.verticalCenter
+            anchors.left: root.isVertical ? undefined : parent.left
+            anchors.top: root.isVertical ? parent.top : undefined
 
-        animate: true
-        text: Icons.getAppCategoryIcon(Hypr.activeToplevel?.lastIpcObject.class, "desktop_windows")
-        color: root.colour
-    }
+            animate: true
+            text: Icons.getAppCategoryIcon(Hypr.activeToplevel?.lastIpcObject.class, "desktop_windows")
+            color: root.colour
+        }
 
-    Title {
-        id: text1
-    }
+        Title {
+            id: text1
+        }
 
-    Title {
-        id: text2
+        Title {
+            id: text2
+        }
     }
 
     TextMetrics {
@@ -121,6 +133,7 @@ Item {
         anchors.left: root.isVertical ? undefined : icon.right
         anchors.topMargin: root.isVertical ? Tokens.spacing.small : 0
         anchors.leftMargin: root.isVertical ? 0 : Tokens.spacing.small
+        // Parent is contentRow when horizontal so left/right attach to icon correctly.
 
         font: metrics.font
         color: root.colour
