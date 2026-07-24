@@ -104,7 +104,7 @@ ColumnLayout {
                 onClicked: {
                     root.visibilities.utilities = false;
                     root.visibilities.sidebar = false;
-                    Quickshell.execDetached([...GlobalConfig.general.apps.playback, recording.modelData.path]);
+                    Hypr.execOnActiveWorkspace([...GlobalConfig.general.apps.playback, recording.modelData.path]);
                 }
             }
 
@@ -114,7 +114,7 @@ ColumnLayout {
                 onClicked: {
                     root.visibilities.utilities = false;
                     root.visibilities.sidebar = false;
-                    Quickshell.execDetached([...GlobalConfig.general.apps.explorer, recording.modelData.path]);
+                    Hypr.execOnActiveWorkspace([...GlobalConfig.general.apps.explorer, recording.modelData.path]);
                 }
             }
 

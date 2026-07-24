@@ -660,4 +660,12 @@ FloatingWindow {
             nState.openAbsolutePath(path);
         visible = true;
     }
+
+    function revealPath(filePath: string): void {
+        if (!filePath)
+            nState.navigateToThisPC();
+        else
+            nState.revealAbsolutePath(filePath);
+        visible = true;
+    }
 }

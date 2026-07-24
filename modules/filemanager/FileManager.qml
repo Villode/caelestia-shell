@@ -115,6 +115,28 @@ Scope {
         raiseWindow(w);
     }
 
+    // Open parent of file and select it (FileManager1 ShowItems)
+    function openReveal(filePath: string): void {
+        prune();
+        if (windows.length > 0) {
+            const w = windows[windows.length - 1];
+            if (w) {
+                w.revealPath(filePath || "");
+                raiseWindow(w);
+                return;
+            }
+        }
+        openRevealNew(filePath);
+    }
+
+    function openRevealNew(filePath: string): void {
+        const w = createWindow();
+        if (!w)
+            return;
+        w.revealPath(filePath || "");
+        raiseWindow(w);
+    }
+
     function closeAll(): void {
         prune();
         const copy = windows.slice();
@@ -273,6 +295,14 @@ Scope {
 
         function openNewHome(): void {
             root.openNew("");
+        }
+
+        function openReveal(path: string): void {
+            root.openReveal(path || "");
+        }
+
+        function openRevealNew(path: string): void {
+            root.openRevealNew(path || "");
         }
 
         function closeAll(): void {

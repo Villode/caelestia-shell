@@ -4,6 +4,7 @@ import Quickshell
 import Caelestia
 import Caelestia.Config
 import qs.utils
+import qs.services
 
 Searcher {
     id: root
@@ -13,12 +14,14 @@ Searcher {
 
         if (entry.runInTerminal) {
             const terminal = [...GlobalConfig.general.apps.terminal];
-            Quickshell.execDetached({
-                command: [Quickshell.shellPath("assets/villode_terminal_exec.sh"), String(terminal.length), ...terminal, "--", `${Quickshell.shellDir}/assets/wrap_term_launch.sh`, ...entry.command],
-                workingDirectory: entry.workingDirectory
-            });
+            Hypr.execOnActiveWorkspace([Quickshell.shellPath("assets/villode_terminal_exec.sh"), String(terminal.length), ...terminal, "--", `${Quickshell.shellDir}/assets/wrap_term_launch.sh`, ...entry.command]);
         } else {
-            entry.execute();
+            // Never entry.execute() — inherits Quickshell birth workspace (often WS1).
+            const cmd = entry.command;
+            if (cmd && cmd.length)
+                Hypr.execOnActiveWorkspace([...cmd]);
+            else
+                entry.execute();
         }
     }
 

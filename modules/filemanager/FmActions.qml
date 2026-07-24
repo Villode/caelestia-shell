@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Io
 import Caelestia
 import qs.utils
+import qs.services
 
 // File ops + compress/extract with progress streaming
 Item {
@@ -71,7 +72,7 @@ Item {
             return;
         }
         for (let i = 0; i < paths.length; i++)
-            Quickshell.execDetached(["xdg-open", paths[i]]);
+            Hypr.execOnActiveWorkspace(["xdg-open", paths[i]]);
         root.state.statusText = qsTr("已打开 %1 项").arg(paths.length);
     }
 
@@ -120,7 +121,7 @@ Item {
             return;
         }
 
-        Quickshell.execDetached(["xdg-open", path]);
+        Hypr.execOnActiveWorkspace(["xdg-open", path]);
     }
 
     // Set by ManagerWindow to open FmQuickLook without circular imports
@@ -132,7 +133,7 @@ Item {
             root.state.statusText = qsTr("预览：%1").arg(name || path.split("/").pop());
             return;
         }
-        Quickshell.execDetached(["xdg-open", path]);
+        Hypr.execOnActiveWorkspace(["xdg-open", path]);
     }
 
     function openArchiveMember(virtualPath: string, name: string): void {

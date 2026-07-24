@@ -79,7 +79,7 @@ Item {
 
                 onClicked: {
                     const terminal = [...GlobalConfig.general.apps.terminal];
-                    Quickshell.execDetached([Quickshell.shellPath("assets/villode_terminal_exec.sh"), String(terminal.length), ...terminal, "--", "qalc", "-i", root.math]);
+                    Hypr.execOnActiveWorkspace([Quickshell.shellPath("assets/villode_terminal_exec.sh"), String(terminal.length), ...terminal, "--", "qalc", "-i", root.math]);
                     root.list.visibilities.launcher = false;
                 }
 

@@ -47,7 +47,7 @@ Searcher {
             } else {
                 list.visibilities.launcher = false;
                 if (!SessionManager.exec(command))
-                    Quickshell.execDetached(command);
+                    Hypr.execOnActiveWorkspace(command);
             }
         }
     }

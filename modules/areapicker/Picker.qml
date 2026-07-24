@@ -295,7 +295,7 @@ MouseArea {
             Quickshell.execDetached(["sh", "-c", "wl-copy --type image/png < " + path]);
             Quickshell.execDetached(["notify-send", "-a", "caelestia-cli", "-i", path, "Screenshot taken", "Screenshot copied to clipboard"]);
         } else {
-            Quickshell.execDetached([`${Quickshell.env("HOME")}/.local/bin/villode-screenshot-editor`, path]);
+            Hypr.execOnActiveWorkspace([`${Quickshell.env("HOME")}/.local/bin/villode-screenshot-editor`, path]);
         }
         closeAnim.start();
     }

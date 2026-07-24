@@ -46,6 +46,23 @@ Singleton {
         Hyprland.dispatch(request);
     }
 
+    /**
+     * Spawn a process on the *currently focused* workspace.
+     * Quickshell/daemons are born on workspace 1 at login; bare
+     * Quickshell.execDetached / DesktopEntry.execute inherit that under
+     * misc:initial_workspace_tracking. Always go through hyprctl dispatch exec.
+     */
+    function execOnActiveWorkspace(command: list<string>): void {
+        if (!command || command.length === 0)
+            return;
+        // Spawn via compositor so the window lands on the *focused* workspace,
+        // not the workspace where Quickshell was born (usually 1 at login).
+        const args = ["hyprctl", "dispatch", "exec", "--"];
+        for (let i = 0; i < command.length; ++i)
+            args.push(String(command[i]));
+        Quickshell.execDetached(args);
+    }
+
     function cycleSpecialWorkspace(direction: string): void {
         const openSpecials = workspaces.values.filter(w => w.name.startsWith("special:") && w.lastIpcObject.windows > 0);
 

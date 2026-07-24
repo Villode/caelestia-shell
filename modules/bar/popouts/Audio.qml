@@ -109,7 +109,7 @@ Item {
             icon: "settings"
 
             onClicked: {
-                Quickshell.execDetached([...GlobalConfig.general.apps.audio]);
+                Hypr.execOnActiveWorkspace([...GlobalConfig.general.apps.audio]);
                 root.popouts.hasCurrent = false;
             }
         }

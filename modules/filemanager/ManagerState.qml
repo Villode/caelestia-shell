@@ -643,6 +643,14 @@ Item {
         while (path.length > 1 && path.endsWith("/"))
             path = path.slice(0, -1);
 
+        if (path.startsWith("file://")) {
+            try {
+                path = decodeURIComponent(path.slice(7));
+            } catch (e) {
+                path = path.slice(7);
+            }
+        }
+
         const home = Paths.home;
         const gvfs = gvfsDir();
         // MTP / gphoto fuse mounts: /run/user/UID/gvfs/mtp:host=...
@@ -675,6 +683,32 @@ Item {
         resetSearchOnNavigate();
         statusText = displayPath();
         // path binding updates FileSystemModel; skip bumpRefresh (empty-path race)
+    }
+
+    /** Open folder containing filePath and select it (FileManager1 ShowItems). */
+    function revealAbsolutePath(filePath: string): void {
+        if (!filePath || filePath.length === 0) {
+            navigateToThisPC();
+            return;
+        }
+        if (filePath.startsWith("file://")) {
+            try {
+                filePath = decodeURIComponent(filePath.slice(7));
+            } catch (e) {
+                filePath = filePath.slice(7);
+            }
+        }
+        while (filePath.length > 1 && filePath.endsWith("/"))
+            filePath = filePath.slice(0, -1);
+
+        const lastSlash = filePath.lastIndexOf("/");
+        const parent = lastSlash > 0 ? filePath.slice(0, lastSlash) : "/";
+        openAbsolutePath(parent);
+
+        // Defer selection until FileSystemModel has reloaded the parent dir
+        Qt.callLater(() => {
+            setSelection([filePath]);
+        });
     }
 
     function setSelection(paths: list<string>): void {

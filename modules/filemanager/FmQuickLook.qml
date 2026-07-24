@@ -185,7 +185,7 @@ Item {
             kind = "video";
             metaLine = qsTr("视频 — 使用内置播放器窗口");
             // Open mpv window for video (still "internal" vs random app)
-            Quickshell.execDetached(["mpv", "--force-window=yes", "--keep-open=yes", "--title=Villode Preview", path]);
+            Hypr.execOnActiveWorkspace(["mpv", "--force-window=yes", "--keep-open=yes", "--title=Villode Preview", path]);
             audioStatus = qsTr("已在内部播放器打开");
         } else if (isArchivePath(path)) {
             // Prefer entering archive as folder from openEntry; Space still lists
@@ -788,7 +788,7 @@ Item {
                         color: Colours.palette.m3onSecondaryContainer
                         onClicked: {
                             if (root.path)
-                                Quickshell.execDetached(["xdg-open", root.path]);
+                                Hypr.execOnActiveWorkspace(["xdg-open", root.path]);
                         }
                     }
                     StyledText {
@@ -840,7 +840,7 @@ Item {
             if (root.kind === "text" && bodyText.activeFocus)
                 return;
             if (root.path)
-                Quickshell.execDetached(["xdg-open", root.path]);
+                Hypr.execOnActiveWorkspace(["xdg-open", root.path]);
             event.accepted = true;
         }
     }
