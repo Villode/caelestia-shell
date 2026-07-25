@@ -71,7 +71,7 @@ Singleton {
             root.scheme = scheme.name;
             flavour = scheme.flavour;
             currentLight = scheme.mode === "light";
-            Quickshell.execDetached(["python3", Quickshell.shellPath("assets/sync_alacritty_theme.py"), scheme.mode, ...GlobalConfig.general.apps.terminal]);
+            root.syncTerminalTheme(scheme.mode);
         } else {
             previewLight = scheme.mode === "light";
         }
@@ -177,6 +177,12 @@ Singleton {
             setPreset(root.preset, mode);
     }
 
+    function syncTerminalTheme(mode: string): void {
+        // Alacritty colours + window.opacity from scheme / Settings transparency.
+        const args = ["python3", Quickshell.shellPath("assets/sync_alacritty_theme.py"), mode || (root.currentLight ? "light" : "dark"), ...GlobalConfig.general.apps.terminal];
+        Quickshell.execDetached(args);
+    }
+
     function reloadHyprRules(): void {
         let rule, trEnabled;
         if (Hypr.usingLua) {
@@ -187,6 +193,8 @@ Singleton {
             trEnabled = transparency.enabled ? 1 : 0;
         }
         Hypr.extras.batchMessage([rule.arg("blur").arg(trEnabled), rule.arg("ignore_alpha").arg(Math.max(0, transparency.base - 0.03))]);
+        // Terminal glass follows the same transparency slider as shell chrome.
+        root.syncTerminalTheme(root.currentLight ? "light" : "dark");
     }
 
     function requestReloadHyprRules(): void {
