@@ -212,14 +212,15 @@ StyledWindow {
 
             panel: panels.dashboard
             group: dashBlobGroup
-            // Top bar uses local glass inside dashboard Wrapper (edgeClearance);
-            // keep this blob only for side-bar positions.
-            visible: panel.visible && !bar.isTop
-            deformAmount: 0.1
+            // Glass lives in dashboard/Wrapper (local StyledRect) for every bar
+            // position so content never drifts from the panel background via
+            // blob y/deform. Keep a zero-size shape so dashBlobGroup stays valid.
+            visible: false
+            deformAmount: 0
             x: panel.x
-            y: panel.y + root.borderThickness
-            implicitWidth: panel.visible && !bar.isTop ? panel.width : 0
-            implicitHeight: panel.visible && !bar.isTop ? Math.max(0, panel.height - root.borderThickness) : 0
+            y: panel.y
+            implicitWidth: 0
+            implicitHeight: 0
         }
 
         PanelBg {
@@ -353,8 +354,8 @@ StyledWindow {
             utilities.deformMatrix: utilsBg.rawDeformMatrix
 
             dashboard.transform: Matrix4x4 {
-                // Top bar: deform was shifting content down relative to glass.
-                matrix: bar.isTop ? Qt.matrix4x4() : dashBg.deformMatrix
+                // Local glass in Wrapper — never apply blob deform to content.
+                matrix: Qt.matrix4x4()
             }
             launcher.transform: Matrix4x4 {
                 matrix: launcherBg.deformMatrix

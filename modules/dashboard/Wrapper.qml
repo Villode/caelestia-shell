@@ -13,10 +13,8 @@ Item {
     id: root
 
     required property DrawerVisibilities visibilities
-    // Top taskbar: open position sits this far below the screen top so the panel
-    // is fully under the bar (content + local glass as one box).
+    // Top taskbar only: open position sits this far below the screen top.
     property real edgeClearance: 0
-    readonly property bool underTopBar: edgeClearance > 0
     readonly property DashboardState dashState: DashboardState {
         reloadableId: "dashboardState"
     }
@@ -49,16 +47,17 @@ Item {
         Anim {}
     }
 
-    // Local glass when under the top taskbar — avoids ContentWindow blob y/deform
-    // mismatch that left empty space above content and overflowed the bottom.
+    // Local glass for all bar positions — ContentWindow dashBg + deform was
+    // shifting content relative to the blob (empty left on side bars, empty
+    // top / overflow on top bar). Keep glass and content as one box.
     StyledRect {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: parent.top
-        width: content.width || parent.implicitWidth
-        height: content.height || parent.implicitHeight
+        width: Math.max(content.width, parent.implicitWidth)
+        height: Math.max(content.height, 1)
         radius: Tokens.rounding.extraLarge
         color: Colours.tPalette.m3surface
-        visible: root.underTopBar
+        visible: root.visible
         z: 0
     }
 
